@@ -21,9 +21,12 @@ import { TextSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 import { useStore } from "~/store";
 import { storeToRefs } from "pinia";
+import TextAlign from "@tiptap/extension-text-align";
 
 import { FontSize, fontSizeOptions } from "~/extensions/fontSizeExtension";
 import TextStyle from "@tiptap/extension-text-style";
+
+import ImageUploader from "~/components/ImageUploader.vue";
 
 interface Props {
   content?: string;
@@ -117,6 +120,7 @@ const monacoEditor = ref<any>(null);
 const showCommitDialog = ref(false);
 const commitMessage = ref("");
 const isCommitting = ref(false);
+const showImageDialog = ref(false);
 
 // Store setup
 const store = useStore();
@@ -440,6 +444,51 @@ const handleLoadSave = async (content: string) => {
   }
 };
 
+const handleImageUploaded = (details: {
+  url: string;
+  alt: string;
+  alignment: string;
+}) => {
+  if (!editor.value) return;
+
+  editor.value
+    .chain()
+    .focus()
+    .setImage({
+      src: details.url,
+      alt: details.alt,
+    })
+    .run();
+
+  // Set alignment
+  const imageNode = editor.value.view.state.selection.$anchor.nodeAfter;
+  if (imageNode) {
+    editor.value
+      .chain()
+      .focus()
+      .setNodeAttribute(
+        imageNode.type,
+        "style",
+        `display: block; margin: 0 ${
+          details.alignment === "center" ? "auto" : "0"
+        }; float: ${
+          details.alignment === "center" ? "none" : details.alignment
+        }`
+      )
+      .run();
+  }
+
+  showImageDialog.value = false;
+};
+
+const handleImageError = (message: string) => {
+  showToast({
+    title: "Error",
+    message,
+    type: "error",
+  });
+};
+
 const handleRawContentChange = (value: string) => {
   if (!value) return;
   const formattedContent = formatHTML(value);
@@ -524,6 +573,12 @@ onMounted(async () => {
         },
       }),
       TextStyle,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+        alignments: ["left", "center", "right", "justify"],
+        defaultAlignment: "left",
+      }),
+
       FontSize.configure({
         types: ["textStyle"],
       }),
@@ -538,8 +593,8 @@ onMounted(async () => {
           class: null,
         },
       }),
-      StyledDiv,
-      GridContainer,
+      // StyledDiv,
+      // GridContainer,
       ColorWheelExtension.configure({
         HTMLAttributes: {
           class: "color-wheel-node",
@@ -554,164 +609,170 @@ onMounted(async () => {
         return html;
       },
       handleDrop: false,
-      handleClick: (view: EditorView, pos: number, event: MouseEvent) => {
-        // Get the precise position
-        const precise = view.posAtCoords({
-          left: event.clientX,
-          top: event.clientY,
-        });
+      // handleClick: (view: EditorView, pos: number, event: MouseEvent) => {
+      //   // Get the precise position
+      //   const precise = view.posAtCoords({
+      //     left: event.clientX,
+      //     top: event.clientY,
+      //   });
 
-        if (!precise) return false;
+      //   if (!precise) return false;
 
-        const { pos: precisePos } = precise;
-        const $pos = view.state.doc.resolve(precisePos);
+      //   const { pos: precisePos } = precise;
+      //   const $pos = view.state.doc.resolve(precisePos);
 
-        // Check if we're actually clicking on text content
-        const domAtPos = view.domAtPos(precisePos);
-        if (!domAtPos) return false;
+      //   // Check if we're actually clicking on text content
+      //   const domAtPos = view.domAtPos(precisePos);
+      //   if (!domAtPos) return false;
 
-        const { node: domNode, offset } = domAtPos;
-        const element = event.target as HTMLElement;
+      //   const { node: domNode, offset } = domAtPos;
+      //   const element = event.target as HTMLElement;
 
-        // If clicking on/near an image, don't interfere
-        if (element.nodeName === "IMG" || element.closest("img")) {
-          return false;
-        }
+      //   // If clicking on/near an image, don't interfere
+      //   if (element.nodeName === "IMG" || element.closest("img")) {
+      //     return false;
+      //   }
 
-        // Create selection at the precise click position
-        view.dispatch(
-          view.state.tr.setSelection(
-            TextSelection.create(view.state.doc, precisePos)
-          )
-        );
+      //   // Create selection at the precise click position
+      //   view.dispatch(
+      //     view.state.tr.setSelection(
+      //       TextSelection.create(view.state.doc, precisePos)
+      //     )
+      //   );
 
-        view.focus();
-        return true;
-      },
-      handleKeyDown: (view: EditorView, event: KeyboardEvent) => {
-        if (event.key === "Enter") {
-          const { state } = view;
-          const { selection } = state;
-          const { $from } = selection;
-          const parent = $from.parent;
+      //   view.focus();
+      //   return true;
+      // },
+      // handleKeyDown: (view: EditorView, event: KeyboardEvent) => {
+      //   if (event.key === "Enter") {
+      //     const { state } = view;
+      //     const { selection } = state;
+      //     const { $from } = selection;
+      //     const parent = $from.parent;
 
-          // Find the current flex container
-          let currentFlexDepth = $from.depth;
-          let flexContainer = null;
+      //     // Find the current flex container
+      //     let currentFlexDepth = $from.depth;
+      //     let flexContainer = null;
 
-          while (currentFlexDepth > 0) {
-            const node = $from.node(currentFlexDepth);
-            if (
-              node.type.name === "styledDiv" &&
-              node.attrs.style?.includes("display: flex")
-            ) {
-              flexContainer = node;
-              break;
-            }
-            currentFlexDepth--;
-          }
+      //     while (currentFlexDepth > 0) {
+      //       const node = $from.node(currentFlexDepth);
+      //       if (
+      //         node.type.name === "styledDiv" &&
+      //         node.attrs.style?.includes("display: flex")
+      //       ) {
+      //         flexContainer = node;
+      //         break;
+      //       }
+      //       currentFlexDepth--;
+      //     }
 
-          if (!flexContainer) {
-            return false;
-          }
+      //     if (!flexContainer) {
+      //       return false;
+      //     }
 
-          // Check if we're in the left column (flex: 1)
-          const isInLeftColumn = parent.attrs.style?.includes("flex: 1");
+      //     // Check if we're in the left column (flex: 1)
+      //     const isInLeftColumn = parent.attrs.style?.includes("flex: 1");
 
-          // Check if we're at the end of the document
-          const isAtEnd = $from.pos === state.doc.content.size;
+      //     // Check if we're at the end of the document
+      //     const isAtEnd = $from.pos === state.doc.content.size;
 
-          if (isAtEnd && event.shiftKey) {
-            // Create a new section at the end
-            view.dispatch(
-              state.tr.insert(
-                $from.pos,
-                state.schema.nodes.styledDiv.create(
-                  { style: "display: flex; gap: 2rem; margin: 3rem 0;" },
-                  [
-                    state.schema.nodes.styledDiv.create({ style: "flex: 1;" }, [
-                      state.schema.nodes.paragraph.create(),
-                    ]),
-                    state.schema.nodes.styledDiv.create({ style: "flex: 2;" }, [
-                      state.schema.nodes.paragraph.create(),
-                    ]),
-                  ]
-                )
-              )
-            );
-            return true;
-          } else if (isInLeftColumn) {
-            // If in left column and Shift+Enter is pressed, create a new line within the column
-            if (event.shiftKey) {
-              view.dispatch(
-                state.tr.insert(
-                  $from.pos,
-                  state.schema.nodes.hardBreak.create()
-                )
-              );
-              return true;
-            }
-            // Regular Enter in left column moves to right column
-            const rightColumn = flexContainer.lastChild;
-            if (rightColumn) {
-              const domNode = view.nodeDOM(rightColumn.pos) as Node;
-              if (domNode) {
-                const targetPos = view.posAtDOM(domNode, 0);
-                view.dispatch(
-                  state.tr.setSelection(
-                    TextSelection.create(state.doc, targetPos)
-                  )
-                );
-                return true;
-              }
-            }
-          } else {
-            // In right column, normal Enter behavior
-            return false;
-          }
-        }
+      //     if (isAtEnd && event.shiftKey) {
+      //       // Create a new section at the end
+      //       view.dispatch(
+      //         state.tr.insert(
+      //           $from.pos,
+      //           state.schema.nodes.styledDiv.create(
+      //             { style: "display: flex; gap: 2rem; margin: 3rem 0;" },
+      //             [
+      //               state.schema.nodes.styledDiv.create({ style: "flex: 1;" }, [
+      //                 state.schema.nodes.paragraph.create(),
+      //               ]),
+      //               state.schema.nodes.styledDiv.create({ style: "flex: 2;" }, [
+      //                 state.schema.nodes.paragraph.create(),
+      //               ]),
+      //             ]
+      //           )
+      //         )
+      //       );
+      //       return true;
+      //     } else if (isInLeftColumn) {
+      //       // If in left column and Shift+Enter is pressed, create a new line within the column
+      //       if (event.shiftKey) {
+      //         view.dispatch(
+      //           state.tr.insert(
+      //             $from.pos,
+      //             state.schema.nodes.hardBreak.create()
+      //           )
+      //         );
+      //         return true;
+      //       }
+      //       // Regular Enter in left column moves to right column
+      //       const rightColumn = flexContainer.lastChild;
+      //       if (rightColumn) {
+      //         const domNode = view.nodeDOM(rightColumn.pos) as Node;
+      //         if (domNode) {
+      //           const targetPos = view.posAtDOM(domNode, 0);
+      //           view.dispatch(
+      //             state.tr.setSelection(
+      //               TextSelection.create(state.doc, targetPos)
+      //             )
+      //           );
+      //           return true;
+      //         }
+      //       }
+      //     } else {
+      //       // In right column, normal Enter behavior
+      //       return false;
+      //     }
+      //   }
 
-        if (event.key === "Tab") {
-          return true;
-        }
+      //   if (event.key === "Tab") {
+      //     return true;
+      //   }
 
-        return false;
-      },
+      //   return false;
+      // },
     },
+    // onUpdate: ({ editor: ed }) => {
+    //   const { selection } = ed.state;
+    //   const { $from } = selection;
+    //   const parent = $from.parent;
+
+    //   if (
+    //     parent.type.name === "styledDiv" &&
+    //     parent.attrs.style?.includes("display: flex")
+    //   ) {
+    //     const currentNode = $from.node();
+    //     const parentPos = $from.before($from.depth);
+
+    //     let targetPos = parentPos;
+    //     let targetDepth = $from.depth;
+
+    //     while (targetDepth > 1) {
+    //       const node = $from.node(targetDepth);
+    //       if (node.attrs.style?.includes("display: flex")) {
+    //         targetPos = $from.before(targetDepth);
+    //         break;
+    //       }
+    //       targetDepth--;
+    //     }
+
+    //     const content = formatHTML(ed.getHTML());
+    //     localContent.value = content;
+    //     previewContent.value = content;
+    //     emit("update:content", content);
+    //   } else {
+    //     const content = formatHTML(ed.getHTML());
+    //     localContent.value = content;
+    //     previewContent.value = content;
+    //     emit("update:content", content);
+    //   }
+    // },
     onUpdate: ({ editor: ed }) => {
-      const { selection } = ed.state;
-      const { $from } = selection;
-      const parent = $from.parent;
-
-      if (
-        parent.type.name === "styledDiv" &&
-        parent.attrs.style?.includes("display: flex")
-      ) {
-        const currentNode = $from.node();
-        const parentPos = $from.before($from.depth);
-
-        let targetPos = parentPos;
-        let targetDepth = $from.depth;
-
-        while (targetDepth > 1) {
-          const node = $from.node(targetDepth);
-          if (node.attrs.style?.includes("display: flex")) {
-            targetPos = $from.before(targetDepth);
-            break;
-          }
-          targetDepth--;
-        }
-
-        const content = formatHTML(ed.getHTML());
-        localContent.value = content;
-        previewContent.value = content;
-        emit("update:content", content);
-      } else {
-        const content = formatHTML(ed.getHTML());
-        localContent.value = content;
-        previewContent.value = content;
-        emit("update:content", content);
-      }
+      const content = formatHTML(ed.getHTML());
+      localContent.value = content;
+      previewContent.value = content;
+      emit("update:content", content);
     },
     parseOptions: {
       preserveWhitespace: "full",
@@ -907,6 +968,51 @@ onBeforeUnmount(() => {
                   {{ option.label }}
                 </option>
               </select>
+              <div class="alignment-buttons">
+                <button
+                  @click="editor.chain().focus().setTextAlign('left').run()"
+                  :class="{
+                    'is-active': editor.isActive({ textAlign: 'left' }),
+                  }"
+                  title="Align left"
+                >
+                  <span class="align-icon">⟵</span>
+                </button>
+                <button
+                  @click="editor.chain().focus().setTextAlign('center').run()"
+                  :class="{
+                    'is-active': editor.isActive({ textAlign: 'center' }),
+                  }"
+                  title="Align center"
+                >
+                  <span class="align-icon">↔</span>
+                </button>
+                <button
+                  @click="editor.chain().focus().setTextAlign('right').run()"
+                  :class="{
+                    'is-active': editor.isActive({ textAlign: 'right' }),
+                  }"
+                  title="Align right"
+                >
+                  <span class="align-icon">⟶</span>
+                </button>
+                <button
+                  @click="editor.chain().focus().setTextAlign('justify').run()"
+                  :class="{
+                    'is-active': editor.isActive({ textAlign: 'justify' }),
+                  }"
+                  title="Justify"
+                >
+                  <span class="align-icon">☰</span>
+                </button>
+              </div>
+              <button
+                @click="showImageDialog = true"
+                class="toolbar-button"
+                title="Insert image"
+              >
+                <span class="button-icon">🖼️</span>
+              </button>
               <AddContentDialog
                 :onInsertComponent="handleInsertComponent"
                 :onInsertSection="handleInsertSection"
@@ -976,6 +1082,23 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
+
+    <div v-if="showImageDialog" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Insert Image</h3>
+          <button @click="showImageDialog = false" class="close-button">
+            ×
+          </button>
+        </div>
+        <div class="modal-body">
+          <ImageUploader
+            @uploaded="handleImageUploaded"
+            @error="handleImageError"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -991,6 +1114,7 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   overflow: hidden;
+  width: 100%;
 }
 
 .editor-main {
@@ -1034,13 +1158,17 @@ onBeforeUnmount(() => {
 
 .tiptap-toolbar button,
 .toolbar-button {
-  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   background: white;
   color: #374151;
   cursor: pointer;
-  font-size: 0.875rem;
   transition: all 0.2s;
 }
 
@@ -1102,6 +1230,92 @@ onBeforeUnmount(() => {
   margin: 0;
 }
 
+.alignment-buttons {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  margin: 0 0.5rem;
+}
+
+.alignment-buttons button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+.align-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.button-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.close-button:hover {
+  color: #374151;
+  background: #f3f4f6;
+}
+
+.modal-body {
+  padding: 1rem;
+}
+
 .file-path {
   color: #374151;
   font-size: 0.875rem;
@@ -1152,8 +1366,25 @@ onBeforeUnmount(() => {
 
 /* Prose Mirror Styles */
 .ProseMirror {
-  flex: 1;
+  position: relative;
   outline: none;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  -webkit-font-variant-ligatures: none;
+  font-variant-ligatures: none;
+  padding: 1rem;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid #4361ee;
 }
 
 /* Color wheel component styles */
@@ -1189,6 +1420,7 @@ onBeforeUnmount(() => {
 .content-wrapper {
   padding: 1rem;
   min-height: 100%;
+  width: 100%;
 }
 
 /* Commit Dialog Styles */
