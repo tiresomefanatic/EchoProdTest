@@ -137,7 +137,7 @@ const handleCommit = async () => {
   try {
     await saveFileContent(
       "tiresomefanatic",
-      "HeroEchoPreview",
+      "EchoProdTest",
       props.filePath,
       localContent.value,
       commitMessage.value.trim(),
@@ -292,7 +292,7 @@ const loadContent = async () => {
   try {
     const { content } = await getFileContent(
       "tiresomefanatic",
-      "HeroEchoPreview",
+      "EchoProdTest",
       props.filePath,
       currentBranch.value
     );

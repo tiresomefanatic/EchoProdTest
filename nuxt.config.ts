@@ -88,7 +88,7 @@ export default defineNuxtConfig({
         ? `https://${process.env.NUXT_PUBLIC_SITE_URL}`
         : process.env.NUXT_PUBLIC_SITE_URL || "http://localhost:3000",
       githubOwner: "tiresomefanatic",
-      githubRepo: "HeroEchoPreview",
+      githubRepo: "EchoProdTest",
     },
   },
 

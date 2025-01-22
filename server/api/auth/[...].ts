@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
       `scope=repo user&` +
       `redirect_uri=${encodeURIComponent(
         (process.env.NODE_ENV === "production"
-          ? "https://tiresomefanatic.github.io/HeroEchoPreview"
+          ? "https://tiresomefanatic.github.io/EchoProdTest"
           : "http://localhost:3000") + "/api/auth/callback"
       )}`;
 
@@ -72,7 +72,7 @@ export default defineEventHandler(async (event) => {
 
       // Return token in response
       const baseUrl =
-        process.env.NODE_ENV === "production" ? "/HeroEchoPreview" : "";
+        process.env.NODE_ENV === "production" ? "/EchoProdTest" : "";
       return sendRedirect(event, `${baseUrl}/?token=${tokenData.access_token}`);
     } catch (error: any) {
       throw createError({

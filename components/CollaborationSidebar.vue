@@ -355,7 +355,7 @@ const openCommit = async (commit: Commit) => {
   try {
     // Open commit in GitHub
     if (!commit.html_url) {
-      const url = `https://github.com/tiresomefanatic/HeroEchoPreview/commit/${commit.sha}`;
+      const url = `https://github.com/tiresomefanatic/EchoProdTest/commit/${commit.sha}`;
       window.open(url, "_blank");
     } else {
       window.open(commit.html_url, "_blank");
@@ -364,7 +364,7 @@ const openCommit = async (commit: Commit) => {
     // Load commit content using getRawContent with commit SHA
     const content = await getRawContent(
       "tiresomefanatic",
-      "HeroEchoPreview",
+      "EchoProdTest",
       props.filePath,
       commit.sha // Use commit SHA as the ref
     );
@@ -429,7 +429,7 @@ const handleBranchChange = async (event: Event) => {
     try {
       const { content, sha } = await getFileContent(
         "tiresomefanatic",
-        "HeroEchoPreview",
+        "EchoProdTest",
         props.filePath,
         newBranch
       );

@@ -188,7 +188,7 @@ const loadGithubContent = async () => {
   try {
     const content = await getRawContent(
       "tiresomefanatic",
-      "HeroEchoPreview",
+      "EchoProdTest",
       contentPath.value,
       currentBranch.value
     );
@@ -257,7 +257,7 @@ const handleSave = async (content: string) => {
   try {
     const result = await saveFileContent(
       "tiresomefanatic",
-      "HeroEchoPreview",
+      "EchoProdTest",
       contentPath.value,
       content,
       `Update ${contentPath.value}`,
