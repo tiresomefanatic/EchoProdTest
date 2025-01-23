@@ -25,6 +25,7 @@ import TextAlign from "@tiptap/extension-text-align";
 
 import { FontSize, fontSizeOptions } from "~/extensions/fontSizeExtension";
 import TextStyle from "@tiptap/extension-text-style";
+import Link from "@tiptap/extension-link";
 
 import ImageUploader from "~/components/ImageUploader.vue";
 
@@ -353,15 +354,15 @@ const handleSave = () => {
   });
 };
 
-const saveToLocal = () => {
-  if (!hasChanges.value || isSaving.value) return;
-  editorStore.saveContent(props.filePath, localContent.value);
-  showToast({
-    title: "Success",
-    message: "Content saved locally",
-    type: "success",
-  });
-};
+// const saveToLocal = () => {
+//   if (!hasChanges.value || isSaving.value) return;
+//   editorStore.saveContent(props.filePath, localContent.value);
+//   showToast({
+//     title: "Success",
+//     message: "Content saved locally",
+//     type: "success",
+//   });
+// };
 
 const handleCommit = async () => {
   if (!props.filePath || !commitMessage.value.trim()) return;
@@ -489,6 +490,40 @@ const handleImageError = (message: string) => {
   });
 };
 
+const setLink = () => {
+  const url = window.prompt("URL");
+
+  // cancelled
+  if (url === null) {
+    return;
+  }
+
+  // empty
+  if (url === "") {
+    editor.value?.chain().focus().extendMarkRange("link").unsetLink().run();
+    return;
+  }
+
+  // Ensure URL has protocol
+  let finalUrl = url;
+  if (!/^https?:\/\//i.test(url) && !/^mailto:/i.test(url)) {
+    finalUrl = "https://" + url;
+  }
+
+  // Set new link
+  editor.value
+    ?.chain()
+    .focus()
+    .extendMarkRange("link")
+    .unsetLink()
+    .setLink({ href: finalUrl })
+    .run();
+};
+
+const removeLink = () => {
+  editor.value?.chain().focus().unsetLink().run();
+};
+
 const handleRawContentChange = (value: string) => {
   if (!value) return;
   const formattedContent = formatHTML(value);
@@ -591,6 +626,15 @@ onMounted(async () => {
         inline: true,
         HTMLAttributes: {
           class: null,
+        },
+      }),
+      Link.configure({
+        openOnClick: true,
+        protocols: ["http", "https", "mailto"],
+        HTMLAttributes: {
+          class: "editor-link",
+          target: "_blank",
+          rel: "noopener noreferrer",
         },
       }),
       // StyledDiv,
@@ -1006,6 +1050,22 @@ onBeforeUnmount(() => {
                   <span class="align-icon">☰</span>
                 </button>
               </div>
+              <div class="divider"></div>
+              <button
+                @click="setLink"
+                :class="{ 'is-active': editor.isActive('link') }"
+                title="Add/edit link"
+              >
+                🔗
+              </button>
+              <button
+                v-if="editor.isActive('link')"
+                @click="removeLink"
+                title="Remove link"
+              >
+                ✖️
+              </button>
+              <div class="divider"></div>
               <button
                 @click="showImageDialog = true"
                 class="toolbar-button"
@@ -1314,6 +1374,23 @@ onBeforeUnmount(() => {
 
 .modal-body {
   padding: 1rem;
+}
+
+.editor-link {
+  color: #4361ee;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.editor-link:hover {
+  color: #3651d4;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: #e5e7eb;
+  margin: 0 0.5rem;
 }
 
 .file-path {

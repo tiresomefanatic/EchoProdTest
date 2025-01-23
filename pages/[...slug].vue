@@ -1,3 +1,4 @@
+# [...slug].vue
 <template>
   <div class="page-wrapper">
     <ClientOnly>
@@ -53,20 +54,16 @@
                 >
                   Exit
                 </button>
-                <ContentCreator v-if="isLoggedIn" />
+                <ContentCreator
+                  v-if="isLoggedIn"
+                  @content-created="handleContentCreated"
+                />
               </ClientOnly>
             </div>
 
             <!-- Main content area -->
             <ClientOnly>
               <div v-if="isEditing" class="editor-container mt-4">
-                <!-- <Editor
-                  :content="editorContent.toString()"
-                  :filePath="contentPath"
-                  @update:content="handleContentChange"
-                  @save="handleSave"
-                  @error="handleEditorError"
-                /> -->
                 <TiptapEditor
                   :content="editorContent"
                   :filePath="contentPath"
@@ -137,10 +134,11 @@ import { useRoute } from "vue-router";
 import { queryContent } from "#imports";
 import { useGithub } from "~/composables/useGithub";
 import { useToast } from "~/composables/useToast";
+import { useNavigation } from "~/composables/useNavigation";
 import { useAsyncData } from "#app";
 import Editor from "~/components/playground/Editor.vue";
 import CollaborationSidebar from "~/components/CollaborationSidebar.vue";
-import ContentCreator from "~/components/ContentCreator.vue"; // Import ContentCreator component
+import ContentCreator from "~/components/ContentCreator.vue";
 import DesignSidebar from "~/components/DesignSidebar.vue";
 import Header from "~/components/Header.vue";
 import { useRuntimeConfig, useNuxtApp } from "#app";
@@ -153,9 +151,12 @@ const {
   isLoggedIn,
   currentBranch,
   fetchBranches,
-  branches, // This will be used instead of the local ref
+  branches,
 } = useGithub();
+
+const { refreshNavigation } = useNavigation();
 const { showToast } = useToast();
+
 // State management
 const loading = ref(false);
 const isEditing = ref(false);
@@ -171,7 +172,6 @@ const path = Array.isArray(slug) ? slug.join("/") : slug;
 
 // Compute whether to show sidebar based on path
 const showSidebar = computed(() => path !== "");
-// const contentKey = computed(() => `${path}-${Date.now()}`);
 
 // Compute the content file path
 const contentPath = computed(() => {
@@ -217,6 +217,7 @@ const handleVisibilityChange = async () => {
     isLoggedIn.value
   ) {
     await loadGithubContent();
+    await refreshNavigation(); // Refresh navigation when tab becomes visible
   }
 };
 
@@ -270,6 +271,9 @@ const handleSave = async (content: string) => {
       editorContent.value = content;
       contentKey.value++; // Force re-render
 
+      // Refresh navigation to reflect changes
+      await refreshNavigation();
+
       showToast({
         title: "Success",
         message: `Content saved successfully to branch: ${currentBranch.value}`,
@@ -313,6 +317,17 @@ const handleLoadSave = (content: string) => {
 
 const handleBranchChange = async () => {
   await loadGithubContent();
+  await refreshNavigation(); // Refresh navigation when branch changes
+};
+
+// Handle new content creation
+const handleContentCreated = async () => {
+  await refreshNavigation();
+  showToast({
+    title: "Success",
+    message: "Content structure updated",
+    type: "success",
+  });
 };
 
 // Watch for editing mode changes
@@ -328,6 +343,7 @@ watch(
   async () => {
     if (isLoggedIn.value && !isEditing.value) {
       await loadGithubContent();
+      await refreshNavigation(); // Refresh navigation on route change
     }
   }
 );
@@ -336,6 +352,7 @@ watch(
 watch(isLoggedIn, async (newValue) => {
   if (newValue && !isEditing.value) {
     await loadGithubContent();
+    await refreshNavigation(); // Refresh navigation on login state change
   }
 });
 
@@ -343,6 +360,7 @@ watch(isLoggedIn, async (newValue) => {
 onMounted(async () => {
   if (isLoggedIn.value && !isEditing.value) {
     await loadGithubContent();
+    await refreshNavigation(); // Initial navigation load
   }
 
   if (process.client) {

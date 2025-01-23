@@ -27,149 +27,75 @@
 
       <nav class="design-nav">
         <div class="nav-content">
-          <!-- Foundation Section -->
-          <div class="nav-group">
-            <div
-              class="nav-group-header main-item"
-              @click="toggleSection('foundation')"
-            >
-              Foundation
-              <span
-                class="chevron"
-                :class="{ rotated: !isCollapsed.foundation }"
-                >›</span
-              >
+          <template v-if="isLoading">
+            <div class="loading-state">
+              <div class="loading-spinner"></div>
+              Loading...
             </div>
-            <div
-              class="nav-group-content"
-              :class="{ collapsed: isCollapsed.foundation }"
-            >
-              <NuxtLink
-                to="/design/foundation/logo"
-                class="nav-item sub-item"
-                @click="closeMobileMenu"
-                >Logo</NuxtLink
-              >
-              <NuxtLink
-                to="/design/foundation/color"
-                class="nav-item sub-item"
-                @click="closeMobileMenu"
-                >Color</NuxtLink
-              >
-              <NuxtLink
-                to="/design/foundation/typography"
-                class="nav-item sub-item"
-                @click="closeMobileMenu"
-                >Typography</NuxtLink
-              >
-              <div class="nav-item sub-item locked">
-                Illustration
-                <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
-              </div>
-              <div class="nav-item sub-item locked">
-                Icons
-                <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
-              </div>
-              <div class="nav-item sub-item locked">
-                Layout
-                <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
-              </div>
-              <div class="nav-item sub-item locked">
-                Imagery
-                <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
-              </div>
-              <div class="nav-item sub-item locked">
-                Animation
-                <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
-              </div>
-              <div class="nav-item sub-item locked">
-                Applications
-                <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
-              </div>
-            </div>
-          </div>
+          </template>
 
-          <!-- Digital Section (Locked) -->
-          <div class="nav-group">
-            <div class="nav-group-header main-item locked">
-              Digital
-              <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
-            </div>
-          </div>
+          <template v-else>
+            <div
+              v-for="section in navigationStructure"
+              :key="section.path"
+              class="nav-group"
+            >
+              <!-- Section Header -->
+              <div
+                class="nav-group-header"
+                :class="{
+                  'main-item': true,
+                  locked: section.locked,
+                  active: isActiveSection(section.path),
+                }"
+                @click="!section.locked && toggleSection(section.path)"
+              >
+                {{ section.title }}
+                <template
+                  v-if="!section.locked && section.type === 'directory'"
+                >
+                  <span
+                    class="chevron"
+                    :class="{ rotated: !isCollapsed[section.path] }"
+                    >›</span
+                  >
+                </template>
+                <img
+                  v-if="section.locked"
+                  src="/lock-icon.svg"
+                  alt="Locked"
+                  class="lock-icon"
+                />
+              </div>
 
-          <!-- Sound Section (Locked) -->
-          <div class="nav-group">
-            <div class="nav-group-header main-item locked">
-              Sound
-              <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
+              <!-- Section Content -->
+              <div
+                v-if="section.type === 'directory'"
+                class="nav-group-content"
+                :class="{ collapsed: isCollapsed[section.path] }"
+              >
+                <template v-for="item in section.children" :key="item.path">
+                  <NuxtLink
+                    v-if="!item.locked"
+                    :to="item.path"
+                    class="nav-item sub-item"
+                    :class="{ 'router-link-active': route.path === item.path }"
+                    @click="closeMobileMenu"
+                  >
+                    {{ item.title }}
+                  </NuxtLink>
+                  <div
+                    v-else
+                    class="nav-item sub-item locked"
+                    :title="'This feature is coming soon'"
+                  >
+                    {{ item.title }}
+                    <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
+                  </div>
+                </template>
+              </div>
             </div>
-          </div>
-
-          <!-- Product Section -->
-          <div class="nav-group">
-            <div
-              class="nav-group-header main-item"
-              @click="toggleSection('product')"
-            >
-              Product
-              <span class="chevron" :class="{ rotated: !isCollapsed.product }"
-                >›</span
-              >
-            </div>
-            <div
-              class="nav-group-content"
-              :class="{ collapsed: isCollapsed.product }"
-            >
-              <NuxtLink
-                to="/design/product/creative-spectrum"
-                class="nav-item sub-item"
-                @click="closeMobileMenu"
-                >Creative Spectrum</NuxtLink
-              >
-              <NuxtLink
-                to="/design/product/case-studies"
-                class="nav-item sub-item"
-                @click="closeMobileMenu"
-                >Case Studies</NuxtLink
-              >
-            </div>
-          </div>
-
-          <!-- Space Section -->
-          <div class="nav-group">
-            <div
-              class="nav-group-header main-item"
-              @click="toggleSection('space')"
-            >
-              Space
-              <span class="chevron" :class="{ rotated: !isCollapsed.space }"
-                >›</span
-              >
-            </div>
-            <div
-              class="nav-group-content"
-              :class="{ collapsed: isCollapsed.space }"
-            >
-              <NuxtLink
-                to="/design/space/introduction"
-                class="nav-item sub-item"
-                @click="closeMobileMenu"
-                >Introduction</NuxtLink
-              >
-              <NuxtLink
-                to="/design/space/mood"
-                class="nav-item sub-item"
-                @click="closeMobileMenu"
-                >Mood</NuxtLink
-              >
-              <NuxtLink
-                to="/design/space/form"
-                class="nav-item sub-item"
-                @click="closeMobileMenu"
-                >Form</NuxtLink
-              >
-            </div>
-          </div>
+          </template>
         </div>
       </nav>
     </aside>
@@ -183,54 +109,63 @@
   </div>
 </template>
 
-<script setup>
-import { ref, watch } from "vue";
+<script setup lang="ts">
+import { ref, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useNavigation } from "../composables/useNavigation";
+import { useGithub } from "../composables/useGithub";
 
 const route = useRoute();
 const isOpen = ref(false);
-const isCollapsed = ref({
-  foundation: false,
-  digital: true,
-  product: true,
-  sound: true,
-  space: true,
+const isCollapsed = ref<Record<string, boolean>>({});
+
+const { navigationStructure, isLoading, refreshNavigation } = useNavigation();
+const { currentBranch } = useGithub();
+
+// Check if a section is currently active
+const isActiveSection = (sectionPath: string): boolean => {
+  return route.path.startsWith(sectionPath);
+};
+
+// Toggle section collapse state
+const toggleSection = (path: string) => {
+  isCollapsed.value[path] = !isCollapsed.value[path];
+};
+
+// Mobile menu handlers
+const toggleMobileMenu = () => {
+  isOpen.value = !isOpen.value;
+  document.body.style.overflow = isOpen.value ? "hidden" : "";
+};
+
+const closeMobileMenu = () => {
+  isOpen.value = false;
+  document.body.style.overflow = "";
+};
+
+// Watch for branch changes to refresh navigation
+watch(currentBranch, async () => {
+  await refreshNavigation();
 });
 
-// Keep parent sections expanded based on current route
+// Watch route changes to expand current section
 watch(
   () => route.path,
   (newPath) => {
-    if (newPath.includes("/design/foundation/")) {
-      isCollapsed.value.foundation = false;
-    }
-    if (newPath.includes("/design/product/")) {
-      isCollapsed.value.product = false;
-    }
-    if (newPath.includes("/design/space/")) {
-      isCollapsed.value.space = false;
-    }
+    // Find and expand the parent section of the current route
+    navigationStructure.value.forEach((section) => {
+      if (section.type === "directory" && newPath.startsWith(section.path)) {
+        isCollapsed.value[section.path] = false;
+      }
+    });
   },
   { immediate: true }
 );
 
-function toggleSection(section) {
-  // Don't toggle if section is locked
-  const lockedSections = ["digital", "sound"];
-  if (!lockedSections.includes(section)) {
-    isCollapsed.value[section] = !isCollapsed.value[section];
-  }
-}
-
-function toggleMobileMenu() {
-  isOpen.value = !isOpen.value;
-  document.body.style.overflow = isOpen.value ? "hidden" : "";
-}
-
-function closeMobileMenu() {
-  isOpen.value = false;
-  document.body.style.overflow = "";
-}
+// Initial setup
+onMounted(async () => {
+  await refreshNavigation();
+});
 </script>
 
 <style scoped>
@@ -260,6 +195,34 @@ function closeMobileMenu() {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.loading-state {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .main-item {
@@ -344,10 +307,14 @@ function closeMobileMenu() {
   background: rgba(0, 0, 0, 0.05);
 }
 
-/* Active route state */
-.router-link-active {
+/* Active states */
+.nav-item.router-link-active {
   font-weight: 500;
   background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-group-header.active:not(.locked) {
+  background: rgba(0, 0, 0, 0.02);
 }
 
 /* Mobile styles */
