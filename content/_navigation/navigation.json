@@ -59,6 +59,12 @@
               "path": "/design/foundation/logo",
               "type": "file",
               "locked": false
+            },
+            {
+              "title": "Typography",
+              "path": "/design/foundation/typography",
+              "type": "file",
+              "locked": false
             }
           ]
         },
