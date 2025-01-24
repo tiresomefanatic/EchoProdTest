@@ -67,6 +67,12 @@
               "locked": false
             },
             {
+              "title": "test3",
+              "path": "/design/foundation/test3.md",
+              "type": "file",
+              "locked": false
+            },
+            {
               "title": "Typography",
               "path": "/design/foundation/typography",
               "type": "file",
