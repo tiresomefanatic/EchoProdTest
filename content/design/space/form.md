@@ -4,7 +4,12 @@
 </p>
 <p style="text-align: left">
 </p>
-<p style="text-align: left">Ganesh is editing
+<p style="text-align: left">
+<a target="_blank" rel="noopener noreferrer" class="editor-link" href="https://www.google.com">Ganesh is editing.</a>
+</p>
+<p style="text-align: left">
+</p>
+<p style="text-align: left">
 </p>
 <h2 style="text-align: left"><strong>Layout Design</strong>
 </h2>
