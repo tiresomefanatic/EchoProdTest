@@ -51,9 +51,7 @@
                 @click="!section.locked && toggleSection(section.path)"
               >
                 {{ section.title }}
-                <template
-                  v-if="!section.locked && section.type === 'directory'"
-                >
+                <template v-if="section.type === 'directory'">
                   <span
                     class="chevron"
                     :class="{ rotated: !isCollapsed[section.path] }"
@@ -71,28 +69,92 @@
               <!-- Section Content -->
               <div
                 v-if="section.type === 'directory'"
-                class="nav-group-content"
+                class="nav-section"
                 :class="{ collapsed: isCollapsed[section.path] }"
               >
-                <template v-for="item in section.children" :key="item.path">
-                  <NuxtLink
-                    v-if="!item.locked"
-                    :to="item.path"
-                    class="nav-item sub-item"
-                    :class="{ 'router-link-active': route.path === item.path }"
-                    @click="closeMobileMenu"
-                  >
-                    {{ item.title }}
-                  </NuxtLink>
-                  <div
-                    v-else
-                    class="nav-item sub-item locked"
-                    :title="'This feature is coming soon'"
-                  >
-                    {{ item.title }}
-                    <img src="/lock-icon.svg" alt="Locked" class="lock-icon" />
-                  </div>
-                </template>
+                <div class="nav-section-inner">
+                  <template v-for="item in section.children" :key="item.path">
+                    <!-- Nested Directory -->
+                    <template v-if="item.type === 'directory'">
+                      <div
+                        class="nav-group-header sub-item"
+                        :class="{
+                          locked: item.locked,
+                          active: isActiveSection(item.path),
+                        }"
+                        @click="!item.locked && toggleSection(item.path)"
+                      >
+                        {{ item.title }}
+                        <span
+                          class="chevron"
+                          :class="{ rotated: !isCollapsed[item.path] }"
+                          >›</span
+                        >
+                      </div>
+                      <div
+                        class="nav-section nested"
+                        :class="{ collapsed: isCollapsed[item.path] }"
+                      >
+                        <div class="nav-section-inner">
+                          <template
+                            v-for="child in item.children"
+                            :key="child.path"
+                          >
+                            <!-- Show all files, both locked and unlocked -->
+                            <NuxtLink
+                              v-if="child.type === 'file' && !child.locked"
+                              :to="child.path"
+                              class="nav-item sub-item"
+                              :class="{
+                                'router-link-active': route.path === child.path,
+                              }"
+                              @click="closeMobileMenu"
+                            >
+                              {{ child.title }}
+                            </NuxtLink>
+                            <div
+                              v-else-if="child.type === 'file' && child.locked"
+                              class="nav-item sub-item locked"
+                              :title="'This feature is coming soon'"
+                            >
+                              {{ child.title }}
+                              <img
+                                src="/lock-icon.svg"
+                                alt="Locked"
+                                class="lock-icon"
+                              />
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- File Items (both locked and unlocked) -->
+                    <NuxtLink
+                      v-else-if="item.type === 'file' && !item.locked"
+                      :to="item.path"
+                      class="nav-item sub-item"
+                      :class="{
+                        'router-link-active': route.path === item.path,
+                      }"
+                      @click="closeMobileMenu"
+                    >
+                      {{ item.title }}
+                    </NuxtLink>
+                    <div
+                      v-else-if="item.type === 'file' && item.locked"
+                      class="nav-item sub-item locked"
+                      :title="'This feature is coming soon'"
+                    >
+                      {{ item.title }}
+                      <img
+                        src="/lock-icon.svg"
+                        alt="Locked"
+                        class="lock-icon"
+                      />
+                    </div>
+                  </template>
+                </div>
               </div>
             </div>
           </template>
@@ -152,10 +214,18 @@ watch(currentBranch, async () => {
 watch(
   () => route.path,
   (newPath) => {
-    // Find and expand the parent section of the current route
+    // Find and expand all parent sections of the current route
     navigationStructure.value.forEach((section) => {
-      if (section.type === "directory" && newPath.startsWith(section.path)) {
-        isCollapsed.value[section.path] = false;
+      if (section.type === "directory") {
+        if (newPath.startsWith(section.path)) {
+          isCollapsed.value[section.path] = false;
+          // Also expand any nested directories
+          section.children?.forEach((child) => {
+            if (child.type === "directory" && newPath.startsWith(child.path)) {
+              isCollapsed.value[child.path] = false;
+            }
+          });
+        }
       }
     });
   },
@@ -171,26 +241,23 @@ onMounted(async () => {
 <style scoped>
 .sidebar-wrapper {
   position: relative;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  height: 100vh;
 }
 
 .design-sidebar {
-  height: 100%;
+  position: sticky;
+  top: 0;
+  height: 100vh;
   width: 280px;
   background: white;
+  overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  -webkit-overflow-scrolling: touch;
 }
 
 .design-nav {
-  flex: 1;
+  height: 100%;
   padding: 1rem;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .nav-content {
@@ -200,8 +267,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  height: 100%;
-  min-height: min-content;
 }
 
 .loading-state {
@@ -230,6 +295,11 @@ onMounted(async () => {
   100% {
     transform: rotate(360deg);
   }
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
 }
 
 .main-item {
@@ -266,12 +336,6 @@ onMounted(async () => {
   pointer-events: none;
 }
 
-.nav-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
 .nav-group-header {
   display: flex;
   justify-content: space-between;
@@ -280,17 +344,25 @@ onMounted(async () => {
   transition: background-color 0.2s ease;
 }
 
-.nav-group-content {
+.nav-section {
+  overflow: hidden;
+  transition: height 0.3s ease-in-out;
+  height: auto;
+}
+
+.nav-section.collapsed {
+  height: 0;
+}
+
+.nav-section.nested {
+  margin-left: 0.5rem;
+}
+
+.nav-section-inner {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  overflow: hidden;
-  transition: all 0.3s ease-out;
-}
-
-.nav-group-content.collapsed {
-  height: 0;
-  opacity: 0;
+  padding: 0.25rem 0;
 }
 
 .chevron {
@@ -455,14 +527,10 @@ onMounted(async () => {
   }
 
   .nav-content {
-    border-radius: 0;
-    height: auto;
-    min-height: 0;
-  }
-
-  .design-nav {
     height: calc(100vh - 64px);
-    padding-bottom: env(safe-area-inset-bottom);
+    overflow-y: auto;
+    margin: 0;
+    border-radius: 0;
   }
 
   /* iOS-specific fixes */
@@ -471,7 +539,7 @@ onMounted(async () => {
       height: -webkit-fill-available;
     }
 
-    .design-nav {
+    .nav-content {
       height: calc(100vh - 64px - env(safe-area-inset-bottom));
     }
   }
