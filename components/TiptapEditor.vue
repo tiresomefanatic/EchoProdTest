@@ -1166,7 +1166,7 @@ onBeforeUnmount(() => {
 .editor-wrapper {
   height: calc(100vh - 64px);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   background: white;
 }
 
@@ -1198,6 +1198,7 @@ onBeforeUnmount(() => {
 .editor-toolbar {
   display: flex;
   justify-content: space-between;
+  flex-direction: row;
   align-items: center;
   padding: 0.5rem 1rem;
   background: white;
@@ -1221,15 +1222,22 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
+  min-width: 36px;
   height: 36px;
-  padding: 0;
+  padding: 0 0.75rem;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   background: white;
   color: #374151;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 1rem;
+  margin-top: 10px;
 }
 
 .tiptap-toolbar button:hover,

@@ -172,20 +172,25 @@ onMounted(async () => {
 .sidebar-wrapper {
   position: relative;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .design-sidebar {
   height: 100%;
   width: 280px;
   background: white;
-  overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .design-nav {
-  height: 100%;
+  flex: 1;
   padding: 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-content {
@@ -195,6 +200,8 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  height: 100%;
+  min-height: min-content;
 }
 
 .loading-state {
@@ -278,12 +285,12 @@ onMounted(async () => {
   flex-direction: column;
   gap: 0.25rem;
   overflow: hidden;
-  max-height: 500px;
-  transition: max-height 0.3s ease-out;
+  transition: all 0.3s ease-out;
 }
 
 .nav-group-content.collapsed {
-  max-height: 0;
+  height: 0;
+  opacity: 0;
 }
 
 .chevron {
@@ -448,10 +455,14 @@ onMounted(async () => {
   }
 
   .nav-content {
-    height: calc(100vh - 64px);
-    overflow-y: auto;
-    margin: 0;
     border-radius: 0;
+    height: auto;
+    min-height: 0;
+  }
+
+  .design-nav {
+    height: calc(100vh - 64px);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   /* iOS-specific fixes */
@@ -460,7 +471,7 @@ onMounted(async () => {
       height: -webkit-fill-available;
     }
 
-    .nav-content {
+    .design-nav {
       height: calc(100vh - 64px - env(safe-area-inset-bottom));
     }
   }
