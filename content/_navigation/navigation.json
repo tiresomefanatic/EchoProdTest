@@ -91,6 +91,12 @@
               "path": "/design/product/creative-spectrum",
               "type": "file",
               "locked": false
+            },
+            {
+              "title": "test",
+              "path": "/design/product/test.md",
+              "type": "file",
+              "locked": false
             }
           ]
         },
