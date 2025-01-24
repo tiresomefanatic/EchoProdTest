@@ -1,0 +1,140 @@
+{
+  "navigation": [
+    {
+      "title": "Design",
+      "path": "/design",
+      "type": "directory",
+      "locked": false,
+      "children": [
+        {
+          "title": "Foundation",
+          "path": "/design/foundation",
+          "type": "directory",
+          "locked": false,
+          "children": [
+            {
+              "title": "Animation",
+              "path": "/design/foundation/animation",
+              "type": "file",
+              "locked": true
+            },
+            {
+              "title": "Applications",
+              "path": "/design/foundation/applications",
+              "type": "file",
+              "locked": true
+            },
+            {
+              "title": "Color",
+              "path": "/design/foundation/color",
+              "type": "file",
+              "locked": false
+            },
+            {
+              "title": "Icons",
+              "path": "/design/foundation/icons",
+              "type": "file",
+              "locked": true
+            },
+            {
+              "title": "Illustration",
+              "path": "/design/foundation/illustration",
+              "type": "file",
+              "locked": true
+            },
+            {
+              "title": "Imagery",
+              "path": "/design/foundation/imagery",
+              "type": "file",
+              "locked": true
+            },
+            {
+              "title": "Layout",
+              "path": "/design/foundation/layout",
+              "type": "file",
+              "locked": true
+            },
+            {
+              "title": "Logo",
+              "path": "/design/foundation/logo",
+              "type": "file",
+              "locked": false
+            }
+          ]
+        },
+        {
+          "title": "Product",
+          "path": "/design/product",
+          "type": "directory",
+          "locked": false,
+          "children": [
+            {
+              "title": "Case Studies",
+              "path": "/design/product/case-studies",
+              "type": "file",
+              "locked": false
+            },
+            {
+              "title": "Creative Spectrum",
+              "path": "/design/product/creative-spectrum",
+              "type": "file",
+              "locked": false
+            }
+          ]
+        },
+        {
+          "title": "Space",
+          "path": "/design/space",
+          "type": "directory",
+          "locked": false,
+          "children": [
+            {
+              "title": "Form",
+              "path": "/design/space/form",
+              "type": "file",
+              "locked": false
+            },
+            {
+              "title": "Mood",
+              "path": "/design/space/mood",
+              "type": "file",
+              "locked": false
+            },
+            {
+              "title": "Pavillion",
+              "path": "/design/space/pavillion",
+              "type": "file",
+              "locked": false
+            }
+          ]
+        },
+        {
+          "title": "Introduction",
+          "path": "/design/introduction",
+          "type": "file",
+          "locked": false
+        },
+        {
+          "title": "Index",
+          "path": "/design/index",
+          "type": "file",
+          "locked": false
+        }
+      ]
+    },
+    {
+      "title": "Develop",
+      "path": "/develop",
+      "type": "directory",
+      "locked": false,
+      "children": [
+        {
+          "title": "Index",
+          "path": "/develop/index",
+          "type": "file",
+          "locked": false
+        }
+      ]
+    }
+  ]
+}
