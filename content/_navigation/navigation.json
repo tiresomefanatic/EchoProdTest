@@ -13,6 +13,13 @@
           "locked": false,
           "children": [
             {
+              "title": "test",
+              "path": "/design/foundation/test",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            },
+            {
               "title": "Animation",
               "path": "/design/foundation/animation",
               "type": "file",
