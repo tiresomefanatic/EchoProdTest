@@ -62,7 +62,7 @@
             },
             {
               "title": "testtest",
-              "path": "design/foundation/testtest.md",
+              "path": "/design/foundation/testtest.md",
               "type": "file",
               "locked": false
             },
