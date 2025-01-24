@@ -61,12 +61,6 @@
               "locked": false
             },
             {
-              "title": "testtest",
-              "path": "/design/foundation/testtest.md",
-              "type": "file",
-              "locked": false
-            },
-            {
               "title": "Typography",
               "path": "/design/foundation/typography",
               "type": "file",
@@ -115,12 +109,6 @@
             {
               "title": "Pavillion",
               "path": "/design/space/pavillion",
-              "type": "file",
-              "locked": false
-            },
-            {
-              "title": "test",
-              "path": "/design/space/test.md",
               "type": "file",
               "locked": false
             }
