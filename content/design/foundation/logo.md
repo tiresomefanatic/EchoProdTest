@@ -2,7 +2,7 @@
 </h1>
 <p style="text-align: left">
 </p>
-<p style="text-align: left">constriuction
+<p style="text-align: left">Logo will be added here..
 </p>
 <p style="text-align: left">
 </p>
