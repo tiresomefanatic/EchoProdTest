@@ -52,7 +52,7 @@
               "title": "Layout",
               "path": "/design/foundation/layout",
               "type": "file",
-              "locked": true
+              "locked": false
             },
             {
               "title": "Logo",
