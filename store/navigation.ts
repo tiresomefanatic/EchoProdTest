@@ -155,6 +155,8 @@ export const useNavigationStore = defineStore("navigation", {
     },
 
     addFile(path: string, title: string) {
+      console.log("Input path:", path); // Debug log
+
       const pathParts = path.replace(/^content\/|\.md$/g, "").split("/");
       const fileName = pathParts.pop() || "";
       const parentPath = "/" + pathParts.join("/");
@@ -223,7 +225,7 @@ export const useNavigationStore = defineStore("navigation", {
         children: [],
       };
 
-      // Find the parent directory to add the folder
+      // Helper function to recursively find and update the parent directory
       const addToParent = (items: NavigationItem[]): boolean => {
         for (const item of items) {
           if (item.type === "directory" && item.path === parentPath) {
@@ -244,7 +246,7 @@ export const useNavigationStore = defineStore("navigation", {
         return false;
       };
 
-      // If parent path is root, add directly to structure
+      // If parent path is root, add directly to the structure
       if (parentPath === "/") {
         const currentStructure =
           this.structures[this.currentBranch]?.navigation || [];
@@ -260,11 +262,19 @@ export const useNavigationStore = defineStore("navigation", {
       } else {
         const currentStructure =
           this.structures[this.currentBranch]?.navigation || [];
-        addToParent(currentStructure);
+        if (!addToParent(currentStructure)) {
+          console.error("Parent directory not found:", parentPath);
+        }
       }
 
       // Save to localStorage
       saveToLocalStorage(this.structures);
+
+      // Log the updated structure for debugging
+      console.log(
+        "Updated navigation structure:",
+        this.structures[this.currentBranch]
+      );
     },
 
     findItemByPath(path: string): NavigationItem | null {

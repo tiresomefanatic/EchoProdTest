@@ -175,7 +175,14 @@ const showSidebar = computed(() => path !== "");
 
 // Compute the content file path
 const contentPath = computed(() => {
-  if (!path) return "content/index.md";
+  if (!path) return "content/index.md"; // Default to index.md for root
+
+  // If the path ends with a slash, assume it's a folder and append index.md
+  if (path.endsWith("/")) {
+    return `content/${path}index.md`;
+  }
+
+  // Otherwise, treat it as a file and append .md
   return `content/${path}.md`;
 });
 
@@ -186,16 +193,38 @@ const loadGithubContent = async () => {
   if (!isLoggedIn.value) return;
 
   try {
-    const content = await getRawContent(
+    let contentPathToLoad = contentPath.value;
+
+    // First, try to load the content as a folder (with index.md)
+    try {
+      const folderContent = await getRawContent(
+        "tiresomefanatic",
+        "EchoProdTest",
+        contentPathToLoad,
+        currentBranch.value
+      );
+      githubContent.value = marked(folderContent);
+      editorContent.value = folderContent;
+      contentKey.value++; // Force re-render
+      return;
+    } catch (folderError) {
+      console.log(
+        "No index.md found in folder, treating as a file:",
+        folderError
+      );
+    }
+
+    // If the folder approach fails, treat it as a file
+    const fileContent = await getRawContent(
       "tiresomefanatic",
       "EchoProdTest",
-      contentPath.value,
+      contentPathToLoad,
       currentBranch.value
     );
 
     // Convert markdown to HTML
-    githubContent.value = marked(content);
-    editorContent.value = content;
+    githubContent.value = marked(fileContent);
+    editorContent.value = fileContent;
     contentKey.value++; // Force re-render
   } catch (error) {
     console.error("Error loading GitHub content:", error);
@@ -233,6 +262,8 @@ const handleEditClick = async () => {
     });
     return;
   }
+
+  console.log("Edit clicked. Content path:", contentPath.value); // Debug log
 
   isEditing.value = true;
   await loadGithubContent();
@@ -342,6 +373,10 @@ watch(
   () => route.path,
   async () => {
     if (isLoggedIn.value && !isEditing.value) {
+      console.log(
+        "Route changed, loading GitHub content for path:",
+        contentPath.value
+      ); // Debug log
       await loadGithubContent();
       await refreshNavigation(); // Refresh navigation on route change
     }

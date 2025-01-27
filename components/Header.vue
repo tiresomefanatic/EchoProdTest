@@ -32,13 +32,13 @@
           <NuxtLink
             v-for="item in navItems"
             :key="item.path"
-            :to="item.disabled ? '' : item.path"
+            :to="item.disabled ? '' : item.path + '/'"
             class="nav-link"
             :class="{
               active: $route.path.startsWith(item.path),
               disabled: item.disabled,
             }"
-            @click.prevent="!item.disabled && navigateTo(item.path)"
+            @click.prevent="!item.disabled && navigateTo(item.path + '/')"
           >
             {{ item.label }}
             <span v-if="item.disabled" class="lock-icon">

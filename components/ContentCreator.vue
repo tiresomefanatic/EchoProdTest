@@ -198,18 +198,26 @@ const createFile = async () => {
 
   isProcessing.value = true;
   try {
-    const path = fileName.value.endsWith(".md")
-      ? fileName.value
-      : `${fileName.value}.md`;
+    // Normalize the file name: remove any existing .md extension
+    const normalizedFileName = fileName.value.replace(/\.md$/, "");
+    console.log("Normalized file name:", normalizedFileName); // Debug log
+
+    // Append .md to the file name for GitHub
+    const path = `${normalizedFileName}.md`;
+    console.log("Constructed path for GitHub:", path); // Debug log
+
+    // Construct the full path for GitHub
     const fullPath = `content${
       selectedPath.value === "/" ? "/" : selectedPath.value + "/"
     }${path}`;
+    console.log("Full path for GitHub:", fullPath); // Debug log
 
-    // Normalize the path for navigation.json (ensure it starts with "/")
-    const normalizedPath = `/${fullPath.replace(/^content\//, "")}`;
+    // Normalize the path for navigation.json (ensure it starts with "/" and does not include .md)
+    const normalizedPath = `/${fullPath.replace(/^content\/|\.md$/g, "")}`;
+    console.log("Normalized path for navigation.json:", normalizedPath); // Debug log
 
     // First update the store for immediate UI feedback
-    navigationStore.addFile(fullPath, fileName.value);
+    navigationStore.addFile(fullPath, normalizedFileName);
 
     // Then try to create the file on GitHub
     await createNewContent(fullPath.replace(/\/+/g, "/"), "", false);
@@ -232,8 +240,8 @@ const createFile = async () => {
 
     // Add the new file to the navigation data
     const newFile: FileItem = {
-      title: fileName.value,
-      path: normalizedPath, // Use normalized path with leading "/"
+      title: normalizedFileName, // Use normalized file name
+      path: normalizedPath, // Use normalized path without .md
       type: "file",
       locked: false,
     };
@@ -305,6 +313,7 @@ const createFolder = async () => {
 
   isProcessing.value = true;
   try {
+    // Construct the full path for the new folder
     const fullPath = `content${
       selectedPath.value === "/" ? "/" : selectedPath.value + "/"
     }${folderName.value}`;

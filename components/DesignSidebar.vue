@@ -16,7 +16,11 @@
     </button>
 
     <!-- Sidebar -->
-    <aside class="design-sidebar" :class="{ 'is-mobile-open': isOpen }">
+    <aside
+      class="design-sidebar"
+      :class="{ 'is-mobile-open': isOpen }"
+      :key="navigationStructureKey"
+    >
       <!-- Mobile header -->
       <div class="mobile-header">
         <span class="mobile-title">Menu</span>
@@ -172,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { useRoute } from "vue-router";
 import { useNavigation } from "../composables/useNavigation";
 import { useGithub } from "../composables/useGithub";
@@ -183,6 +187,11 @@ const isCollapsed = ref<Record<string, boolean>>({});
 
 const { navigationStructure, isLoading, refreshNavigation } = useNavigation();
 const { currentBranch } = useGithub();
+
+// Create a computed key to force re-render when navigationStructure changes
+const navigationStructureKey = computed(() =>
+  JSON.stringify(navigationStructure.value)
+);
 
 // Check if a section is currently active
 const isActiveSection = (sectionPath: string): boolean => {
