@@ -21,18 +21,23 @@ interface EditorState {
   currentBranch: string;
   collaborators: string[];
   isCollaborating: boolean;
+  pullRequests: string[];
+  lastPRUpdate: string;
 }
 
 export const useEditorStore = defineStore("editor", {
   state: (): EditorState => {
     const savedState = localStorage.getItem("editor-saves");
     const gitState = localStorage.getItem("editor-git-contents");
+    const prState = localStorage.getItem("editor-pull-requests");
     return {
       savedContents: savedState ? JSON.parse(savedState) : {},
       gitContents: gitState ? JSON.parse(gitState) : {},
       currentBranch: "main",
       collaborators: [],
       isCollaborating: false,
+      pullRequests: prState ? JSON.parse(prState) : [],
+      lastPRUpdate: new Date().toISOString(),
     };
   },
 
@@ -234,6 +239,28 @@ export const useEditorStore = defineStore("editor", {
 
       // Also save as a local save
       this.saveContent(filePath, content);
+    },
+    // PR Management Actions
+    addPullRequest(pr) {
+      this.pullRequests.unshift(pr);
+      this.lastPRUpdate = new Date().toISOString();
+      localStorage.setItem(
+        "editor-pull-requests",
+        JSON.stringify(this.pullRequests)
+      );
+    },
+
+    updatePullRequests(prs) {
+      this.pullRequests = prs;
+      this.lastPRUpdate = new Date().toISOString();
+      localStorage.setItem(
+        "editor-pull-requests",
+        JSON.stringify(this.pullRequests)
+      );
+    },
+
+    getPullRequests() {
+      return this.pullRequests;
     },
   },
 });

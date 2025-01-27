@@ -6,9 +6,9 @@
         <Header />
         <div class="content-area" :class="{ 'editing-mode': isEditing }">
           <!-- Mobile menu wrapper -->
-          <!-- <div class="mobile-menu-wrapper md:hidden">
+          <div class="mobile-menu-wrapper md:hidden">
             <DesignSidebar />
-          </div> -->
+          </div>
 
           <!-- Desktop sidebar shown only in non-editing mode -->
           <aside
@@ -533,9 +533,8 @@ onBeforeUnmount(() => {
   width: 280px;
   flex-shrink: 0;
   background: white;
-  border-right: 1px solid #e5e7eb;
   position: sticky;
-  top: 64px;
+  top: 60px;
   height: 100vh;
   margin-left: 20px;
 }

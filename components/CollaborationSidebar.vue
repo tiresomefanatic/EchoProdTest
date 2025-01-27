@@ -392,8 +392,13 @@ const loadPullRequests = async () => {
 
   loading.value = true;
   try {
+    // First, load from store for immediate display
+    pullRequests.value = editorStore.getPullRequests();
+
+    // Then fetch from GitHub
     const result = await getPullRequests();
     if (result && Array.isArray(result)) {
+      editorStore.updatePullRequests(result);
       pullRequests.value = result;
       console.log("Loaded pull requests:", pullRequests.value);
     }
@@ -493,9 +498,33 @@ const openPR = (url: string) => {
   window.open(url, "_blank");
 };
 
-const handlePRCreated = async () => {
+const handlePRCreated = async (newPR) => {
   showCreatePR.value = false;
-  await loadPullRequests();
+
+  // Optimistically add the new PR to the store
+  editorStore.addPullRequest(newPR);
+
+  // Update UI immediately using store data
+  pullRequests.value = editorStore.getPullRequests();
+
+  showToast({
+    title: "Success",
+    message: "Pull request created successfully",
+    type: "success",
+  });
+
+  // Trigger background refresh after a delay
+  setTimeout(async () => {
+    try {
+      const updatedPRs = await getPullRequests();
+      if (updatedPRs && Array.isArray(updatedPRs)) {
+        editorStore.updatePullRequests(updatedPRs);
+        pullRequests.value = updatedPRs;
+      }
+    } catch (error) {
+      console.error("Error refreshing PR list:", error);
+    }
+  }, 5000); // Try to refresh after 5 seconds
 };
 
 const handleResolveConflicts = async (pr: PullRequest) => {
