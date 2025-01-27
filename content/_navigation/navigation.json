@@ -131,6 +131,12 @@
           "path": "/design/introduction",
           "type": "file",
           "locked": false
+        },
+        {
+          "title": "Motion Design",
+          "path": "/design/Motion Design",
+          "type": "file",
+          "locked": false
         }
       ]
     },
