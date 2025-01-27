@@ -3,6 +3,12 @@
 <p style="text-align: left">Lorem ipsum dolor sit amet consectetur. Et ut ultrices dolor ut. Vitae pharetra rutrum dolor vestibulum pharetra et. Pretium consectetur venenatis lacus quam non ipsum.<br>
 <br>Typography is very important.
 </p>
+<p style="text-align: left">
+</p>
+<h2 style="text-align: left">Secondary typography
+</h2>
+<p style="text-align: left">There are 2 fonts
+</p>
 <h2 style="text-align: left"><strong>Primary typeface</strong>
 </h2>
 <p style="text-align: left">
