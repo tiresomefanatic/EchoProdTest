@@ -1,27 +1,60 @@
 // composables/usePasswordProtection.ts
+
+// Create a global state outside the composable
+let globalPasswordVerified: Ref<boolean> | null = null;
+
 export const usePasswordProtection = () => {
-  const isPasswordVerified = useState("isPasswordVerified", () => false);
+  if (!globalPasswordVerified) {
+    // Initialize the global state only once
+    globalPasswordVerified = useState<boolean>("isPasswordVerified", () => {
+      if (process.client) {
+        // Force immediate localStorage check
+        const storedValue = window.localStorage.getItem("isPasswordVerified");
+        const isVerified = storedValue === "true";
+
+        // Immediately sync localStorage if needed
+        if (isVerified) {
+          window.localStorage.setItem("isPasswordVerified", "true");
+        }
+
+        return isVerified;
+      }
+      return false;
+    });
+  }
 
   const verifyPassword = (password: string) => {
-    const ADMIN_PASSWORD = "echo2024"; // Change this to your desired password
-    const trimmedPassword = password.trim().toLowerCase(); // Trim and convert to lowercase
-    const adminPasswordLower = ADMIN_PASSWORD.toLowerCase(); // Convert to lowercase
+    const ADMIN_PASSWORD = "echo2024";
+    const trimmedPassword = password.trim();
 
-    console.log("Entered password (trimmed and lowercase):", trimmedPassword); // Debug log
-    console.log("Expected password (lowercase):", adminPasswordLower); // Debug log
-
-    if (trimmedPassword === adminPasswordLower) {
-      console.log("Password is correct"); // Debug log
-      isPasswordVerified.value = true;
+    if (trimmedPassword === ADMIN_PASSWORD) {
+      if (process.client) {
+        window.localStorage.setItem("isPasswordVerified", "true");
+      }
+      globalPasswordVerified!.value = true;
       return true;
-    } else {
-      console.log("Password is incorrect"); // Debug log
-      return false;
     }
+    return false;
   };
 
+  const clearPasswordVerification = () => {
+    if (process.client) {
+      window.localStorage.removeItem("isPasswordVerified");
+    }
+    globalPasswordVerified!.value = false;
+  };
+
+  // Force immediate sync with localStorage on client side
+  if (
+    process.client &&
+    window.localStorage.getItem("isPasswordVerified") === "true"
+  ) {
+    globalPasswordVerified!.value = true;
+  }
+
   return {
-    isPasswordVerified,
+    isPasswordVerified: globalPasswordVerified!,
     verifyPassword,
+    clearPasswordVerification,
   };
 };

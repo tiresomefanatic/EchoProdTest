@@ -1,7 +1,17 @@
 <template>
   <div>
+    <!-- Initial loading state -->
+    <div
+      v-if="isLoading"
+      class="min-h-screen flex items-center justify-center bg-gray-50"
+    >
+      <div
+        class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"
+      ></div>
+    </div>
+
     <!-- Password protection layer -->
-    <div v-if="!isPasswordVerified" class="password-protection">
+    <div v-else-if="!isPasswordVerified" class="password-protection">
       <div class="password-container">
         <h1 class="password-title">Admin Access</h1>
         <p class="password-description">Enter password to access the website</p>
@@ -38,21 +48,34 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { usePasswordProtection } from "~/composables/usePasswordProtection";
 import Header from "~/components/Header.vue";
 
 const { isPasswordVerified, verifyPassword } = usePasswordProtection();
 const password = ref("");
 const passwordError = ref("");
+const isLoading = ref(true);
+
+// Check initial state with a small delay to prevent flash
+onMounted(() => {
+  if (process.client) {
+    // Check localStorage directly
+    const localStorageValue = window.localStorage.getItem("isPasswordVerified");
+    if (localStorageValue === "true") {
+      isPasswordVerified.value = true;
+    }
+    // Remove loading state after a short delay
+    setTimeout(() => {
+      isLoading.value = false;
+    }, 100);
+  }
+});
 
 const verifyPasswordLocal = () => {
-  console.log("Password entered:", password.value); // Debug log
   if (verifyPassword(password.value)) {
-    console.log("Password verified successfully"); // Debug log
     passwordError.value = "";
   } else {
-    console.log("Incorrect password"); // Debug log
     passwordError.value = "Incorrect password";
     password.value = "";
   }
