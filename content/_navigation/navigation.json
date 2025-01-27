@@ -60,7 +60,6 @@
               "type": "file",
               "locked": false
             },
-           
             {
               "title": "Typography",
               "path": "/design/foundation/typography",
@@ -116,14 +115,20 @@
           ]
         },
         {
-          "title": "Introduction",
-          "path": "/design/introduction",
+          "title": "experiments",
+          "path": "/design/experiments",
           "type": "file",
           "locked": false
         },
         {
           "title": "Index",
           "path": "/design/index",
+          "type": "file",
+          "locked": false
+        },
+        {
+          "title": "Introduction",
+          "path": "/design/introduction",
           "type": "file",
           "locked": false
         }
