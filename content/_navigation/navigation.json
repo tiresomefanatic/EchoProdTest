@@ -95,6 +95,12 @@
           "locked": false,
           "children": [
             {
+              "title": "colors in space",
+              "path": "/design/space/colors in space",
+              "type": "file",
+              "locked": false
+            },
+            {
               "title": "Form",
               "path": "/design/space/form",
               "type": "file",
