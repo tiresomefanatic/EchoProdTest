@@ -136,6 +136,32 @@ const {
 } = useGithub();
 const { showToast } = useToast();
 
+const isMainBranch = computed(() => {
+  return currentBranch.value?.toLowerCase() === "main";
+});
+
+const commitButtonTitle = computed(() => {
+  if (isMainBranch.value) {
+    return "Cannot commit directly to main branch";
+  }
+  return hasChanges.value ? "Commit your changes" : "No changes to commit";
+});
+
+// Modify the commit handling
+const handleCommitClick = () => {
+  if (isMainBranch.value) {
+    showToast({
+      title: "Warning",
+      message:
+        "Cannot commit directly to main branch. Please create a new branch for your changes.",
+      type: "warning",
+      duration: 5000,
+    });
+    return;
+  }
+  showCommitDialog.value = true;
+};
+
 // Node extensions with style support
 const StyledDiv = Node.create({
   name: "styledDiv",
@@ -884,16 +910,22 @@ onBeforeUnmount(() => {
               <button class="toolbar-button" @click="previewMode = true">
                 Preview
               </button>
-              <button
+              <div
                 v-if="showCommitButton && hasChanges"
-                class="toolbar-button primary"
-                @click="() => (showCommitDialog = true)"
-                :title="
-                  hasChanges ? 'Commit your changes' : 'No changes to commit'
-                "
+                class="commit-button-wrapper"
               >
-                Commit Changes
-              </button>
+                <button
+                  class="toolbar-button primary"
+                  @click="() => handleCommitClick()"
+                  :disabled="isMainBranch"
+                  :title="commitButtonTitle"
+                >
+                  Commit Changes
+                </button>
+                <div v-if="isMainBranch" class="main-branch-warning">
+                  Cannot commit directly to main branch
+                </div>
+              </div>
               <button
                 v-if="hasChanges"
                 class="toolbar-button primary"
@@ -1163,6 +1195,27 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
+.commit-button-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.main-branch-warning {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .editor-wrapper {
   height: calc(100vh - 64px);
   display: flex;
@@ -1268,6 +1321,13 @@ onBeforeUnmount(() => {
 .toolbar-button.loading {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.toolbar-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #9ca3af;
+  border-color: #9ca3af;
 }
 
 .font-size-select {

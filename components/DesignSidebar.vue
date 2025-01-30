@@ -249,19 +249,18 @@ onMounted(async () => {
 
 <style scoped>
 .sidebar-wrapper {
-  position: relative;
-  height: 100vh;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .design-sidebar {
-  position: sticky;
-  top: 0;
-  height: 100vh;
   width: 280px;
   background: white;
-  overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .design-nav {

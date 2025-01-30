@@ -13,7 +13,7 @@
           <!-- Desktop sidebar shown only in non-editing mode -->
           <aside
             v-if="!isEditing && showSidebar"
-            class="sidebar hidden md:block fixed top-[60px] left-0 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto"
+            class="sidebar hidden md:block fixed left-0 bottom-0 w-64"
           >
             <DesignSidebar />
           </aside>
@@ -533,11 +533,10 @@ onBeforeUnmount(() => {
   width: 280px;
   flex-shrink: 0;
   background: white;
-  border-right: 1px solid #e5e7eb;
   position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
-  overflow-y: auto;
+  top: 60px;
+  height: 100vh;
+  margin-left: 20px;
 }
 
 .main-content {
