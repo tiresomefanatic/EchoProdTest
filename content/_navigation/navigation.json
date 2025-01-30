@@ -20,6 +20,13 @@
               "children": []
             },
             {
+              "title": "Illustration",
+              "path": "/design/foundation/Illustration",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            },
+            {
               "title": "Animation",
               "path": "/design/foundation/animation",
               "type": "file",
