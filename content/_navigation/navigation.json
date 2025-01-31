@@ -60,7 +60,6 @@
               "type": "file",
               "locked": false
             },
-           
             {
               "title": "Typography",
               "path": "/design/foundation/typography",
@@ -75,6 +74,13 @@
           "type": "directory",
           "locked": false,
           "children": [
+            {
+              "title": "Folder test",
+              "path": "/design/product/Folder test",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            },
             {
               "title": "Case Studies",
               "path": "/design/product/case-studies",
