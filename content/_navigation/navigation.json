@@ -11,7 +11,14 @@
           "path": "/design/Digital",
           "type": "directory",
           "locked": false,
-          "children": []
+          "children": [
+            {
+              "title": "Foundation Elements",
+              "path": "/design/Digital/Foundation Elements",
+              "type": "file",
+              "locked": false
+            }
+          ]
         },
         {
           "title": "Foundation",
