@@ -17,6 +17,12 @@
               "path": "/design/Digital/Foundation Elements",
               "type": "file",
               "locked": false
+            },
+            {
+              "title": "Tokens",
+              "path": "/design/Digital/Tokens",
+              "type": "file",
+              "locked": false
             }
           ]
         },
