@@ -7,6 +7,13 @@
       "locked": false,
       "children": [
         {
+          "title": "Digital",
+          "path": "/design/Digital",
+          "type": "directory",
+          "locked": false,
+          "children": []
+        },
+        {
           "title": "Foundation",
           "path": "/design/foundation",
           "type": "directory",
@@ -60,7 +67,6 @@
               "type": "file",
               "locked": false
             },
-           
             {
               "title": "Typography",
               "path": "/design/foundation/typography",
@@ -116,14 +122,14 @@
           ]
         },
         {
-          "title": "Introduction",
-          "path": "/design/introduction",
+          "title": "Index",
+          "path": "/design/index",
           "type": "file",
           "locked": false
         },
         {
-          "title": "Index",
-          "path": "/design/index",
+          "title": "Introduction",
+          "path": "/design/introduction",
           "type": "file",
           "locked": false
         }
