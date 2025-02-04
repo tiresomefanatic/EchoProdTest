@@ -20,8 +20,23 @@
 <h2 style="text-align: left">
 <img src="https://raw.githubusercontent.com/tiresomefanatic/EchoProdTest/cmf/public/images/1738573252582-Screenshot-2024-07-19-at-10.51.42-PM.png" alt="">Zig-Trimming
 </h2>
+<h2 style="text-align: left">
+<img src="https://raw.githubusercontent.com/tiresomefanatic/EchoProdTest/cmf/public/images/1738573368596-zfe.png" alt="">Wordmark
+</h2>
+<h2 style="text-align: left">
+<img src="https://raw.githubusercontent.com/tiresomefanatic/EchoProdTest/cmf/public/images/1738573958960-VIDA-Group.png" alt="">Wordmark-Clearspaces<img src="https://raw.githubusercontent.com/tiresomefanatic/EchoProdTest/cmf/public/images/1738651959630-Group-1410116357.png" alt="">Wordmark Alignment
+</h2>
+<h2 style="text-align: left">
+<img src="https://raw.githubusercontent.com/tiresomefanatic/EchoProdTest/cmf/public/images/1738651912892-Group-1410116356.png" alt="">Horizontal Logo
+</h2>
+<h2 style="text-align: left">
+<img src="https://raw.githubusercontent.com/tiresomefanatic/EchoProdTest/cmf/public/images/1738652029924-Group-1410116358.png" alt="">Horizontal clearspaces
+</h2>
+<h2 style="text-align: left">
+<img src="https://raw.githubusercontent.com/tiresomefanatic/EchoProdTest/cmf/public/images/1738652133424-Group-1410116359.png" alt="">Horizontal Alignment
+</h2>
 <p style="text-align: left">
-<img src="https://raw.githubusercontent.com/tiresomefanatic/EchoProdTest/cmf/public/images/1738573368596-zfe.png" alt="">
+<img src="https://raw.githubusercontent.com/tiresomefanatic/EchoProdTest/cmf/public/images/1738652375381-Group-1410116362.png" alt="">
 </p>
 <p style="text-align: left">
 </p>
