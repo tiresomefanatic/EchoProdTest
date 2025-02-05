@@ -135,6 +135,13 @@
           ]
         },
         {
+          "title": "Test",
+          "path": "/design/Test",
+          "type": "directory",
+          "locked": false,
+          "children": []
+        },
+        {
           "title": "Index",
           "path": "/design/index",
           "type": "file",
