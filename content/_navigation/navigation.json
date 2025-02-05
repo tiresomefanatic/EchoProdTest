@@ -7,6 +7,32 @@
       "locked": false,
       "children": [
         {
+          "title": "Digital",
+          "path": "/design/Digital",
+          "type": "directory",
+          "locked": false,
+          "children": [
+            {
+              "title": "Foundation Elements",
+              "path": "/design/Digital/Foundation Elements",
+              "type": "file",
+              "locked": false
+            },
+            {
+              "title": "Test",
+              "path": "/design/Digital/Test",
+              "type": "file",
+              "locked": false
+            },
+            {
+              "title": "Tokens",
+              "path": "/design/Digital/Tokens",
+              "type": "file",
+              "locked": false
+            }
+          ]
+        },
+        {
           "title": "Foundation",
           "path": "/design/foundation",
           "type": "directory",
@@ -129,14 +155,21 @@
           ]
         },
         {
-          "title": "Introduction",
-          "path": "/design/introduction",
-          "type": "file",
-          "locked": false
+          "title": "Test",
+          "path": "/design/Test",
+          "type": "directory",
+          "locked": false,
+          "children": []
         },
         {
           "title": "Index",
           "path": "/design/index",
+          "type": "file",
+          "locked": false
+        },
+        {
+          "title": "Introduction",
+          "path": "/design/introduction",
           "type": "file",
           "locked": false
         }
