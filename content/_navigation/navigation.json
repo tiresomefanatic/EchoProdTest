@@ -75,6 +75,13 @@
           "locked": false,
           "children": [
             {
+              "title": "case studies",
+              "path": "/design/product/case studies",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            },
+            {
               "title": "Product Case studies",
               "path": "/design/product/Product Case studies",
               "type": "directory",
