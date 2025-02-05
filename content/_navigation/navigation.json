@@ -19,6 +19,12 @@
               "locked": false
             },
             {
+              "title": "Test",
+              "path": "/design/Digital/Test",
+              "type": "file",
+              "locked": false
+            },
+            {
               "title": "Tokens",
               "path": "/design/Digital/Tokens",
               "type": "file",
