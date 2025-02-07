@@ -2,6 +2,8 @@
 </h2>
 <p style="text-align: left">Tokens are a set of foundational design decisions represented as reusable data. These tokens are shared across all platforms, iOS, Android, and Web, and control the entire visual part of our design system. added new sentence.
 </p>
+<p style="text-align: left">Added something.
+</p>
 <h2 style="text-align: left">Anatomy
 </h2>
 <p style="text-align: left">Each design token has a unique name and its corresponding value. This name/value pairing is similar to a dictionary data structure found in engineering, where a key is associated with a value, and the key/value pair can be used to store and retrieve data.
