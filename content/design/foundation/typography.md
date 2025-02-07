@@ -1,7 +1,7 @@
 <h1 style="text-align: left"><strong>Typography</strong>
 </h1>
-<p style="text-align: left">Lorem ipsum dolor sit amet consectetur. Et ut ultrices dolor ut. Vitae pharetra rutrum dolor vestibulum pharetra et. Pretium consectetur venenatis lacus quam non ipsum.]]<br>
-<br>Typography is very important.]]]
+<p style="text-align: left">Lorem ipsum dolor sit amet consectetur. Et ut ultrices dolor ut. Vitae pharetra rutrum dolor vestibulum pharetra et. Pretium consectetur venenatis lacus quam non ipsum.0000<br>
+<br>Typography is very important.000
 </p>
 <p style="text-align: left">
 </p>
