@@ -152,9 +152,8 @@ const handleEditorError = (error: Error) => {
 .landing-content-area {
   flex: 1;
   width: 100%;
-  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 auto;
 }
 
 .main-content {
