@@ -3,60 +3,77 @@ import { ref } from "vue";
 
 // Define interface for toast configuration
 export interface ToastConfig {
-  title?: string; // Optional title for more structured toasts
-  message: string; // Main toast message
-  type: "success" | "error" | "warning" | "info"; // Added more types for flexibility
-  duration?: number; // Optional custom duration
+  id?: string;  // Optional ID for updating specific toasts
+  title?: string;
+  message: string;
+  type: "success" | "error" | "warning" | "info" | "loading";
+  duration?: number;
 }
 
 // Define the internal toast object structure
 interface Toast extends ToastConfig {
-  id: number;
+  id: string;
   created: Date;
 }
 
 // Create a reactive reference to store toasts
 const toasts = ref<Toast[]>([]);
-let nextId = 0;
 
 export const useToast = () => {
-  // Show toast can now accept either a string or a toast config
-  const showToast = (
-    configOrMessage: ToastConfig | string,
-    type: "success" | "error" | "warning" | "info" = "success"
-  ) => {
-    // Create the toast object based on input type
-    const toastConfig: ToastConfig =
-      typeof configOrMessage === "string"
-        ? { message: configOrMessage, type }
-        : configOrMessage;
-
-    // Create the full toast object
+  // Show a new toast
+  const showToast = (config: ToastConfig) => {
     const toast: Toast = {
-      id: nextId++,
+      id: config.id || `toast-${Date.now()}`,
       created: new Date(),
-      duration: 3000, // Default duration
-      ...toastConfig,
+      duration: config.duration ?? 3000,
+      ...config,
     };
 
     // Add toast to the list
     toasts.value.push(toast);
 
-    // Remove toast after duration
-    setTimeout(() => {
-      removeToast(toast.id);
-    }, toast.duration);
+    // Remove toast after duration if not loading and duration > 0
+    if (config.type !== 'loading' && config.duration !== 0) {
+      setTimeout(() => {
+        removeToast(toast.id);
+      }, toast.duration);
+    }
+
+    return toast.id;
   };
 
-  // Helper function to remove a specific toast
-  const removeToast = (id: number) => {
-    const index = toasts.value.findIndex((t) => t.id === id);
+  // Update an existing toast
+  const updateToast = (id: string, config: Partial<ToastConfig>) => {
+    const index = toasts.value.findIndex(t => t.id === id);
+    if (index !== -1) {
+      toasts.value[index] = {
+        ...toasts.value[index],
+        ...config,
+      };
+
+      // Handle auto-dismiss for non-loading toasts
+      if (config.type && config.type !== 'loading' && config.duration !== 0) {
+        setTimeout(() => {
+          removeToast(id);
+        }, config.duration || 3000);
+      }
+    }
+  };
+
+  // Remove a specific toast
+  const removeToast = (id: string) => {
+    const index = toasts.value.findIndex(t => t.id === id);
     if (index !== -1) {
       toasts.value.splice(index, 1);
     }
   };
 
-  // Allow manual removal of toasts
+  // Dismiss a toast (alias for removeToast)
+  const dismissToast = (id: string) => {
+    removeToast(id);
+  };
+
+  // Clear all toasts
   const clearToasts = () => {
     toasts.value = [];
   };
@@ -64,7 +81,9 @@ export const useToast = () => {
   return {
     toasts,
     showToast,
+    updateToast,
     removeToast,
+    dismissToast,
     clearToasts,
   };
 };

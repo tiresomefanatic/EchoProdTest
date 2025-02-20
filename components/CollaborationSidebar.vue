@@ -419,29 +419,29 @@ const handleBranchChange = async (event: Event) => {
   const newBranch = select.value;
 
   if (newBranch !== currentBranch.value) {
-    const editorStore = useEditorStore();
-
-    // Save current content before switching
-    if (props.filePath) {
-      const currentContent = store.rawText;
-      editorStore.saveContent(props.filePath, currentContent);
-    }
-
-    // Switch branch
-    await switchBranch(newBranch);
-
-    // Load content for new branch
+    loading.value = true;
     try {
+      // Save current content before switching
+      if (props.filePath) {
+        const currentContent = store.rawText;
+        editorStore.saveContent(props.filePath, currentContent);
+      }
+
+      // Switch branch
+      await switchBranch(newBranch);
+
+      // Load content for new branch
       const { content, sha } = await getFileContent(
         "tiresomefanatic",
         "EchoProdTest",
         props.filePath,
         newBranch
       );
+
       if (content) {
+        // Update store and editor content
         editorStore.saveGitContent(props.filePath, content, newBranch, sha);
-        // Update the editor content
-        store.rawText = content;
+        store.updateRawText(content);
 
         showToast({
           title: "Branch Switched",
@@ -456,6 +456,8 @@ const handleBranchChange = async (event: Event) => {
         message: `Failed to load content for branch "${newBranch}"`,
         type: "error",
       });
+    } finally {
+      loading.value = false;
     }
   }
 };
@@ -463,18 +465,15 @@ const handleBranchChange = async (event: Event) => {
 const createNewBranch = async () => {
   if (!newBranchName.value) return;
 
-  loading.value = true;
   try {
     const result = await createBranch(newBranchName.value);
     if (result) {
-      showToast({
-        title: "Success",
-        message: `Created branch: ${newBranchName.value}`,
-        type: "success",
-      });
+      // Branch creation successful
       newBranchName.value = "";
       showNewBranchInput.value = false;
-      await loadCommits();
+      
+      // Force re-render of selector
+      selectorKey.value++;
     }
   } catch (error) {
     console.error("Error creating branch:", error);
@@ -483,8 +482,6 @@ const createNewBranch = async () => {
       message: "Failed to create branch",
       type: "error",
     });
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -612,6 +609,15 @@ watch([activeTab, isLoggedIn], () => {
     // Cleanup interval when tab changes or component unmounts
     return () => clearInterval(interval);
   }
+});
+
+// Add reactive reference for forcing re-renders
+const selectorKey = ref(0);
+
+// Watch for branch changes
+watch(currentBranch, () => {
+  // Force re-render of selector
+  selectorKey.value++;
 });
 
 // Initialize

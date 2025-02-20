@@ -2,135 +2,70 @@
 <template>
   <div class="page-wrapper">
     <ClientOnly>
-      <div>
-        <Header />
-        <div class="content-area" :class="{ 'editing-mode': isEditing }">
-          <!-- Mobile menu wrapper -->
-          <div class="mobile-menu-wrapper md:hidden">
-            <DesignSidebar />
-          </div>
-
-          <!-- Desktop sidebar shown only in non-editing mode -->
-          <aside
-            v-if="!isEditing && showSidebar"
-            class="sidebar hidden md:block fixed left-0 bottom-0 w-64"
-          >
-            <DesignSidebar />
-          </aside>
-
-          <div class="main-content flex-1">
-            <!-- Content header with edit controls - only show when logged in -->
-            <div
-              v-if="isLoggedIn"
-              class="content-header fixed top-[76px] right-6 z-10 flex items-center gap-3"
-            >
+      <Header class="menu-bar" />
+      
+      <div class="main-container">
+        <div class="content">
+          <DesignSidebar class="sidebar" />
+          
+          <div class="text-container">
+            <div class="body-container">
               <ClientOnly>
-                <div v-if="branches.length > 0" class="branch-select-wrapper">
-                  <select
-                    v-model="currentBranch"
-                    @change="handleBranchChange"
-                    class="branch-select px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option
-                      v-for="branch in branches"
-                      :key="branch"
-                      :value="branch"
-                    >
-                      {{ branch }}
-                    </option>
-                  </select>
+                <div v-if="isEditing" class="editor-container">
+                  <TiptapEditor
+                    :content="editorContent"
+                    :filePath="contentPath"
+                    @update:content="handleContentChange"
+                    @save="handleSave"
+                    @error="handleEditorError"
+                  />
+                  <CollaborationSidebar
+                    v-if="isLoggedIn"
+                    :filePath="contentPath"
+                    @load-save="handleLoadSave"
+                  />
                 </div>
-                <button
-                  v-if="!isEditing"
-                  @click="handleEditClick"
-                  class="edit-button px-4 py-2 bg-[#0969DA] text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Edit
-                </button>
-                <button
-                  v-else
-                  @click="exitEditor"
-                  class="edit-button px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                >
-                  Exit
-                </button>
-                <ContentCreator
-                  v-if="isLoggedIn"
-                  @content-created="handleContentCreated"
-                />
+                <div v-else class="prose-content">
+                  <div :key="githubContent">
+                    <template v-if="!isLoggedIn">
+                      <ContentDoc :path="path" :head="false">
+                        <template #empty>
+                          <p>No content found.</p>
+                        </template>
+                        <template #not-found>
+                          <p>Content not found. Path: {{ path }}</p>
+                        </template>
+                      </ContentDoc>
+                    </template>
+                    <template v-else>
+                      <div v-html="githubContent" class="markdown-content"></div>
+                    </template>
+                  </div>
+                </div>
               </ClientOnly>
             </div>
 
-            <!-- Main content area -->
+            
+            
             <ClientOnly>
-              <div v-if="isEditing" class="editor-container mt-4">
-                <TiptapEditor
-                  :content="editorContent"
-                  :filePath="contentPath"
-                  @update:content="handleContentChange"
-                  @save="handleSave"
-                  @error="handleEditorError"
-                />
-                <CollaborationSidebar
-                  v-if="isLoggedIn"
-                  :filePath="contentPath"
-                  class="collaboration-sidebar"
-                  @load-save="handleLoadSave"
-                />
-              </div>
-              <div v-else class="prose-content max-w-[960px] mx-auto px-6 py-8">
-                <div :key="githubContent">
-                  <template v-if="!isLoggedIn">
-                    <ContentDoc :path="path" :head="false">
-                      <template #empty>
-                        <p>No content found.</p>
-                      </template>
-                      <template #not-found>
-                        <p>Content not found. Path: {{ path }}</p>
-                      </template>
-                    </ContentDoc>
-                  </template>
-                  <template v-else>
-                    <div v-html="githubContent" class="markdown-content"></div>
-                  </template>
-                </div>
-              </div>
+              <TableOfContents v-if="!isEditing" class="table-of-contents" />
             </ClientOnly>
           </div>
         </div>
+
+        <footer class="footer">
+          <h1>©2024 ECHO</h1>
+        </footer>
       </div>
     </ClientOnly>
-
-    <!-- Footer section -->
-    <div
-      class="page-footer"
-      style="
-        background: #1d1b1b;
-        padding: 32px;
-        max-height: 80px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      "
-    >
-      <h1
-        style="
-          color: white;
-          font-size: 14px;
-          font-style: normal;
-          font-weight: 400;
-          line-height: 142%;
-        "
-      >
-        ©2024 ECHO
-      </h1>
-    </div>
   </div>
+  
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRoute } from "vue-router";
+import { navigateTo } from "#app";
 import { queryContent } from "#imports";
 import { useGithub } from "~/composables/useGithub";
 import { useToast } from "~/composables/useToast";
@@ -143,6 +78,7 @@ import DesignSidebar from "~/components/DesignSidebar.vue";
 import Header from "~/components/Header.vue";
 import { useRuntimeConfig, useNuxtApp } from "#app";
 import { marked } from "marked";
+import TableOfContents from "~/components/TableOfContents.vue";
 
 // Initialize GitHub functionality and services
 const {
@@ -152,6 +88,8 @@ const {
   currentBranch,
   fetchBranches,
   branches,
+  switchBranch,
+  clearContentPolling,
 } = useGithub();
 
 const { refreshNavigation } = useNavigation();
@@ -170,8 +108,16 @@ const route = useRoute();
 const slug = route.params.slug || [];
 const path = Array.isArray(slug) ? slug.join("/") : slug;
 
+// Redirect to index page if we're at the root
+onMounted(() => {
+  if (!path) {
+    navigateTo("/");
+  }
+  console.log('isEditing value:', isEditing.value);
+});
+
 // Compute whether to show sidebar based on path
-const showSidebar = computed(() => path !== "");
+const showSidebar = computed(() => true);
 
 // Compute the content file path
 const contentPath = computed(() => {
@@ -346,10 +292,24 @@ const handleLoadSave = (content: string) => {
   isEditing.value = true; // Switch to edit mode to show the loaded content
 };
 
-const handleBranchChange = async () => {
-  await loadGithubContent();
-  await refreshNavigation(); // Refresh navigation when branch changes
+const handleBranchChange = async (event: Event) => {
+  const select = event.target as HTMLSelectElement;
+  const newBranch = select.value;
+
+  if (newBranch !== currentBranch.value) {
+    await switchBranch(newBranch);
+    await loadGithubContent();
+    await refreshNavigation();
+  }
 };
+
+// Add a watch for currentBranch to handle initial load
+watch(currentBranch, async (newBranch) => {
+  if (isLoggedIn.value && !isEditing.value) {
+    await loadGithubContent();
+    await refreshNavigation();
+  }
+}, { immediate: true });
 
 // Handle new content creation
 const handleContentCreated = async () => {
@@ -362,9 +322,11 @@ const handleContentCreated = async () => {
 };
 
 // Watch for editing mode changes
-watch(isEditing, async (newValue, oldValue) => {
-  if (newValue && !oldValue) {
-    await loadGithubContent();
+watch(isEditing, (newValue) => {
+  console.log('isEditing changed to:', newValue);
+  if (newValue && !isEditing.value) {
+    isEditing.value = newValue;
+    loadGithubContent();
   }
 });
 
@@ -391,11 +353,22 @@ watch(isLoggedIn, async (newValue) => {
   }
 });
 
+// Add watch for branches
+watch(branches, async (newBranches) => {
+  if (newBranches.length > 0) {
+    // Force re-render of branch selector
+    contentKey.value++;
+  }
+}, { deep: true });
+
 // Setup content refresh and event handlers
 onMounted(async () => {
-  if (isLoggedIn.value && !isEditing.value) {
-    await loadGithubContent();
-    await refreshNavigation(); // Initial navigation load
+  if (isLoggedIn.value) {
+    await fetchBranches(); // Ensure branches are loaded initially
+    if (!isEditing.value) {
+      await loadGithubContent();
+      await refreshNavigation();
+    }
   }
 
   if (process.client) {
@@ -406,6 +379,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (process.client) {
     document.removeEventListener("visibilitychange", handleVisibilityChange);
+    clearContentPolling(); // Clean up content polling
   }
 });
 </script>
@@ -413,9 +387,9 @@ onBeforeUnmount(() => {
 <style>
 /* Global prose styles - these are essential */
 .prose-content {
-  max-width: 100%;
-  width: 100%;
+  max-width: 740px; /* From Figma measurement */
   margin: 0;
+  padding: 0;
   color: #000000;
   font-size: 16px;
   line-height: 1.6;
@@ -511,67 +485,242 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .page-wrapper {
-  min-height: 100vh;
-  position: relative;
+  /* Default styles (Breakpoint 1 - 1380px and above) */
+  display: flex;
   width: 100%;
-  overflow-x: hidden;
+  min-width: 1380px;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  background: #FFFFFF;
+}
+
+.menu-bar {
+  display: flex;
+  width: 100%;
+  height: 56px;
+  padding: 0px 266px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.main-container {
+  display: flex;
+  width: 100%;
+  padding-top: 40px;
+  flex-direction: column;
+  align-items: center;
+  gap: 64px;
+}
+
+.content {
+  display: flex;
+  width: 100%;
+  max-width: 1512px;
+  padding: 0px 266px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 40px;
+  position: relative;
+}
+
+.sidebar {
+  display: flex;
+  width: 195px;
+  flex-direction: column;
+  align-items: flex-start;
+  position: sticky;
+  top: 96px;
+}
+
+.text-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 40px;
+  position: relative;
+  width: 740px;
+}
+
+.body-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 40px;
+}
+
+.table-of-contents {
+  position: fixed;
+  right: 84px;
+  top: 96px;
+  display: flex;
+  width: 160px;
+  flex-direction: column;
+  align-items: flex-start;
+  z-index: 1000;
+}
+
+/* Remove these as they're now handled by the component */
+.table-of-contents h3,
+.table-of-contents p {
+  display: none;
+}
+
+/* Update toc-nav to match parent container */
+.toc-nav {
+  display: flex;
+  width: 160px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.footer {
+  display: flex;
+  width: 100%;
+  max-width: 1512px;
+  padding: 32px 84px;
+  background: #1D1B1B;
+  color: #FFFFFF;
+  justify-content: center;
+  align-items: center;
+}
+
+.footer h1 {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 142%;
+}
+
+/* Typography styles */
+.prose-content {
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.prose-content h1 {
+  font-size: 60px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+}
+
+.prose-content h2 {
+  font-size: 48px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 48px 0 24px;
+}
+
+.prose-content h3 {
+  font-size: 36px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 32px 0 16px;
+}
+
+.prose-content p {
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 16px 0;
+  color: #1F2937;
+}
+
+/* Editor styles */
+.editor-container {
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: calc(100vh - 200px);
+  padding: 40px;
+}
+
+/* Breakpoint styles remain the same */
+/* Breakpoint 2 - min-width: 1024px and max-width: 1379px */
+@media screen and (min-width: 1024px) and (max-width: 1379px) {
+  .page-wrapper {
+    display: flex;
+    width: 1024px;
+    min-width: 1024px;
+    max-width: 1380px;
+    padding-bottom: 80px;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* Breakpoint 3 - min-width: 768px and max-width: 1023px */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .page-wrapper {
+    display: flex;
+    width: 1023px;
+    min-width: 768px;
+    max-width: 1023px;
+    padding-bottom: 80px;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* Breakpoint 4 (mobile) - max-width: 768px */
+@media screen and (max-width: 767px) {
+  .page-wrapper {
+    display: flex;
+    width: 767px;
+    min-width: 767px;
+    max-width: 767px;
+    padding-bottom: 80px;
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .content-area {
   display: flex;
-  background: white;
-  min-height: calc(100vh - 64px);
-  position: relative;
   width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+  padding: 40px 266px;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 40px;
+  flex: 1;
 }
 
 .content-area.editing-mode {
   padding: 0;
 }
 
-.sidebar {
-  width: 280px;
-  flex-shrink: 0;
-  background: white;
-  position: sticky;
-  top: 60px;
-  height: 100vh;
-  margin-left: 20px;
-}
-
-.main-content {
-  flex: 1;
-  min-width: 0; /* Prevent flex item from overflowing */
-  padding: 32px;
-  position: relative;
-}
-
-.main-content.with-sidebar {
-  width: calc(100% - 280px);
-}
-
 .content-header {
-  margin: 20px 26px;
-  padding: 4px 8px;
+  position: fixed;
+  top: 76px;
+  left: calc(266px + 195px); /* Left margin + sidebar width */
+  right: 266px;
+  z-index: 10;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
   background: white;
-  border-bottom: 1px solid #e5e7eb;
-  align-items: start;
+  padding: 16px 0;
 }
 
 .markdown-content {
   @apply prose prose-sm md:prose-base lg:prose-lg max-w-none;
-}
-
-.editor-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-height: calc(100vh - 200px);
-  margin: 0;
-  padding: 20px;
-  width: 100%;
 }
 
 .branch-select-wrapper {
@@ -635,26 +784,45 @@ onBeforeUnmount(() => {
 }
 
 /* Mobile styles */
-@media (max-width: 768px) {
-  .main-content {
-    margin-left: 0;
-  }
-
+@media (max-width: 1280px) {
   .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
+    left: 266px;
   }
 
-  .sidebar.active {
-    transform: translateX(0);
+  .main-content {
+    margin-left: calc(266px + 195px);
+    margin-right: 266px;
+    width: auto;
+  }
+
+  .content-header {
+    left: calc(266px + 195px);
+    right: 266px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    left: 16px;
+  }
+
+  .main-content {
+    margin: 0;
+    padding: 16px;
+    width: auto;
+  }
+
+  .content-header {
+    position: static;
+    padding: 16px;
   }
 }
 
 .page-footer {
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
+  left: 463.3px; /* Same as main content margin-left */
+  right: calc(268.5px + 84px); /* TOC width + right margin */
+  z-index: 10;
 }
 </style>

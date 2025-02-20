@@ -13,6 +13,15 @@ interface GitContent {
   branch: string;
   sha: string;
   lastFetched: string;
+  lastModified: string;
+  cdnExpiry: string;
+}
+
+interface CommitInfo {
+  sha: string;
+  message: string;
+  date: string;
+  branch: string;
 }
 
 interface EditorState {
@@ -23,6 +32,11 @@ interface EditorState {
   isCollaborating: boolean;
   pullRequests: string[];
   lastPRUpdate: string;
+  branchCache: {
+    branches: string[];
+    lastFetched: string;
+  };
+  commitHistory: Record<string, CommitInfo[]>; // key is filePath
 }
 
 export const useEditorStore = defineStore("editor", {
@@ -30,14 +44,21 @@ export const useEditorStore = defineStore("editor", {
     const savedState = localStorage.getItem("editor-saves");
     const gitState = localStorage.getItem("editor-git-contents");
     const prState = localStorage.getItem("editor-pull-requests");
+    const savedBranch = process.client ? localStorage.getItem("github-current-branch") : "main";
+    
     return {
       savedContents: savedState ? JSON.parse(savedState) : {},
       gitContents: gitState ? JSON.parse(gitState) : {},
-      currentBranch: "main",
+      currentBranch: savedBranch || "main",
       collaborators: [],
       isCollaborating: false,
       pullRequests: prState ? JSON.parse(prState) : [],
       lastPRUpdate: new Date().toISOString(),
+      branchCache: {
+        branches: [],
+        lastFetched: new Date().toISOString(),
+      },
+      commitHistory: {},
     };
   },
 
@@ -146,6 +167,8 @@ export const useEditorStore = defineStore("editor", {
         branch,
         sha,
         lastFetched: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+        cdnExpiry: new Date().toISOString(),
       };
 
       // Persist to localStorage
@@ -168,7 +191,9 @@ export const useEditorStore = defineStore("editor", {
 
     setBranch(branch: string) {
       this.currentBranch = branch;
-      // When branch changes, we want to persist the current state
+      if (process.client) {
+        localStorage.setItem("github-current-branch", branch);
+      }
       localStorage.setItem("editor-saves", JSON.stringify(this.savedContents));
     },
 
@@ -261,6 +286,28 @@ export const useEditorStore = defineStore("editor", {
 
     getPullRequests() {
       return this.pullRequests;
+    },
+
+    updateBranchCache(branchList: string[]) {
+      this.branchCache = {
+        branches: branchList,
+        lastFetched: new Date().toISOString(),
+      };
+      
+      // Also update localStorage
+      if (process.client) {
+        localStorage.setItem('editor-branch-cache', JSON.stringify(this.branchCache));
+      }
+    },
+
+    updateContentTimestamp(filePath: string, branch: string) {
+      const key = `${filePath}-${branch}`;
+      if (this.gitContents[key]) {
+        this.gitContents[key] = {
+          ...this.gitContents[key],
+          lastFetched: new Date().toISOString()
+        };
+      }
     },
   },
 });

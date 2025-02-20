@@ -249,32 +249,29 @@ onMounted(async () => {
 
 <style scoped>
 .sidebar-wrapper {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  width: 195px;
 }
 
 .design-sidebar {
-  width: 280px;
-  background: white;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .design-nav {
   height: 100%;
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .nav-content {
-  background: #f7f7f7;
-  border-radius: 16px;
-  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 4px;
+  width: 195px;
 }
 
 .loading-state {
@@ -308,75 +305,87 @@ onMounted(async () => {
 .nav-group {
   display: flex;
   flex-direction: column;
-}
-
-.main-item {
-  font-size: 1.125rem;
-  font-weight: 400;
-  color: #000000;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-}
-
-.sub-item {
-  font-size: 1rem;
-  font-weight: 400;
-  color: #000000;
-  padding: 0.5rem 0.75rem;
-  margin-left: 0.5rem;
-  line-height: 150%;
-  letter-spacing: 0.15px;
-}
-
-.nav-item {
-  text-decoration: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
-}
-
-.nav-item.locked,
-.nav-group-header.locked {
-  color: #999;
-  cursor: not-allowed;
-  pointer-events: none;
+  gap: 4px;
 }
 
 .nav-group-header {
   display: flex;
-  justify-content: space-between;
+  height: 32px;
+  padding: 0;
   align-items: center;
+  gap: 12px;
+  align-self: stretch;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  font-family: "PP Neue Montreal";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 538;
+  line-height: 24px;
+  letter-spacing: 0.15px;
+  color: #000;
+}
+
+.nav-group-header:hover:not(.locked) {
+  font-weight: 538;
+}
+
+.nav-group-header.active:not(.locked) {
+  font-weight: 538;
+}
+
+.nav-item {
+  display: flex;
+  height: 32px;
+  padding: 0;
+  align-items: center;
+  gap: 12px;
+  align-self: stretch;
+  font-family: "PP Neue Montreal";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 538;
+  line-height: 24px;
+  letter-spacing: 0.15px;
+  color: #000;
+  text-decoration: none;
+}
+
+.nav-item:hover:not(.locked) {
+  font-weight: 538;
+}
+
+.nav-item.router-link-active {
+  font-weight: 538;
 }
 
 .nav-section {
   overflow: hidden;
   transition: height 0.3s ease-in-out;
   height: auto;
+  padding-left: 12px;
+  margin-top: 0;
 }
 
 .nav-section.collapsed {
   height: 0;
-}
-
-.nav-section.nested {
-  margin-left: 0.5rem;
+  margin-top: 0;
 }
 
 .nav-section-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.25rem 0;
+  gap: 4px;
+}
+
+.sub-item {
+  padding-left: 12px;
 }
 
 .chevron {
-  font-size: 1.25rem;
+  font-size: 16px;
   transition: transform 0.3s ease;
-  display: inline-block;
+  margin-left: 0;
+  order: -1;
 }
 
 .chevron.rotated {
@@ -386,22 +395,14 @@ onMounted(async () => {
 .lock-icon {
   width: 16px;
   height: 16px;
+  margin-left: auto;
 }
 
-/* Hover states */
-.nav-item:not(.locked):hover,
-.nav-group-header:not(.locked):hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-/* Active states */
-.nav-item.router-link-active {
-  font-weight: 500;
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.nav-group-header.active:not(.locked) {
-  background: rgba(0, 0, 0, 0.02);
+.nav-item.locked,
+.nav-group-header.locked {
+  color: #999;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Mobile styles */
@@ -550,6 +551,10 @@ onMounted(async () => {
     .nav-content {
       height: calc(100vh - 64px - env(safe-area-inset-bottom));
     }
+  }
+
+  .sidebar-wrapper {
+    width: 195px;
   }
 }
 </style>

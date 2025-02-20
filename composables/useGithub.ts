@@ -2,6 +2,8 @@
 import { Octokit } from "@octokit/rest";
 import { useRuntimeConfig, navigateTo, useState } from "#app";
 import { ref, onMounted, computed } from "vue";
+import { useEditorStore } from "~/store/editor";
+import { useToast } from "~/composables/useToast";
 
 // Define interfaces for all GitHub-related data structures
 export interface GitHubUser {
@@ -44,15 +46,28 @@ export interface Commit {
   };
 }
 
+interface ContentResponse {
+  content: string;
+  sha: string;
+  lastFetched: string;
+}
+
 // Main composable function for GitHub functionality
 export const useGithub = () => {
   // Initialize runtime configuration and state
   const config = useRuntimeConfig();
   const user = ref<GitHubUser | null>(null);
   const loading = ref(false);
-  // Make currentBranch persistent
-  const currentBranch = useState<string>("github-current-branch", () => "main");
-  const branches = ref<string[]>([]);
+  // Change the currentBranch state to use localStorage
+  const currentBranch = useState<string>("github-current-branch", () => {
+    if (process.client) {
+      // Try to get saved branch from localStorage first
+      const savedBranch = localStorage.getItem("github-current-branch");
+      return savedBranch || "main";
+    }
+    return "main";
+  });
+  const branches = useState<string[]>("github-branches", () => []);
 
   // Initialize Octokit with stored token if available
   const octokit = new Octokit({
@@ -230,58 +245,89 @@ export const useGithub = () => {
     }
   };
 
-  // Get raw content with improved caching and error handling
+  // Add inside useGithub composable
+  const pollContent = ref<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchAndCompareContent = async (
+    owner: string,
+    repo: string,
+    path: string,
+    branch: string
+  ): Promise<ContentResponse> => {
+    const editorStore = useEditorStore();
+    const currentContent = editorStore.getGitContent(path, branch);
+
+    try {
+      const { data } = await octokit.rest.repos.getContent({
+        owner,
+        repo,
+        path,
+        ref: branch,
+      });
+
+      // Type guard to ensure we're dealing with a file
+      if ('content' in data && !Array.isArray(data)) {
+        const content = decodeBase64ToString(data.content);
+        
+        // Compare both SHA and content
+        if (currentContent && 
+            data.sha === currentContent.sha && 
+            content === currentContent.content) {
+          // No changes detected
+          editorStore.updateContentTimestamp(path, branch);
+          return {
+            content: currentContent.content,
+            sha: currentContent.sha,
+            lastFetched: new Date().toISOString()
+          };
+        }
+
+        // Either SHA or content has changed
+        const newContent = {
+          content,
+          sha: data.sha,
+          lastFetched: new Date().toISOString()
+        };
+
+        editorStore.saveGitContent(path, content, branch, data.sha);
+        return newContent;
+      }
+      throw new Error('Not a file');
+    } catch (error) {
+      console.error('Error fetching content:', error);
+      throw error;
+    }
+  };
+
+  // Update getRawContent to use the polling mechanism
   const getRawContent = async (
     owner: string,
     repo: string,
     path: string,
-    branch?: string
-  ) => {
-    try {
-      const targetBranch = branch || currentBranch.value;
+    branch: string = currentBranch.value
+  ): Promise<string> => {
+    // Initial fetch
+    const response = await fetchAndCompareContent(owner, repo, path, branch);
 
-      // Check commit storage first
-      const commitData = getCommitContent(owner, repo, path, targetBranch);
-
-      // Get GitHub content to compare
-      const url = `https://raw.githubusercontent.com/${owner}/${repo}/${targetBranch}/${path}?t=${Date.now()}`;
-      console.log("Fetching content from URL:", url);
-
-      const response = await fetch(url);
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.log("File not found, returning empty content");
-          return "";
+    // Setup polling if not already running for this path
+    if (!pollContent.value) {
+      pollContent.value = setInterval(async () => {
+        try {
+          await fetchAndCompareContent(owner, repo, path, branch);
+        } catch (error) {
+          console.error('Error in content poll:', error);
         }
-        throw new Error(`Failed to fetch content: ${response.statusText}`);
-      }
+      }, 5 * 60 * 1000); // Poll every 5 minutes
+    }
 
-      const githubContent = await response.text();
+    return response.content;
+  };
 
-      // If we have commit data, check if GitHub content matches
-      if (commitData) {
-        if (commitData.content === githubContent) {
-          // GitHub has caught up, clear commit storage
-          console.log(
-            "GitHub content matches commit storage, clearing storage"
-          );
-          clearCommitContent(owner, repo, path, targetBranch);
-          return githubContent;
-        }
-        // GitHub hasn't caught up, use commit storage
-        console.log("Using commit storage content as GitHub hasn't caught up");
-        return commitData.content;
-      }
-
-      return githubContent;
-    } catch (error) {
-      console.error("Error fetching content:", error);
-      // If fetch fails and we have commit data, use it
-      if (error && commitData) {
-        console.log("Fetch failed, using commit storage content");
-        return commitData.content;
-      }
-      throw error;
+  // Add cleanup function
+  const clearContentPolling = () => {
+    if (pollContent.value) {
+      clearInterval(pollContent.value);
+      pollContent.value = null;
     }
   };
 
@@ -455,16 +501,16 @@ export const useGithub = () => {
   };
 
   // Handle branch change
-  const changeBranch = async (branch: string) => {
-    const editorStore = useEditorStore();
+  const switchBranch = async (branch: string) => {
     currentBranch.value = branch;
-    editorStore.setBranch(branch);
+    if (process.client) {
+      localStorage.setItem("github-current-branch", branch);
+    }
   };
 
   // Fetch branches
   const fetchBranches = async () => {
     if (!process.client) return;
-
     const token = localStorage.getItem("github_token");
     if (!token) return;
 
@@ -473,10 +519,16 @@ export const useGithub = () => {
       const { data } = await octokit.rest.repos.listBranches({
         owner: config.public.githubOwner,
         repo: config.public.githubRepo,
+        per_page: 100,
       });
 
-      branches.value = data.map((branch) => branch.name);
+      const githubBranches = data.map(branch => branch.name);
+      
+      // Combine GitHub branches with pending branches
+      branches.value = [...new Set([...githubBranches])].sort();
+      
       loading.value = false;
+      return branches.value;
     } catch (error) {
       loading.value = false;
       console.error("Error fetching branches:", error);
@@ -488,10 +540,17 @@ export const useGithub = () => {
   const createBranch = async (branchName: string) => {
     if (!isLoggedIn.value) return null;
 
+    const { showToast, updateToast, dismissToast } = useToast();
+    const toastId = 'branch-creation';
+
     try {
-      console.log(
-        `Creating new branch: ${branchName} from ${currentBranch.value}`
-      );
+      showToast({
+        id: toastId,
+        title: "Creating Branch",
+        message: `Creating new branch: ${branchName}...`,
+        type: "loading",
+        duration: 0,
+      });
 
       // Get current branch's latest commit
       const { data: currentRef } = await octokit.rest.git.getRef({
@@ -500,7 +559,7 @@ export const useGithub = () => {
         ref: `heads/${currentBranch.value}`,
       });
 
-      // Create new branch from current branch
+      // Create new branch
       await octokit.rest.git.createRef({
         owner: "tiresomefanatic",
         repo: "EchoProdTest",
@@ -508,16 +567,62 @@ export const useGithub = () => {
         sha: currentRef.object.sha,
       });
 
-      console.log(`Created branch ${branchName}, fetching updated branch list`);
-      await fetchBranches();
+      updateToast(toastId, {
+        message: "Branch created, waiting for GitHub to process...",
+      });
 
-      // Switch to new branch
-      console.log(`Switching to new branch: ${branchName}`);
-      currentBranch.value = branchName;
+      // Verify branch exists with longer timeout and less frequent polling
+      let attempts = 0;
+      while (attempts < 6) { // Try for 3 minutes (6 attempts * 30 seconds)
+        const { data } = await octokit.rest.repos.listBranches({
+          owner: "tiresomefanatic",
+          repo: "EchoProdTest",
+          per_page: 100,
+        });
+        
+        if (data.some(b => b.name === branchName)) {
+          branches.value = data.map(b => b.name);
+          await switchBranch(branchName);
+
+          updateToast(toastId, {
+            title: "Branch Created",
+            message: `Successfully created and verified branch: ${branchName}`,
+            type: "success",
+            duration: 3000,
+          });
+
+          return true;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
+        attempts++;
+
+        // Update toast with attempt count
+        updateToast(toastId, {
+          message: `Branch created, waiting for GitHub to process... (Attempt ${attempts}/6)`,
+        });
+      }
+
+      // If we get here, verification timed out
+      updateToast(toastId, {
+        title: "Branch Created",
+        message: `Branch has been created but might take a few more minutes to be available. Please refresh the page later.`,
+        type: "warning",
+        duration: 5000,
+      });
 
       return true;
+
     } catch (error) {
       console.error("Error creating branch:", error);
+      
+      updateToast(toastId, {
+        title: "Error",
+        message: "Failed to create branch. Please try again.",
+        type: "error",
+        duration: 3000,
+      });
+
       return null;
     }
   };
@@ -754,13 +859,14 @@ export const useGithub = () => {
     resolveConflict: resolveConflictInFile,
     fetchBranches,
     createBranch,
-    switchBranch: changeBranch,
+    switchBranch,
     createNewPullRequest,
     getFileContent,
     createNewContent,
     deleteContent,
     uploadImage,
     getRepoInfo,
+    clearContentPolling,
   };
 };
 

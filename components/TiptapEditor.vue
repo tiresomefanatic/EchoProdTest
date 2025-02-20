@@ -558,19 +558,52 @@ const handleRawContentChange = (value: string) => {
   emit("update:content", formattedContent);
 };
 
-// Watch for content changes
+// Modify the watch for rawText to be more aggressive in updating
 watch(
   () => rawText.value,
   (newContent) => {
-    if (newContent && editor.value && newContent !== localContent.value) {
-      console.log("rawText changed, updating localContent:", newContent.length);
+    if (newContent && editor.value) {
+      console.log("rawText changed, updating editor content:", newContent.length);
       const formattedContent = formatHTML(newContent);
-      editor.value.commands.setContent(formattedContent);
+      
+      // Force editor update
+      editor.value.commands.setContent(formattedContent, false);
       localContent.value = formattedContent;
+      
+      // Also update preview if active
+      if (previewMode.value) {
+        previewContent.value = formattedContent;
+      }
+    }
+  },
+  { immediate: true } // Add immediate option to ensure initial content is set
+);
+
+// Add a watch for branch changes to trigger content reload
+watch(
+  () => currentBranch.value,
+  async (newBranch) => {
+    if (newBranch && props.filePath) {
+      try {
+        const { content, sha } = await getFileContent(
+          "tiresomefanatic",
+          "EchoProdTest",
+          props.filePath,
+          newBranch
+        );
+        
+        if (content) {
+          const formattedContent = formatHTML(content);
+          store.updateRawText(formattedContent);
+        }
+      } catch (error) {
+        console.error("Error loading content for branch:", error);
+      }
     }
   }
 );
 
+// Watch for content changes
 watch(
   () => editorStore.getCurrentGitContent(props.filePath || "")?.content,
   (newContent) => {

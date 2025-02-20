@@ -35,14 +35,11 @@
 
     <!-- Website content - shown only after password verification -->
     <div v-else>
-      <NuxtLayout>
-        <Header />
-        <main class="mt-24">
-          <NuxtLoadingIndicator />
-          <NuxtPage />
-          <Toast />
-        </main>
-      </NuxtLayout>
+   
+        <NuxtLoadingIndicator />
+        <NuxtPage />
+        <Toast />
+    
     </div>
   </div>
 </template>
@@ -83,6 +80,8 @@ const verifyPasswordLocal = () => {
 </script>
 
 <style>
+@import '~/assets/css/fonts.css';
+
 body {
   @apply bg-white;
 }

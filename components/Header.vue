@@ -118,27 +118,63 @@ const route = useRoute();
 </script>
 
 <style scoped>
-/* Keep all existing styles but remove user profile related styles */
 .header {
-  @apply fixed top-0 left-0 right-0 z-50 bg-[#FAFAFA99] rounded-[16px] backdrop-blur-[27px] mt-[24px] mx-[32px];
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  width: 1512px;
+  height: 56px;
+  padding: 0px 266px;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(250, 250, 250, 0.60);
+  backdrop-filter: blur(27px);
+  border-bottom: 1px solid rgba(29, 27, 27, 0.1);
 }
 
 .header-content {
-  @apply mx-8 h-16 flex items-center;
-  gap: 32px;
+  display: flex;
+  width: 980px;
+  height: 56px;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .right-content {
-  @apply flex items-center justify-end flex-1;
-  gap: 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  align-self: stretch;
 }
 
 .logo {
-  @apply flex items-center space-x-2 ml-auto;
+  display: flex;
+  padding: 0px 10px;
+  align-items: center;
+  gap: 5px;
+  align-self: stretch;
 }
 
 .logo-link {
-  @apply text-xl font-bold text-gray-900;
+  color: #000;
+  font-family: "PP Neue Montreal";
+  font-size: 28px;
+  font-style: normal;
+  font-weight: 450;
+  line-height: normal;
+  letter-spacing: -0.56px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo svg {
+  width: 22.69px;
+  height: 22px;
 }
 
 .logo-dot {
@@ -146,72 +182,121 @@ const route = useRoute();
 }
 
 .nav {
-  @apply flex space-x-8;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  align-self: stretch;
 }
 
 .nav-link {
-  @apply text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors duration-200 flex items-center gap-2;
+  display: flex;
+  padding: 8px 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  align-self: stretch;
+  color: #1D1B1B;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  position: relative;
+  opacity: 0.8;
+  line-height: 24px;
 }
 
 .nav-link.active {
-  @apply text-[#1D1B1B] text-[16px] font-medium leading-[150%] tracking-[0.15px] relative;
+  color: #1D1B1B;
+  opacity: 1;
+  font-weight: 600;
 }
 
 .nav-link.active::after {
   content: "";
-  @apply absolute bottom-[-3px] h-[3px] bg-[#FF5310] rounded-[10px];
-  width: 70%;
-  left: 15%;
-  right: 15%;
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #FF5310;
 }
 
 .nav-link.disabled {
-  @apply cursor-not-allowed opacity-50 hover:text-gray-600;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .lock-icon {
-  @apply inline-flex items-center;
+  display: inline-flex;
+  align-items: center;
 }
 
 .header-right {
-  @apply flex items-center space-x-4;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
 }
 
 .search {
-  @apply relative flex items-center bg-[#F3F3F3] pl-3 rounded-[8px];
-  flex-grow: 1;
+  display: flex;
+  width: 248px;
+  height: 32px;
+  padding: 8px 14px;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px;
+  background: #E6E6E6;
+}
+
+.search svg {
+  width: 16px;
+  height: 16px;
+  color: #1D1B1B;
+  opacity: 0.7;
 }
 
 .search-input {
-  @apply w-full pl-0 pr-8 py-2 max-h-[32px] bg-transparent border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed;
-  width: 100%;
-  max-width: 300px;
-}
-
-.search-divider {
-  @apply absolute right-3 text-gray-400;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 0 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: #1D1B1B;
+  padding: 0;
 }
 
 .search-input::placeholder {
-  color: #1d1b1b;
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.5px;
+  color: #1D1B1B;
+  opacity: 0.7;
+}
+
+.search-divider {
+  color: #1D1B1B;
+  opacity: 0.3;
+  font-size: 14px;
+}
+
+/* Mobile styles */
+@media (max-width: 1512px) {
+  .header-content {
+    width: 100%;
+    padding: 0 20px;
+  }
 }
 
 @media (max-width: 768px) {
   .nav {
-    @apply hidden;
+    display: none;
   }
 
   .search {
-    @apply hidden;
+    display: none;
   }
 
   .header-content {
-    @apply px-4;
+    padding: 0 16px;
   }
 }
 </style>
