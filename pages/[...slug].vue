@@ -6,51 +6,50 @@
       
       <div class="main-container">
         <div class="content">
-          <DesignSidebar class="sidebar" />
-          
-          <div class="text-container">
-            <div class="body-container">
-              <ClientOnly>
-                <div v-if="isEditing" class="editor-container">
-                  <TiptapEditor
-                    :content="editorContent"
-                    :filePath="contentPath"
-                    @update:content="handleContentChange"
-                    @save="handleSave"
-                    @error="handleEditorError"
-                  />
-                  <CollaborationSidebar
-                    v-if="isLoggedIn"
-                    :filePath="contentPath"
-                    @load-save="handleLoadSave"
-                  />
-                </div>
-                <div v-else class="prose-content">
-                  <div :key="githubContent">
-                    <template v-if="!isLoggedIn">
-                      <ContentDoc :path="path" :head="false">
-                        <template #empty>
-                          <p>No content found.</p>
-                        </template>
-                        <template #not-found>
-                          <p>Content not found. Path: {{ path }}</p>
-                        </template>
-                      </ContentDoc>
-                    </template>
-                    <template v-else>
-                      <div v-html="githubContent" class="markdown-content"></div>
-                    </template>
+         
+            <DesignSidebar class="sidebar" />
+            <div class="text-container">
+              <div class="body-container">
+                <ClientOnly>
+                  <div v-if="isEditing" class="editor-container">
+                    <TiptapEditor
+                      :content="editorContent"
+                      :filePath="contentPath"
+                      @update:content="handleContentChange"
+                      @save="handleSave"
+                      @error="handleEditorError"
+                    />
+                    <CollaborationSidebar
+                      v-if="isLoggedIn"
+                      :filePath="contentPath"
+                      @load-save="handleLoadSave"
+                    />
                   </div>
-                </div>
-              </ClientOnly>
+                  <div v-else class="prose-content">
+                    <div :key="githubContent">
+                      <template v-if="!isLoggedIn">
+                        <ContentDoc :path="path" :head="false">
+                          <template #empty>
+                            <p>No content found.</p>
+                          </template>
+                          <template #not-found>
+                            <p>Content not found. Path: {{ path }}</p>
+                          </template>
+                        </ContentDoc>
+                      </template>
+                      <template v-else>
+                        <div v-html="githubContent" class="markdown-content"></div>
+                      </template>
+                    </div>
+                  </div>
+                </ClientOnly>
+              </div>
+              <TableOfContents v-if="!isEditing" class="table-of-contents" />
             </div>
+                    
 
             
-            
-            <ClientOnly>
-              <TableOfContents v-if="!isEditing" class="table-of-contents" />
-            </ClientOnly>
-          </div>
+      
         </div>
 
         <footer class="footer">
@@ -485,100 +484,97 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .page-wrapper {
-  /* Default styles (Breakpoint 1 - 1380px and above) */
   display: flex;
   width: 100%;
-  min-width: 1380px;
-  min-height: 100vh;
+  padding-bottom: 80px;
   flex-direction: column;
   align-items: center;
   background: #FFFFFF;
-}
-
-.menu-bar {
-  display: flex;
-  width: 100%;
-  height: 56px;
-  padding: 0px 266px;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #E5E7EB;
-  background: #FFFFFF;
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 
 .main-container {
   display: flex;
-  width: 100%;
-  padding-top: 40px;
+  padding-top: 80px;
   flex-direction: column;
   align-items: center;
   gap: 64px;
+  align-self: stretch;
 }
 
 .content {
   display: flex;
-  width: 100%;
-  max-width: 1512px;
-  padding: 0px 266px;
-  justify-content: flex-start;
-  align-items: flex-start;
-  gap: 40px;
-  position: relative;
+padding: 0px 266px;
+justify-content: center;
+align-items: flex-start;
+gap: 40px;
+align-self: stretch;
 }
 
 .sidebar {
-  display: flex;
   width: 195px;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-shrink: 0;
   position: sticky;
-  top: 96px;
+  top: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .text-container {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  flex-direction: row;
+  justify-content: space-between;
   align-items: flex-start;
-  gap: 40px;
-  position: relative;
-  width: 740px;
+ 
+  align-self: stretch;
 }
 
 .body-container {
-  width: 100%;
   display: flex;
+  width: 740px;
+  background-color: brown;
   flex-direction: column;
   align-items: flex-start;
-  gap: 40px;
+
 }
 
 .table-of-contents {
-  position: fixed;
-  right: 84px;
-  top: 96px;
+  width: 195px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 100px;
   display: flex;
-  width: 160px;
   flex-direction: column;
   align-items: flex-start;
-  z-index: 1000;
+  height: fit-content;
 }
 
-/* Remove these as they're now handled by the component */
-.table-of-contents h3,
-.table-of-contents p {
-  display: none;
+/* Main styles - 1380px and above */
+@media screen and (min-width: 1380px) {
+  .content {
+    padding: 0px 120px;
+  }
 }
 
-/* Update toc-nav to match parent container */
-.toc-nav {
-  display: flex;
-  width: 160px;
-  flex-direction: column;
-  align-items: flex-start;
+/* 1204px - 1380px */
+@media screen and (min-width: 1204px) and (max-width: 1379px) {
+  .content {
+    padding: 0px 120px;
+  }
+}
+
+/* 768px - 1204px */
+@media screen and (min-width: 768px) and (max-width: 1203px) {
+  .content {
+    padding: 0px 60px;
+  }
+}
+
+/* Mobile - below 768px */
+@media screen and (max-width: 767px) {
+  .content {
+    padding: 0px 16px;
+  }
 }
 
 .footer {
@@ -644,46 +640,6 @@ onBeforeUnmount(() => {
   padding: 40px;
 }
 
-/* Breakpoint styles remain the same */
-/* Breakpoint 2 - min-width: 1024px and max-width: 1379px */
-@media screen and (min-width: 1024px) and (max-width: 1379px) {
-  .page-wrapper {
-    display: flex;
-    width: 1024px;
-    min-width: 1024px;
-    max-width: 1380px;
-    padding-bottom: 80px;
-    flex-direction: column;
-    align-items: center;
-  }
-}
-
-/* Breakpoint 3 - min-width: 768px and max-width: 1023px */
-@media screen and (min-width: 768px) and (max-width: 1023px) {
-  .page-wrapper {
-    display: flex;
-    width: 1023px;
-    min-width: 768px;
-    max-width: 1023px;
-    padding-bottom: 80px;
-    flex-direction: column;
-    align-items: center;
-  }
-}
-
-/* Breakpoint 4 (mobile) - max-width: 768px */
-@media screen and (max-width: 767px) {
-  .page-wrapper {
-    display: flex;
-    width: 767px;
-    min-width: 767px;
-    max-width: 767px;
-    padding-bottom: 80px;
-    flex-direction: column;
-    align-items: center;
-  }
-}
-
 .content-area {
   display: flex;
   width: 100%;
@@ -691,7 +647,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 40px;
-  padding: 40px 266px;
+  padding: 0px 266px;
 }
 
 .main-content {
@@ -781,41 +737,6 @@ onBeforeUnmount(() => {
 
 .editing-mode .main-content {
   @apply ml-0;
-}
-
-/* Mobile styles */
-@media (max-width: 1280px) {
-  .sidebar {
-    left: 266px;
-  }
-
-  .main-content {
-    margin-left: calc(266px + 195px);
-    margin-right: 266px;
-    width: auto;
-  }
-
-  .content-header {
-    left: calc(266px + 195px);
-    right: 266px;
-  }
-}
-
-@media (max-width: 768px) {
-  .sidebar {
-    left: 16px;
-  }
-
-  .main-content {
-    margin: 0;
-    padding: 16px;
-    width: auto;
-  }
-
-  .content-header {
-    position: static;
-    padding: 16px;
-  }
 }
 
 .page-footer {

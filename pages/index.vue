@@ -2,7 +2,7 @@
   <div class="landing-page-wrapper">
     <ClientOnly>
       <div>
-        <Header />
+      
         <div class="landing-content-area">
           <div class="main-content">
             <ClientOnly>

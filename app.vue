@@ -35,6 +35,7 @@
 
     <!-- Website content - shown only after password verification -->
     <div v-else>
+      <Header />
    
         <NuxtLoadingIndicator />
         <NuxtPage />
