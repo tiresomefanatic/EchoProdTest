@@ -44,10 +44,10 @@
                   </div>
                 </ClientOnly>
               </div>
-              <TableOfContents v-if="!isEditing" class="table-of-contents" />
+           
             </div>
                     
-
+            <TableOfContents v-if="!isEditing" class="table-of-contents" />
             
       
         </div>
@@ -485,20 +485,21 @@ onBeforeUnmount(() => {
 <style scoped>
 .page-wrapper {
   display: flex;
-  width: 100%;
-  padding-bottom: 80px;
-  flex-direction: column;
-  align-items: center;
-  background: #FFFFFF;
+width: 1512px;
+min-width: 1380px;
+min-height: 982px;
+padding-bottom: 80px;
+flex-direction: column;
+align-items: center;
 }
 
 .main-container {
   display: flex;
-  padding-top: 80px;
-  flex-direction: column;
-  align-items: center;
-  gap: 64px;
-  align-self: stretch;
+padding-top: 40px;
+flex-direction: column;
+align-items: center;
+gap: 64px;
+align-self: stretch;
 }
 
 .content {
@@ -511,13 +512,10 @@ align-self: stretch;
 }
 
 .sidebar {
-  width: 195px;
-  flex-shrink: 0;
-  position: sticky;
-  top: 100px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+width: 195px;
+flex-direction: column;
+align-items: center;
 }
 
 .text-container {
