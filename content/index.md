@@ -1,46 +1,46 @@
 <div style="width: 100%; margin: 0; padding: 0;">
-  <div style="margin: 0; padding: 24px;">
-    <img src="/images/hero-banner.png" alt="Foundation of Design Banner" style="width: 100%; display: block; margin: 0; border-radius: 20px;" />
+  <div style="margin: 0;">
+    <img src="/images/hero-banner.png" alt="Foundation of Design Banner" style="width: 100%; display: block; margin: 0;" />
   </div>
 
   <div style="width: 100%; max-width: 1512px; margin: 0 auto; padding: 0 clamp(16px, calc((100vw - 1512px) / 2 + 276px), 276px);">
-    <h2 style="color: #000; font-size: 24px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.48px; margin: 0; text-align: start; padding: 42.5px 0px 32px;">Get started</h2>
+    <h2 style="color: #000; font-size: 32px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.64px; margin: 0; text-align: start; padding: 42.5px 0px 32px;">Get started</h2>
 
    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin: 0;">
-      <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0 auto;">
+      <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0;">
         <div style="background: #000; height: clamp(100px, 40vw, 150px); display: flex; align-items: center; position: relative;">
           <img src="/images/intro-design.png" alt="Design concept" style="width: 100%; height: auto; object-fit:cover;" />
         </div>
         <div style="padding: clamp(12px, 3vw, 20px); position: relative; background: white;">
-          <h3 style="color: #1E1E1E; font-size: clamp(12px, 3.5vw, 14px); font-style: normal; font-weight: 700; line-height: 140%; margin: 0 0 6px;">Design</h3>
-          <p style="color: #757575; font-size: clamp(10px, 3vw, 12px); font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
+          <h3 style="color: #1E1E1E; font-size: 24px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0 0 6px;">Design</h3>
+          <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
         </div>
       </div>
 
-  <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0 auto;">
+  <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0;">
         <div style="background: #000; height: clamp(100px, 40vw, 150px); display: flex; align-items: center; position: relative;">
           <img src="/images/intro-develop.png" alt="Develop concept" style="width: 100%; height: auto; object-fit: cover;" />
         </div>
         <div style="padding: clamp(12px, 3vw, 20px); position: relative; background: white;">
-          <h3 style="color: #1E1E1E; font-size: clamp(12px, 3.5vw, 14px); font-style: normal; font-weight: 700; line-height: 140%; margin: 0 0 6px;">Develop</h3>
-          <p style="color: #757575; font-size: clamp(10px, 3vw, 12px); font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
+          <h3 style="color: #1E1E1E; font-size: 24px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0 0 6px;">Develop</h3>
+          <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
         </div>
       </div>
 
-  <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0 auto;">
+  <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0;">
         <div style="background: #000; height: clamp(100px, 40vw, 150px); display: flex; align-items: center; position: relative;">
           <img src="/images/intro-contribute.png" alt="Contribute concept" style="width: 100%; height: auto; object-fit: cover;" />
         </div>
         <div style="padding: clamp(12px, 3vw, 20px); position: relative; background: white;">
-          <h3 style="color: #1E1E1E; font-size: clamp(12px, 3.5vw, 14px); font-style: normal; font-weight: 700; line-height: 140%; margin: 0 0 6px;">Contribute</h3>
-          <p style="color: #757575; font-size: clamp(10px, 3vw, 12px); font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
+          <h3 style="color: #1E1E1E; font-size: 24px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0 0 6px;">Contribute</h3>
+          <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
         </div>
       </div>
     </div>
 
-<div style="margin: 64px 0 0; display: flex; flex-direction: row; justify-content: space-between; gap: clamp(16px, 5vw, 32px);">
-    <h2 style="font-size: 1.5rem; font-weight: 600; margin: 0 0 16px; flex: 1;">What is the Echosystem?</h2>
-    <p style="margin: 0; line-height: 1.6; color: #666; flex: 1;">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.</p>
+<div style="margin: 64px 0 0; display: flex; flex-direction: column; gap: clamp(16px, 5vw, 16px);">
+    <h2 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 32px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.64px; margin: 0 0 0;">What is the Echosystem?</h2>
+    <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.</p>
 </div>
 
    <div style="background: #000; border-radius: 8px; padding: 40px; margin: 40px 0;">
@@ -50,84 +50,130 @@
  <div style="margin: 64px 0 0; display: grid; grid-template-columns: 1fr auto; gap: 24px;">
 
  <div>
-    <h2 style="color: #000; font-size: 24px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.48px; margin: 0;">Goals</h2>
+    <h2 style="color: #000; font-size: 24px; font-family: 'PP Neue Montreal'; font-style: normal; font-weight: 530; line-height: normal; letter-spacing: -0.48px; margin: 0 0 16px;">Goals</h2>
+    <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0 0 24px;">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.</p>
+
+  <div style="margin-bottom: 16px;">
+        <h3 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0;">Goal #1</h3>
+        <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut. Vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam nibh laoreet.</p>
   </div>
+
+  <div style="margin-bottom: 16px;">
+        <h3 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0;">Goal #2</h3>
+        <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut. Vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam nibh laoreet.</p>
+  </div>
+
+  <div style="margin-bottom: 16px;">
+        <h3 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0;">Goal #3</h3>
+        <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut. Vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam nibh laoreet.</p>
+  </div>
+
   <div>
-    <p style="margin: 0 0 40px; line-height: 1.6; color: #757575; font-size: 16px; font-style: normal; font-weight: 375; line-height: 140%;">Echo aims to:</p>
-
-   <div style="margin: 32px 0;">
-      <h3 style="font-size: 16px; font-weight: 600; line-height: 140%; margin: 0 0 8px; color: #000;">Cohesive Experience</h3>
-      <p style="margin: 0; line-height: 1.6; color: #757575; font-size: 16px; font-style: normal; font-weight: 375; line-height: 140%;">Create a cohesive experience across all digital, brand and product touchpoints</p>
-    </div>
-
-  <div style="margin: 32px 0;">
-      <h3 style="font-size: 16px; font-weight: 600; line-height: 140%; margin: 0 0 8px; color: #000;">Autonomy</h3>
-      <p style="margin: 0; line-height: 1.6; color: #757575; font-size: 16px; font-style: normal; font-weight: 375; line-height: 140%;">Give autonomy to anyone creating or working on our digital products</p>
-    </div>
-
-  <div style="margin: 32px 0;">
-      <h3 style="font-size: 16px; font-weight: 600; line-height: 140%; margin: 0 0 8px; color: #000;">Feedback and contribution</h3>
-      <p style="margin: 0; line-height: 1.6; color: #757575; font-size: 16px; font-style: normal; font-weight: 375; line-height: 140%;">Collect feedback and offer design reviews to help improve the digital product creation process</p>
-    </div>
+        <h3 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0;">Goal #4</h3>
+        <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut. Vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam nibh laoreet.</p>
+   </div>
   </div>
 
 </div>
-<hr style="background: #EBEBEB; border: 0; height: 1px;">
-<div style="margin: 64px 0 0;">
-  <h2 style="font-size: 1.5rem; font-weight: 600; margin: 0 0 24px;">How did ECHO come <br/> about?</h2>
-  
-  <div style="width: 100%; max-width: 959px; height: 480px; background: #5377D3; border-radius: max(10px, 5%); margin: clamp(32px, 5vw, 64px) 0; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: min(24px, 3vw);">
+<div style="margin: 80px 0 0;">
+    <h2 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 32px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.64px; margin: 0 0 16px;">How did ECHO come about?</h2>
+    
+  <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">The design system utilizes a curated color palette to ensure a clear and consistent user experience. This palette consists of a limited number of core colors, each offered in a range of hues for increased versatility. This approach allows for the creation of a clear visual hierarchy within the app, where specific colors can be assigned to highlight critical information or distinguish between different features. By offering a range of hues within each core color, the system provides flexibility for creating subtle variations within the overall theme while maintaining a cohesive look and feel.</p>
+</div>
+
+  <div style="width: 100%; max-width: 959px; height: 480px; background: #5377D3; margin: clamp(32px, 5vw, 64px) 0; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: min(24px, 3vw);">
     <h2 style="color: white; font-size: 32px; line-height: 1.4; margin: 0; font-weight: 700; text-align: center;">
       Echoing from the past.<br/>
       Echoing into the future.
     </h2>
   </div>
 
-  <div style="margin: 32px 0 64px; display: flex; flex-direction: row; justify-content: space-between; gap: clamp(16px, 5vw, 32px);">
-    <h3 style="color: #000; font-size: 24px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.48px; margin: 0 0 16px; flex: 1;">Echo Experience</h3>
-    <p style="color: #757575; font-size: 16px; font-style: normal; font-weight: 375; line-height: 140%; margin: 0; flex: 1;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam non leo rest fermentum nunc mi. Lacteeti id proin diam adipisicing laboris erat sed. Vestibulum risus sit elementum tortor.</p>
-  </div>
   <div>
+    <h2 style="color: #000; font-size: 24px; font-family: 'PP Neue Montreal'; font-style: normal; font-weight: 530; line-height: normal; letter-spacing: -0.48px; margin: 0 0 16px;">Goals</h2>
+    <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0 0 24px;">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.</p>
 
+  <div style="margin-bottom: 16px;">
+        <h3 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0;">Goal #1</h3>
+        <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut. Vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam nibh laoreet.</p>
+  </div>
 
+  <div style="margin-bottom: 16px;">
+        <h3 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0;">Goal #2</h3>
+        <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut. Vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam nibh laoreet.</p>
+  </div>
+
+  <div style="margin-bottom: 16px;">
+        <h3 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0;">Goal #3</h3>
+        <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut. Vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam nibh laoreet.</p>
+  </div>
+
+  <div>
+        <h3 style="color: #000; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0;">Goal #4</h3>
+        <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut. Vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam nibh laoreet.</p>
    </div>
+ </div>
+
+
+<div style="margin-top: 64px;">
+  <h2 style="color: #000; font-family: inter; font-size: 20px; font-style: normal; font-weight: 400; line-height: 120%; margin: 0 0 16px;">Help and support</h2>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" width="696" height="2" viewBox="0 0 696 2" fill="none" style="margin-bottom: 32px;">
+    <path d="M0 0.806641H696" stroke="#D9D9D9"/>
+  </svg>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 64px;">
+    <div>
+      <h3 style="color: #000; font-family: inter; font-size: 16px; font-style: normal; font-weight: 600; line-height: 140%; margin: 0 0 16px;">Did you find what you needed?</h3>
+      
+  <div style="display: flex; gap: 12px;">
+        <button style="display: flex; width: 88px; padding: 8px 16px; border: 1px solid #D9D9D9; border-radius: 8px; background: white; cursor: pointer; justify-content: center; align-items: center; gap: 4px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="25" viewBox="0 0 24 25" fill="none">
+            <mask id="mask0_40000795_16378" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
+              <rect y="0.806641" width="24" height="24" fill="#D9D9D9"/>
+            </mask>
+            <g mask="url(#mask0_40000795_16378)">
+              <path d="M18 21.8066H7V8.80664L14 1.80664L15.25 3.05664C15.3667 3.17331 15.4625 3.33164 15.5375 3.53164C15.6125 3.73164 15.65 3.92331 15.65 4.10664V4.45664L14.55 8.80664H21C21.5333 8.80664 22 9.00664 22.4 9.40664C22.8 9.80664 23 10.2733 23 10.8066V12.8066C23 12.9233 22.9833 13.0483 22.95 13.1816C22.9167 13.315 22.8833 13.44 22.85 13.5566L19.85 20.6066C19.7 20.94 19.45 21.2233 19.1 21.4566C18.75 21.69 18.3833 21.8066 18 21.8066ZM9 19.8066H18L21 12.8066V10.8066H12L13.35 5.30664L9 9.65664V19.8066ZM7 8.80664V10.8066H4V19.8066H7V21.8066H2V8.80664H7Z" fill="#1C1B1F"/>
+            </g>
+          </svg>
+          <span style="color: #000; font-family: inter; font-size: 16px; font-weight: 600; line-height: 140%;">Yes</span>
+        </button>
+        <button style="display: flex; width: 88px; padding: 8px 16px; border: 1px solid #D9D9D9; border-radius: 8px; background: white; cursor: pointer; justify-content: center; align-items: center; gap: 4px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="25" viewBox="0 0 24 25" fill="none">
+            <mask id="mask0_40000795_16383" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
+              <rect y="0.806641" width="24" height="24" fill="#D9D9D9"/>
+            </mask>
+            <g mask="url(#mask0_40000795_16383)">
+              <path d="M6 3.80664H17V16.8066L10 23.8066L8.75 22.5566C8.63333 22.44 8.5375 22.2816 8.4625 22.0816C8.3875 21.8816 8.35 21.69 8.35 21.5066V21.1566L9.45 16.8066H3C2.46667 16.8066 2 16.6066 1.6 16.2066C1.2 15.8066 1 15.34 1 14.8066V12.8066C1 12.69 1.01667 12.565 1.05 12.4316C1.08333 12.2983 1.11667 12.1733 1.15 12.0566L4.15 5.00664C4.3 4.67331 4.55 4.38997 4.9 4.15664C5.25 3.92331 5.61667 3.80664 6 3.80664ZM15 5.80664H6L3 12.8066V14.8066H12L10.65 20.3066L15 15.9566V5.80664ZM17 16.8066V14.8066H20V5.80664H17V3.80664H22V16.8066H17Z" fill="#1C1B1F"/>
+            </g>
+          </svg>
+          <span style="color: #000; font-family: inter; font-size: 16px; font-weight: 600; line-height: 140%;">No</span>
+        </button>
+      </div>
+
+  
+  </div>
+
+  <div>
+      <h3 style="color: #000; font-family: inter; font-size: 16px; font-style: normal; font-weight: 600; line-height: 140%; margin: 0 0 16px;">Help us make these docs great!</h3>
+      <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 14px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0 0 16px;">All ECHO docs are open source. See something thats wrong or unclear? Submit a pull request</p>
+      
+  <button style="display: flex; padding: 8px 16px; justify-content: center; align-items: center; gap: 4px; border-radius: 8px; border: 1px solid #D4D4D4; background: white; cursor: pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="25" viewBox="0 0 24 25" fill="none">
+          <mask id="mask0_40000795_16392" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
+            <rect width="24" height="24" transform="matrix(-1 0 0 1 24 0.806641)" fill="#D9D9D9"/>
+          </mask>
+          <g mask="url(#mask0_40000795_16392)">
+            <path d="M17 22.8066C17.8333 22.8066 18.5417 22.515 19.125 21.9316C19.7083 21.3483 20 20.64 20 19.8066C20 19.1566 19.8125 18.5733 19.4375 18.0566C19.0625 17.54 18.5833 17.1816 18 16.9816V8.63164C18.5833 8.43164 19.0625 8.07331 19.4375 7.55664C19.8125 7.03997 20 6.45664 20 5.80664C20 4.97331 19.7083 4.26497 19.125 3.68164C18.5417 3.09831 17.8333 2.80664 17 2.80664C16.1667 2.80664 15.4583 3.09831 14.875 3.68164C14.2917 4.26497 14 4.97331 14 5.80664C14 6.45664 14.1875 7.03997 14.5625 7.55664C14.9375 8.07331 15.4167 8.43164 16 8.63164V8.80664C16 9.63997 15.7083 10.3483 15.125 10.9316C14.5417 11.515 13.8333 11.8066 13 11.8066H11C9.61667 11.8066 8.4375 12.2941 7.4625 13.2691C6.4875 14.2441 6 15.4233 6 16.8066V16.9816C5.41667 17.1816 4.9375 17.54 4.5625 18.0566C4.1875 18.5733 4 19.1566 4 19.8066C4 20.64 4.29167 21.3483 4.875 21.9316C5.45833 22.515 6.16667 22.8066 7 22.8066C7.83333 22.8066 8.54167 22.515 9.125 21.9316C9.70833 21.3483 10 20.64 10 19.8066C10 19.1566 9.8125 18.5733 9.4375 18.0566C9.0625 17.54 8.58333 17.1816 8 16.9816V16.8066C8 15.9733 8.29167 15.265 8.875 14.6816C9.45833 14.0983 10.1667 13.8066 11 13.8066H13C13.5667 13.8066 14.1042 13.7191 14.6125 13.5441C15.1208 13.3691 15.5833 13.1233 16 12.8066V16.9816C15.4167 17.1816 14.9375 17.54 14.5625 18.0566C14.1875 18.5733 14 19.1566 14 19.8066C14 20.64 14.2917 21.3483 14.875 21.9316C15.4583 22.515 16.1667 22.8066 17 22.8066Z" fill="#1C1B1F"/>
+          </g>
+        </svg>
+        <span style="color: #000; font-family: inter; font-size: 16px; font-weight: 600; line-height: 140%;">Make a contribution</span>
+      </button>
+      <a href="#" style="color: #518EEA; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.32px; text-decoration: none; display: block; text-decoration: underline; margin-top: 4px;">Learn how to contribute</a>
     </div>
   </div>
-  
-</div>
-</div>
-
-<div style="display: flex; justify-content: center; padding: 20px; background-color: #f5f5f5; width: 100%; max-width: 1512px; margin: 0 auto; padding: 0 clamp(16px, calc((100vw - 1512px) / 2 + 276px), 276px);">
-  <div style="flex: 1; margin: 0 10px; padding: 61.5px 0;">
-    <h3 style="color: #000; font-size: 16px; font-style: normal; font-weight: 600; line-height: 140%; margin-bottom: 0.5rem;">What's new?</h3>
-    <p style="margin-bottom: 1rem; max-width: 350px; color: #757575; font-size: 14px; font-style: normal; font-weight: 400; line-height: 140%;">Lorem ipsum dolor sit amet consectetur. Lorem ipsum dolor sit amet consectetur.</p>
-    <a href="#" style="display: flex; width: 150px; justify-content: center; align-items: center; padding: 10px 15px; background-color: #e0e0e0; color: #000; font-size: 14px; font-style: normal; font-weight: 600; line-height: 140%; text-decoration: none; border-radius: 100px; transition: background-color 0.3s;">
-      View updates 
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 17" fill="none" style="vertical-align: middle; margin-left: 5px;">
-        <mask id="mask0_40000133_10529" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="17">
-          <rect y="0.5" width="16" height="16" fill="#D9D9D9"/>
-        </mask>
-        <g mask="url(#mask0_40000133_10529)">
-          <path d="M4.30702 12.632L3.24219 11.5672L9.55052 5.25885H3.94869V3.74219H12.132V11.9255H10.6154V6.32369L4.30702 12.632Z" fill="#1C1B1F"/>
-        </g>
-      </svg>
-    </a>
-
-  </div>
-  <div style="flex: 1; margin: 0 10px; padding: 61.5px 0;">
-    <h3 style="color: #000; font-size: 16px; font-style: normal; font-weight: 600; line-height: 140%; margin-bottom: 0.5rem;">Get in touch</h3>
-    <p style="margin-bottom: 1rem; max-width: 350px; color: #757575; font-size: 14px; font-style: normal; font-weight: 400; line-height: 140%;">Lorem ipsum dolor sit amet consectetur. Lorem ipsum dolor sit amet consectetur.</p>
-    <a href="#" style="display: flex; width: 150px; justify-content: center; align-items: center; padding: 10px 15px; background-color: #e0e0e0; color: #000; font-size: 14px; font-style: normal; font-weight: 600; line-height: 140%; text-decoration: none; border-radius: 100px; transition: background-color 0.3s;">
-      Contact us 
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 17" fill="none" style="vertical-align: middle; margin-left: 5px;">
-        <mask id="mask0_40000133_10529" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="17">
-          <rect y="0.5" width="16" height="16" fill="#D9D9D9"/>
-        </mask>
-        <g mask="url(#mask0_40000133_10529)">
-          <path d="M4.30702 12.632L3.24219 11.5672L9.55052 5.25885H3.94869V3.74219H12.132V11.9255H10.6154V6.32369L4.30702 12.632Z" fill="#1C1B1F"/>
-        </g>
-      </svg>
-    </a>
-  
-  </div>
+   <h3 style="color: #000; font-family: inter; font-size: 16px; font-style: normal; font-weight: 600; line-height: 140%; margin: 80px 0 16px;">Still need help?</h3>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <a href="#" style="color: #518EEA; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.32px; text-decoration: none;">Provide ECHO feedback</a>
+      <a href="#" style="color: #518EEA; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.32px; text-decoration: none;">Contact support</a>
+    </div>
 </div>
