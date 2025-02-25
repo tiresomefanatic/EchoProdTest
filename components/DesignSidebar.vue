@@ -418,7 +418,7 @@ onMounted(async () => {
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .mobile-menu-btn {
     display: flex;
     position: fixed;

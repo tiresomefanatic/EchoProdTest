@@ -6,55 +6,47 @@
       
       <div class="main-container">
         <div class="content">
-         
-            <DesignSidebar class="sidebar" />
-            <div class="text-container">
-              <div class="body-container">
-                <ClientOnly>
-                  <div v-if="isEditing" class="editor-container">
-                    <TiptapEditor
-                      :content="editorContent"
-                      :filePath="contentPath"
-                      @update:content="handleContentChange"
-                      @save="handleSave"
-                      @error="handleEditorError"
-                    />
-                    <CollaborationSidebar
-                      v-if="isLoggedIn"
-                      :filePath="contentPath"
-                      @load-save="handleLoadSave"
-                    />
+          <DesignSidebar class="sidebar" />
+          <div class="text-container">
+            <div class="body-container">
+              <ClientOnly>
+                <div v-if="isEditing" class="editor-container">
+                  <TiptapEditor
+                    :content="editorContent"
+                    :filePath="contentPath"
+                    @update:content="handleContentChange"
+                    @save="handleSave"
+                    @error="handleEditorError"
+                  />
+                  <CollaborationSidebar
+                    v-if="isLoggedIn"
+                    :filePath="contentPath"
+                    @load-save="handleLoadSave"
+                  />
+                </div>
+                <div v-else class="prose-content">
+                  <div :key="githubContent">
+                    <template v-if="!isLoggedIn">
+                      <ContentDoc :path="path" :head="false">
+                        <template #empty>
+                          <p>No content found.</p>
+                        </template>
+                        <template #not-found>
+                          <p>Content not found. Path: {{ path }}</p>
+                        </template>
+                      </ContentDoc>
+                    </template>
+                    <template v-else>
+                      <div v-html="githubContent" class="markdown-content"></div>
+                    </template>
                   </div>
-                  <div v-else class="prose-content">
-                    <div :key="githubContent">
-                      <template v-if="!isLoggedIn">
-                        <ContentDoc :path="path" :head="false">
-                          <template #empty>
-                            <p>No content found.</p>
-                          </template>
-                          <template #not-found>
-                            <p>Content not found. Path: {{ path }}</p>
-                          </template>
-                        </ContentDoc>
-                      </template>
-                      <template v-else>
-                        <div v-html="githubContent" class="markdown-content"></div>
-                      </template>
-                    </div>
-                  </div>
-                </ClientOnly>
-              </div>
-           
+                </div>
+              </ClientOnly>
             </div>
-                    
-            <TableOfContents v-if="!isEditing" class="table-of-contents" />
-            
-      
+          </div>
+          <TableOfContents v-if="!isEditing" class="table-of-contents" />
         </div>
-
-        <footer class="footer">
-          <h1>©2024 ECHO</h1>
-        </footer>
+        <Footer class="full-width-footer" />
       </div>
     </ClientOnly>
   </div>
@@ -78,7 +70,7 @@ import Header from "~/components/Header.vue";
 import { useRuntimeConfig, useNuxtApp } from "#app";
 import { marked } from "marked";
 import TableOfContents from "~/components/TableOfContents.vue";
-
+import Footer from "~/components/Footer.vue";
 // Initialize GitHub functionality and services
 const {
   getRawContent,
@@ -485,9 +477,8 @@ onBeforeUnmount(() => {
 <style scoped>
 .page-wrapper {
   display: flex;
-width: 1512px;
-min-width: 1380px;
-min-height: 982px;
+width: 100%;
+min-width: 982px;
 padding-bottom: 80px;
 flex-direction: column;
 align-items: center;
@@ -495,49 +486,53 @@ align-items: center;
 
 .main-container {
   display: flex;
-padding-top: 40px;
-flex-direction: column;
-align-items: center;
-gap: 64px;
-align-self: stretch;
+  width: 100%;
+  max-width: 1512px;
+  padding: 60px 20px;
+  flex-direction: column;
+  align-items: center;
+  gap: 64px;
 }
 
 .content {
   display: flex;
-padding: 0px 266px;
+  width: 100%;
 justify-content: center;
 align-items: flex-start;
 gap: 40px;
-align-self: stretch;
+}
+
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  .sidebar {
+    width: 0px;
+  }
+  .content{
+    padding: 0px 165.5px;
+  }
 }
 
 .sidebar {
   display: flex;
-width: 195px;
 flex-direction: column;
 align-items: center;
 }
 
 .text-container {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  justify-content: space-evenly;
   align-items: flex-start;
- 
-  align-self: stretch;
+  flex: 1;
 }
 
 .body-container {
-  display: flex;
-  width: 740px;
-  background-color: brown;
+  max-width: 740px;
   flex-direction: column;
   align-items: flex-start;
-
+  flex: 1;
+  min-width:0px;
 }
 
 .table-of-contents {
-  width: 195px;
   flex-shrink: 0;
   position: sticky;
   top: 100px;
@@ -550,46 +545,67 @@ align-items: center;
 /* Main styles - 1380px and above */
 @media screen and (min-width: 1380px) {
   .content {
-    padding: 0px 120px;
+    padding: 0px 266px;
   }
 }
 
-/* 1204px - 1380px */
-@media screen and (min-width: 1204px) and (max-width: 1379px) {
+/* 1024px - 1380px */
+@media screen and (min-width: 1024px) and (max-width: 1379px) {
   .content {
-    padding: 0px 120px;
+    padding: 0px 199.5px;
   }
 }
 
-/* 768px - 1204px */
-@media screen and (min-width: 768px) and (max-width: 1203px) {
-  .content {
-    padding: 0px 60px;
-  }
-}
+
 
 /* Mobile - below 768px */
 @media screen and (max-width: 767px) {
-  .content {
-    padding: 0px 16px;
+  .page-wrapper {
+    min-width: 100%;
+    padding-bottom: 40px;
   }
-}
 
-.footer {
-  display: flex;
-  width: 100%;
-  max-width: 1512px;
-  padding: 32px 84px;
-  background: #1D1B1B;
-  color: #FFFFFF;
-  justify-content: center;
-  align-items: center;
-}
+  .main-container {
+    padding: 20px 10px;
+    max-width: 100%;
+  }
 
-.footer h1 {
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 142%;
+  .content {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 0;
+    width: 100%;
+  }
+
+  .text-container {
+    width: 100%;
+    padding: 0 15px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .body-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .prose-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 15px;
+  }
+
+  .sidebar {
+    width: 100%;
+    position: static;
+    margin-bottom: 20px;
+  }
+
+  .table-of-contents {
+    display: none;
+  }
 }
 
 /* Typography styles */
@@ -645,7 +661,6 @@ align-items: center;
   justify-content: space-between;
   align-items: flex-start;
   gap: 40px;
-  padding: 0px 266px;
 }
 
 .main-content {
@@ -737,11 +752,4 @@ align-items: center;
   @apply ml-0;
 }
 
-.page-footer {
-  position: absolute;
-  bottom: 0;
-  left: 463.3px; /* Same as main content margin-left */
-  right: calc(268.5px + 84px); /* TOC width + right margin */
-  z-index: 10;
-}
 </style>
