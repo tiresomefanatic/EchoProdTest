@@ -3,11 +3,53 @@
   <div class="page-wrapper">
     <ClientOnly>
       <Header class="menu-bar" />
+      <div
+              v-if="isLoggedIn"
+              class="content-header fixed top-[76px] right-6 z-10 flex items-center gap-3"
+            >
+              <ClientOnly>
+                <div v-if="branches.length > 0" class="branch-select-wrapper">
+                  <select
+                    v-model="currentBranch"
+                    @change="handleBranchChange"
+                    class="branch-select px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option
+                      v-for="branch in branches"
+                      :key="branch"
+                      :value="branch"
+                    >
+                      {{ branch }}
+                    </option>
+                  </select>
+                </div>
+                <button
+                  v-if="!isEditing"
+                  @click="handleEditClick"
+                  class="edit-button px-4 py-2 bg-[#0969DA] text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  v-else
+                  @click="exitEditor"
+                  class="edit-button px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                >
+                  Exit
+                </button>
+                <ContentCreator
+                  v-if="isLoggedIn"
+                  @content-created="handleContentCreated"
+                />
+              </ClientOnly>
+            </div>
       
       <div class="main-container">
+       
+        
         <div class="content">
          
-            <DesignSidebar class="sidebar" />
+            <DesignSidebar   v-if="!isEditing" class="sidebar" />
             <div class="text-container">
               <div class="body-container">
                 <ClientOnly>
@@ -18,6 +60,7 @@
                       @update:content="handleContentChange"
                       @save="handleSave"
                       @error="handleEditorError"
+                      @exit="exitEditor"
                     />
                     <CollaborationSidebar
                       v-if="isLoggedIn"
@@ -78,6 +121,9 @@ import Header from "~/components/Header.vue";
 import { useRuntimeConfig, useNuxtApp } from "#app";
 import { marked } from "marked";
 import TableOfContents from "~/components/TableOfContents.vue";
+import { useNavigationStore } from "~/store/navigation";
+import { useEditorStore } from "~/store/editor";
+import { useStore } from "~/store";
 
 // Initialize GitHub functionality and services
 const {
@@ -107,6 +153,12 @@ const route = useRoute();
 const slug = route.params.slug || [];
 const path = Array.isArray(slug) ? slug.join("/") : slug;
 
+// Add editor store import and initialization
+const editorStore = useEditorStore();
+
+// Add store initialization
+const store = useStore();
+
 // Redirect to index page if we're at the root
 onMounted(() => {
   if (!path) {
@@ -117,6 +169,14 @@ onMounted(() => {
 
 // Compute whether to show sidebar based on path
 const showSidebar = computed(() => true);
+
+// Add hasChanges computed property
+const hasChanges = computed(() => {
+  if (!contentPath.value) return false;
+  const currentContent = editorContent.value;
+  const originalContent = githubContent.value;
+  return currentContent !== originalContent;
+});
 
 // Compute the content file path
 const contentPath = computed(() => {
@@ -131,6 +191,90 @@ const contentPath = computed(() => {
   return `content/${path}.md`;
 });
 
+// Add content cache interface
+interface ContentCache {
+  content: string;
+  timestamp: number;
+  branch: string;
+}
+
+// Add content cache management
+const getContentFromCache = (path: string, branch: string): ContentCache | null => {
+  try {
+    const cached = localStorage.getItem(`content-cache-${branch}-${path}`);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {
+    console.warn('Failed to read from content cache:', e);
+  }
+  return null;
+};
+
+const setContentToCache = (path: string, branch: string, content: string) => {
+  try {
+    const cacheData: ContentCache = {
+      content,
+      timestamp: Date.now(),
+      branch
+    };
+    localStorage.setItem(`content-cache-${branch}-${path}`, JSON.stringify(cacheData));
+  } catch (e) {
+    console.warn('Failed to write to content cache:', e);
+  }
+};
+
+const clearContentCache = (path: string, branch: string) => {
+  try {
+    localStorage.removeItem(`content-cache-${branch}-${path}`);
+  } catch (e) {
+    console.warn('Failed to clear content cache:', e);
+  }
+};
+
+// Add draft cache interface
+interface DraftCache {
+  content: string;
+  timestamp: number;
+  branch: string;
+  isDraft: boolean;
+}
+
+// Update cache management for drafts
+const getDraftFromCache = (path: string, branch: string): DraftCache | null => {
+  try {
+    const cached = localStorage.getItem(`draft-cache-${branch}-${path}`);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {
+    console.warn('Failed to read from draft cache:', e);
+  }
+  return null;
+};
+
+const setDraftToCache = (path: string, branch: string, content: string) => {
+  try {
+    const cacheData: DraftCache = {
+      content,
+      timestamp: Date.now(),
+      branch,
+      isDraft: true
+    };
+    localStorage.setItem(`draft-cache-${branch}-${path}`, JSON.stringify(cacheData));
+  } catch (e) {
+    console.warn('Failed to write to draft cache:', e);
+  }
+};
+
+const clearDraftCache = (path: string, branch: string) => {
+  try {
+    localStorage.removeItem(`draft-cache-${branch}-${path}`);
+  } catch (e) {
+    console.warn('Failed to clear draft cache:', e);
+  }
+};
+
 /**
  * Load GitHub content
  */
@@ -139,38 +283,35 @@ const loadGithubContent = async () => {
 
   try {
     let contentPathToLoad = contentPath.value;
-
-    // First, try to load the content as a folder (with index.md)
-    try {
-      const folderContent = await getRawContent(
-        "tiresomefanatic",
-        "EchoProdTest",
-        contentPathToLoad,
-        currentBranch.value
-      );
-      githubContent.value = marked(folderContent);
-      editorContent.value = folderContent;
-      contentKey.value++; // Force re-render
-      return;
-    } catch (folderError) {
-      console.log(
-        "No index.md found in folder, treating as a file:",
-        folderError
-      );
+    
+    // Only check for drafts if we're in editing mode
+    if (isEditing.value) {
+      const draftContent = editorStore.getDraft(contentPathToLoad);
+      if (draftContent) {
+        editorContent.value = draftContent.content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(draftContent.content);
+        store.updateRawText(draftContent.content);
+        contentKey.value++;
+        return;
+      }
     }
-
-    // If the folder approach fails, treat it as a file
-    const fileContent = await getRawContent(
+    
+    // If no draft content or not in editing mode, load from GitHub
+    const content = await getRawContent(
       "tiresomefanatic",
       "EchoProdTest",
       contentPathToLoad,
       currentBranch.value
     );
-
-    // Convert markdown to HTML
-    githubContent.value = marked(fileContent);
-    editorContent.value = fileContent;
-    contentKey.value++; // Force re-render
+    
+    // Update content
+    editorContent.value = content;
+    // @ts-ignore - Ignoring type error from marked function
+    githubContent.value = marked(content);
+    store.updateRawText(content);
+    contentKey.value++;
+    
   } catch (error) {
     console.error("Error loading GitHub content:", error);
     showToast({
@@ -216,6 +357,7 @@ const handleEditClick = async () => {
 
 const handleContentChange = (newContent: string) => {
   editorContent.value = newContent;
+  store.updateRawText(newContent);
 };
 
 /**
@@ -232,40 +374,26 @@ const handleSave = async (content: string) => {
   }
 
   try {
-    const result = await saveFileContent(
-      "tiresomefanatic",
-      "EchoProdTest",
-      contentPath.value,
-      content,
-      `Update ${contentPath.value}`,
-      currentBranch.value
-    );
+    // Save as draft
+    editorStore.saveDraft(contentPath.value, content);
+    
+    // Update local content and store
+    editorContent.value = content;
+    store.updateRawText(content);
+    // @ts-ignore - Ignoring type error from marked function
+    githubContent.value = marked(content);
+    
+    showToast({
+      title: "Success",
+      message: "Content saved as draft",
+      type: "success",
+    });
 
-    if (result) {
-      // Update local content immediately
-      githubContent.value = marked(content);
-      editorContent.value = content;
-      contentKey.value++; // Force re-render
-
-      // Refresh navigation to reflect changes
-      await refreshNavigation();
-
-      showToast({
-        title: "Success",
-        message: `Content saved successfully to branch: ${currentBranch.value}`,
-        type: "success",
-      });
-
-      isEditing.value = false;
-      await loadGithubContent(); // Refresh content from GitHub
-    } else {
-      throw new Error(`Failed to save to branch: ${currentBranch.value}`);
-    }
   } catch (error) {
-    console.error(`Error saving content:`, error);
+    console.error("Error saving content:", error);
     showToast({
       title: "Error",
-      message: `Failed to save to branch: ${currentBranch.value}`,
+      message: "Failed to save content",
       type: "error",
     });
   }
@@ -280,15 +408,97 @@ const handleEditorError = (error: Error) => {
 };
 
 const exitEditor = async () => {
-  await loadGithubContent();
-  isEditing.value = false;
+  if (isEditing.value) {
+    if (editorContent.value !== githubContent.value) {
+      const confirmExit = confirm('You have unsaved changes, save to drafts and you can access them later.\n\nYes - Save to drafts and exit\nNo - Exit without saving');
+      if (confirmExit) {
+        // Save to drafts before exiting
+        if (contentPath.value) {
+          editorStore.saveDraft(contentPath.value, editorContent.value);
+        }
+      } else {
+        // Clear draft if user chooses not to save
+        if (contentPath.value) {
+          editorStore.clearDraft(contentPath.value);
+          await loadGithubContent(); // Load the committed content
+        }
+      }
+    }
+    isEditing.value = false;
+  }
 };
 
-const handleLoadSave = (content: string) => {
-  editorContent.value = content;
-  githubContent.value = marked(content);
-  contentKey.value++; // Force re-render
-  isEditing.value = true; // Switch to edit mode to show the loaded content
+// Add watch for draft changes
+watch(
+  () => editorStore.getDraft(contentPath.value),
+  async (newDraft) => {
+    if (!newDraft && isEditing.value) {
+      // If draft was cleared and we're in editing mode, load the committed content
+      try {
+        const content = await getRawContent(
+          "tiresomefanatic",
+          "EchoProdTest",
+          contentPath.value,
+          currentBranch.value
+        );
+        editorContent.value = content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(content);
+        store.updateRawText(content);
+        contentKey.value++;
+      } catch (error) {
+        console.error("Error loading committed content:", error);
+        showToast({
+          title: "Error",
+          message: "Failed to load committed content",
+          type: "error",
+        });
+      }
+    }
+  }
+);
+
+const handleLoadSave = async (content: string) => {
+  if (!content) {
+    showToast({
+      title: "Error",
+      message: "No content to load",
+      type: "error",
+    });
+    return;
+  }
+
+  try {
+    // Update editor content
+    editorContent.value = content;
+    // @ts-ignore - Ignoring type error from marked function
+    githubContent.value = marked(content);
+    
+    // Update store's raw text to ensure TiptapEditor gets the content
+    store.updateRawText(content);
+    
+    // Save as draft
+    editorStore.saveDraft(contentPath.value, content);
+    
+    // Force re-render
+    contentKey.value++;
+    
+    // Ensure we're in editing mode
+    isEditing.value = true;
+
+    showToast({
+      title: "Success",
+      message: "Successfully loaded draft content",
+      type: "success",
+    });
+  } catch (error) {
+    console.error("Error loading content:", error);
+    showToast({
+      title: "Error",
+      message: "Failed to load content",
+      type: "error",
+    });
+  }
 };
 
 const handleBranchChange = async (event: Event) => {
@@ -296,6 +506,8 @@ const handleBranchChange = async (event: Event) => {
   const newBranch = select.value;
 
   if (newBranch !== currentBranch.value) {
+    // Clear draft when switching branches
+    editorStore.clearDraft(contentPath.value);
     await switchBranch(newBranch);
     await loadGithubContent();
     await refreshNavigation();
@@ -312,6 +524,7 @@ watch(currentBranch, async (newBranch) => {
 
 // Handle new content creation
 const handleContentCreated = async () => {
+  clearContentCache(contentPath.value, currentBranch.value);
   await refreshNavigation();
   showToast({
     title: "Success",
@@ -319,15 +532,6 @@ const handleContentCreated = async () => {
     type: "success",
   });
 };
-
-// Watch for editing mode changes
-watch(isEditing, (newValue) => {
-  console.log('isEditing changed to:', newValue);
-  if (newValue && !isEditing.value) {
-    isEditing.value = newValue;
-    loadGithubContent();
-  }
-});
 
 // Watch for route changes
 watch(
@@ -363,7 +567,7 @@ watch(branches, async (newBranches) => {
 // Setup content refresh and event handlers
 onMounted(async () => {
   if (isLoggedIn.value) {
-    await fetchBranches(); // Ensure branches are loaded initially
+    await fetchBranches();
     if (!isEditing.value) {
       await loadGithubContent();
       await refreshNavigation();
@@ -504,18 +708,18 @@ align-self: stretch;
 
 .content {
   display: flex;
-padding: 0px 266px;
-justify-content: center;
-align-items: flex-start;
-gap: 40px;
-align-self: stretch;
+  padding: 0px 266px;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+  align-self: stretch;
 }
 
 .sidebar {
   display: flex;
-width: 195px;
-flex-direction: column;
-align-items: center;
+  width: 195px;
+  flex-direction: column;
+  align-items: center;
 }
 
 .text-container {
@@ -523,17 +727,36 @@ align-items: center;
   flex-direction: row;
   justify-content: space-between;
   align-items: flex-start;
- 
   align-self: stretch;
 }
 
 .body-container {
   display: flex;
   width: 740px;
-  background-color: brown;
   flex-direction: column;
   align-items: flex-start;
+}
 
+/* Editor mode styles */
+.content:has(.editor-container) {
+  padding: 0px 40px;
+}
+
+.content:has(.editor-container) .text-container {
+  width: 100%;
+}
+
+.content:has(.editor-container) .body-container {
+  width: 100%;
+}
+
+.content:has(.editor-container) .editor-container {
+  width: 100%;
+  max-width: none;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .table-of-contents {
@@ -547,31 +770,46 @@ align-items: center;
   height: fit-content;
 }
 
-/* Main styles - 1380px and above */
+/* Media queries for responsive layout */
 @media screen and (min-width: 1380px) {
   .content {
     padding: 0px 120px;
   }
+  .content:has(.editor-container) {
+    padding: 0px 40px;
+  }
 }
 
-/* 1204px - 1380px */
 @media screen and (min-width: 1204px) and (max-width: 1379px) {
   .content {
     padding: 0px 120px;
   }
+  .content:has(.editor-container) {
+    padding: 0px 40px;
+  }
 }
 
-/* 768px - 1204px */
 @media screen and (min-width: 768px) and (max-width: 1203px) {
   .content {
     padding: 0px 60px;
   }
+  .content:has(.editor-container) {
+    padding: 0px 20px;
+  }
+  .body-container {
+    width: 100%;
+  }
 }
 
-/* Mobile - below 768px */
 @media screen and (max-width: 767px) {
   .content {
     padding: 0px 16px;
+  }
+  .content:has(.editor-container) {
+    padding: 0px 10px;
+  }
+  .body-container {
+    width: 100%;
   }
 }
 

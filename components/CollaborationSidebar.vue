@@ -186,36 +186,23 @@
           </div>
         </div>
 
-        <!-- Saves Tab -->
-        <div v-if="activeTab === 'saves'">
-          <div v-if="localSaves.length === 0" class="empty-state">
-            No saved changes available
+        <!-- Drafts Tab -->
+        <div v-if="activeTab === 'drafts'">
+          <div v-if="!hasDraft" class="empty-state">
+            No drafts available
           </div>
-          <div v-else class="saves-list">
-            <div
-              v-for="save in localSaves"
-              :key="save.timestamp"
-              class="save-item"
-            >
-              <div class="save-info">
-                <span class="save-timestamp">{{
-                  formatDate(save.timestamp)
-                }}</span>
-                <span class="save-branch">on branch {{ save.branch }}</span>
-              </div>
-              <div class="save-actions">
-                <button @click="handleLoadSave(save)" class="action-button">
-                  Load
-                </button>
-                <button
-                  @click="
-                    editorStore.deleteSave(props.filePath, save.timestamp)
-                  "
-                  class="action-button delete"
-                >
-                  Delete
-                </button>
-              </div>
+          <div v-else class="draft-content">
+            <div class="draft-info">
+              <span class="draft-timestamp">Last modified: {{ formatDate(currentDraft.timestamp) }}</span>
+              <span class="draft-branch">on branch {{ currentDraft.branch }}</span>
+            </div>
+            <div class="draft-actions">
+              <button @click="handleLoadDraft" class="action-button">
+                Load Draft
+              </button>
+              <button @click="handleClearDraft" class="action-button delete">
+                Clear Draft
+              </button>
             </div>
           </div>
         </div>
@@ -302,15 +289,19 @@ const store = useStore();
 const editorStore = useEditorStore();
 
 // Computed
-const localSaves = computed(() => {
-  return editorStore.getSavedContents(props.filePath);
+const hasDraft = computed(() => {
+  return editorStore.hasDraft(props.filePath);
+});
+
+const currentDraft = computed(() => {
+  return editorStore.getDraft(props.filePath);
 });
 
 const availableTabs = computed(() => [
   { id: "history", label: "History", count: commits.value.length },
   { id: "branches", label: "Branches", count: branches.value?.length || 0 },
   { id: "prs", label: "Pull Requests", count: pullRequests.value?.length || 0 },
-  { id: "saves", label: "Saves", count: localSaves.value?.length || 0 },
+  { id: "drafts", label: "Drafts", count: hasDraft.value ? 1 : 0 },
 ]);
 
 const hasChanges = computed(() => false);
@@ -421,10 +412,10 @@ const handleBranchChange = async (event: Event) => {
   if (newBranch !== currentBranch.value) {
     loading.value = true;
     try {
-      // Save current content before switching
+      // Save current content as draft before switching
       if (props.filePath) {
         const currentContent = store.rawText;
-        editorStore.saveContent(props.filePath, currentContent);
+        editorStore.saveDraft(props.filePath, currentContent);
       }
 
       // Switch branch
@@ -546,18 +537,13 @@ const handleResolveConflicts = async (pr: PullRequest) => {
   }
 };
 
-const handleLoadSave = (save) => {
-  console.log("Loading save:", save);
-  if (!save || !save.content) {
-    console.error("Invalid save:", save);
-    showToast({
-      title: "Error",
-      message: "Invalid save content",
-      type: "error",
-    });
-    return;
-  }
-  emit("load-save", save.content);
+const handleLoadDraft = () => {
+  if (!currentDraft.value) return;
+  emit("load-save", currentDraft.value.content);
+};
+
+const handleClearDraft = () => {
+  editorStore.clearDraft(props.filePath);
 };
 
 const formatDate = (dateString: string) => {
@@ -1001,43 +987,33 @@ onMounted(async () => {
   background: #f9fafb;
 }
 
-/* Saves styles */
-.saves-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.save-item {
+/* Draft styles */
+.draft-content {
   padding: 1rem;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   background: #ffffff;
 }
 
-.save-item:hover {
-  background: #f9fafb;
-}
-
-.save-info {
+.draft-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   margin-bottom: 0.75rem;
 }
 
-.save-timestamp {
+.draft-timestamp {
   color: #111827;
   font-weight: 500;
   font-size: 0.875rem;
 }
 
-.save-branch {
+.draft-branch {
   color: #6b7280;
   font-size: 0.75rem;
 }
 
-.save-actions {
+.draft-actions {
   display: flex;
   gap: 0.5rem;
 }
@@ -1065,16 +1041,6 @@ onMounted(async () => {
 
 .action-button.delete:hover {
   background: #fee2e2;
-}
-
-.action-button.resolve {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
-  color: #374151;
-}
-
-.action-button.resolve:hover {
-  background: #e5e7eb;
 }
 
 /* Login prompt */

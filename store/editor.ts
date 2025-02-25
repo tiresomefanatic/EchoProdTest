@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { useToast } from "~/composables/useToast";
 
-interface SavedContent {
+interface DraftContent {
   content: string;
   timestamp: string;
   branch: string;
@@ -24,13 +24,25 @@ interface CommitInfo {
   branch: string;
 }
 
+interface PullRequest {
+  number: number;
+  title: string;
+  user: {
+    login: string;
+    avatar_url: string;
+  };
+  html_url: string;
+  mergeable: boolean;
+  mergeable_state: string;
+}
+
 interface EditorState {
-  savedContents: Record<string, SavedContent[]>; // key is filePath-branch
-  gitContents: Record<string, GitContent>; // key is filePath-branch
+  drafts: Record<string, DraftContent>;
+  gitContents: Record<string, GitContent>;
   currentBranch: string;
   collaborators: string[];
   isCollaborating: boolean;
-  pullRequests: string[];
+  pullRequests: PullRequest[];
   lastPRUpdate: string;
   branchCache: {
     branches: string[];
@@ -40,38 +52,30 @@ interface EditorState {
 }
 
 export const useEditorStore = defineStore("editor", {
-  state: (): EditorState => {
-    const savedState = localStorage.getItem("editor-saves");
-    const gitState = localStorage.getItem("editor-git-contents");
-    const prState = localStorage.getItem("editor-pull-requests");
-    const savedBranch = process.client ? localStorage.getItem("github-current-branch") : "main";
-    
-    return {
-      savedContents: savedState ? JSON.parse(savedState) : {},
-      gitContents: gitState ? JSON.parse(gitState) : {},
-      currentBranch: savedBranch || "main",
-      collaborators: [],
-      isCollaborating: false,
-      pullRequests: prState ? JSON.parse(prState) : [],
-      lastPRUpdate: new Date().toISOString(),
-      branchCache: {
-        branches: [],
-        lastFetched: new Date().toISOString(),
-      },
-      commitHistory: {},
-    };
-  },
+  state: (): EditorState => ({
+    drafts: {},
+    gitContents: {},
+    currentBranch: "main",
+    collaborators: [],
+    isCollaborating: false,
+    pullRequests: [],
+    lastPRUpdate: new Date().toISOString(),
+    branchCache: {
+      branches: [],
+      lastFetched: new Date().toISOString(),
+    },
+    commitHistory: {},
+  }),
 
   getters: {
-    getSavedContents: (state) => (filePath: string) => {
-      console.log(
-        "Getting saved contents for key:",
-        `${filePath}-${state.currentBranch}`
-      );
-      const saves =
-        state.savedContents[`${filePath}-${state.currentBranch}`] || [];
-      console.log("Found saves:", saves);
-      return saves;
+    getDraft: (state) => (filePath: string) => {
+      const key = `${filePath}-${state.currentBranch}`;
+      return state.drafts[key];
+    },
+
+    hasDraft: (state) => (filePath: string) => {
+      const key = `${filePath}-${state.currentBranch}`;
+      return !!state.drafts[key];
     },
 
     getGitContent: (state) => (filePath: string, branch: string) => {
@@ -83,84 +87,58 @@ export const useEditorStore = defineStore("editor", {
       const key = `${filePath}-${state.currentBranch}`;
       return state.gitContents[key];
     },
+
+    getPullRequests: (state) => () => {
+      return state.pullRequests;
+    }
   },
 
   actions: {
-    saveContent(filePath: string, content: string) {
-      console.log("Saving content - Length:", content.length);
-      console.log("Preview:", {
-        filePath,
-        content: content.substring(0, 100) + "...",
-      });
-
+    saveDraft(filePath: string, content: string) {
       const { showToast } = useToast();
       const key = `${filePath}-${this.currentBranch}`;
-      const newSave = {
-        content: content.toString(), // Ensure content is a string
+      
+      this.drafts[key] = {
+        content: content.toString(),
         timestamp: new Date().toISOString(),
         branch: this.currentBranch,
         filePath,
       };
 
-      // Initialize array if it doesn't exist
-      if (!this.savedContents[key]) {
-        this.savedContents[key] = [];
-      }
-
-      // Add new save to the beginning of the array
-      this.savedContents[key].unshift(newSave);
-
-      // Keep only the last 10 saves
-      if (this.savedContents[key].length > 10) {
-        this.savedContents[key] = this.savedContents[key].slice(0, 10);
-      }
-
-      console.log(
-        "Saved content length:",
-        this.savedContents[key][0].content.length
-      );
-      console.log("Updated saves count:", this.savedContents[key].length);
-
-      // Persist to localStorage
       try {
-        localStorage.setItem(
-          "editor-saves",
-          JSON.stringify(this.savedContents)
-        );
-        console.log("Saved to localStorage successfully");
-
-        // Verify the save
-        const savedData = localStorage.getItem("editor-saves");
-        if (savedData) {
-          const parsed = JSON.parse(savedData);
-          const savedContent = parsed[key][0].content;
-          console.log(
-            "Verified localStorage save - Content length:",
-            savedContent.length
-          );
-        }
+        localStorage.setItem("editor-drafts", JSON.stringify(this.drafts));
+        showToast({
+          title: "Draft Saved",
+          message: `Draft saved for "${filePath}" on branch "${this.currentBranch}"`,
+          type: "success"
+        });
       } catch (error) {
-        console.error("Error saving to localStorage:", error);
+        console.error("Error saving draft:", error);
         showToast({
           title: "Error",
-          description: "Failed to save changes locally",
-          type: "error",
+          message: "Failed to save draft",
+          type: "error"
         });
-        return;
       }
-
-      showToast({
-        title: "Changes Saved",
-        description: `Changes saved locally on branch "${this.currentBranch}"`,
-      });
     },
 
-    saveGitContent(
-      filePath: string,
-      content: string,
-      branch: string,
-      sha: string
-    ) {
+    clearDraft(filePath: string) {
+      const { showToast } = useToast();
+      const key = `${filePath}-${this.currentBranch}`;
+      
+      if (this.drafts[key]) {
+        delete this.drafts[key];
+        localStorage.setItem("editor-drafts", JSON.stringify(this.drafts));
+        
+        showToast({
+          title: "Draft Cleared",
+          message: `Draft cleared for "${filePath}" on branch "${this.currentBranch}"`,
+          type: "success"
+        });
+      }
+    },
+
+    saveGitContent(filePath: string, content: string, branch: string, sha: string) {
       const key = `${filePath}-${branch}`;
       this.gitContents[key] = {
         content,
@@ -171,22 +149,7 @@ export const useEditorStore = defineStore("editor", {
         cdnExpiry: new Date().toISOString(),
       };
 
-      // Persist to localStorage
-      localStorage.setItem(
-        "editor-git-contents",
-        JSON.stringify(this.gitContents)
-      );
-    },
-
-    loadSaves() {
-      const saved = localStorage.getItem("editor-saves");
-      const gitContents = localStorage.getItem("editor-git-contents");
-      if (saved) {
-        this.savedContents = JSON.parse(saved);
-      }
-      if (gitContents) {
-        this.gitContents = JSON.parse(gitContents);
-      }
+      localStorage.setItem("editor-git-contents", JSON.stringify(this.gitContents));
     },
 
     setBranch(branch: string) {
@@ -194,53 +157,13 @@ export const useEditorStore = defineStore("editor", {
       if (process.client) {
         localStorage.setItem("github-current-branch", branch);
       }
-      localStorage.setItem("editor-saves", JSON.stringify(this.savedContents));
-    },
-
-    clearSaves(filePath: string) {
-      const { showToast } = useToast();
-      const key = `${filePath}-${this.currentBranch}`;
-      if (this.savedContents[key]) {
-        delete this.savedContents[key];
-        localStorage.setItem(
-          "editor-saves",
-          JSON.stringify(this.savedContents)
-        );
-
-        showToast({
-          title: "Saves Cleared",
-          description: `All local saves cleared for "${filePath}" on branch "${this.currentBranch}"`,
-        });
-      }
     },
 
     clearGitContent(filePath: string, branch: string) {
       const key = `${filePath}-${branch}`;
       if (this.gitContents[key]) {
         delete this.gitContents[key];
-        localStorage.setItem(
-          "editor-git-contents",
-          JSON.stringify(this.gitContents)
-        );
-      }
-    },
-
-    deleteSave(filePath: string, timestamp: string) {
-      const { showToast } = useToast();
-      const key = `${filePath}-${this.currentBranch}`;
-      if (this.savedContents[key]) {
-        this.savedContents[key] = this.savedContents[key].filter(
-          (save) => save.timestamp !== timestamp
-        );
-        localStorage.setItem(
-          "editor-saves",
-          JSON.stringify(this.savedContents)
-        );
-
-        showToast({
-          title: "Save Deleted",
-          description: `Local save deleted from branch "${this.currentBranch}"`,
-        });
+        localStorage.setItem("editor-git-contents", JSON.stringify(this.gitContents));
       }
     },
 
@@ -253,39 +176,26 @@ export const useEditorStore = defineStore("editor", {
     },
 
     updateContent(filePath: string, content: string) {
-      console.log("Updating content - Length:", content.length);
-
-      // Update the git content for the current branch
       const gitKey = `${filePath}-${this.currentBranch}`;
       if (this.gitContents[gitKey]) {
         this.gitContents[gitKey].content = content;
         this.gitContents[gitKey].lastFetched = new Date().toISOString();
       }
-
-      // Also save as a local save
-      this.saveContent(filePath, content);
+      
+      // Save as draft
+      this.saveDraft(filePath, content);
     },
-    // PR Management Actions
-    addPullRequest(pr) {
+
+    addPullRequest(pr: PullRequest) {
       this.pullRequests.unshift(pr);
       this.lastPRUpdate = new Date().toISOString();
-      localStorage.setItem(
-        "editor-pull-requests",
-        JSON.stringify(this.pullRequests)
-      );
+      localStorage.setItem("editor-pull-requests", JSON.stringify(this.pullRequests));
     },
 
-    updatePullRequests(prs) {
+    updatePullRequests(prs: PullRequest[]) {
       this.pullRequests = prs;
       this.lastPRUpdate = new Date().toISOString();
-      localStorage.setItem(
-        "editor-pull-requests",
-        JSON.stringify(this.pullRequests)
-      );
-    },
-
-    getPullRequests() {
-      return this.pullRequests;
+      localStorage.setItem("editor-pull-requests", JSON.stringify(this.pullRequests));
     },
 
     updateBranchCache(branchList: string[]) {
@@ -294,7 +204,6 @@ export const useEditorStore = defineStore("editor", {
         lastFetched: new Date().toISOString(),
       };
       
-      // Also update localStorage
       if (process.client) {
         localStorage.setItem('editor-branch-cache', JSON.stringify(this.branchCache));
       }
@@ -309,5 +218,44 @@ export const useEditorStore = defineStore("editor", {
         };
       }
     },
+
+    // Initialize store from localStorage
+    initializeStore() {
+      if (process.client) {
+        try {
+          // Load drafts
+          const savedDrafts = localStorage.getItem("editor-drafts");
+          if (savedDrafts) {
+            this.drafts = JSON.parse(savedDrafts);
+          }
+
+          // Load git contents
+          const savedGitContents = localStorage.getItem("editor-git-contents");
+          if (savedGitContents) {
+            this.gitContents = JSON.parse(savedGitContents);
+          }
+
+          // Load pull requests
+          const savedPRs = localStorage.getItem("editor-pull-requests");
+          if (savedPRs) {
+            this.pullRequests = JSON.parse(savedPRs);
+          }
+
+          // Load branch cache
+          const savedBranchCache = localStorage.getItem("editor-branch-cache");
+          if (savedBranchCache) {
+            this.branchCache = JSON.parse(savedBranchCache);
+          }
+
+          // Load current branch
+          const savedBranch = localStorage.getItem("github-current-branch");
+          if (savedBranch) {
+            this.currentBranch = savedBranch;
+          }
+        } catch (error) {
+          console.error("Error initializing editor store:", error);
+        }
+      }
+    }
   },
 });

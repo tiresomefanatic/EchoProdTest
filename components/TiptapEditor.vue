@@ -106,6 +106,7 @@ const emit = defineEmits<{
   "update:content": [content: string];
   save: [content: string];
   error: [error: Error];
+  exit: [];
 }>();
 
 // State management
@@ -340,7 +341,7 @@ const editorOptions = {
 
 // Computed properties
 const showCommitButton = computed(() => {
-  return props.filePath && currentBranch.value;
+  return props.filePath && isLoggedIn.value;
 });
 
 const hasChanges = computed(() => {
@@ -349,6 +350,12 @@ const hasChanges = computed(() => {
   return gitContent
     ? localContent.value !== gitContent.content
     : localContent.value !== "";
+});
+
+const contentSource = computed(() => {
+  if (!props.filePath) return 'New File';
+  if (editorStore.hasDraft(props.filePath)) return 'Draft';
+  return 'Committed';
 });
 
 const sanitizedPreviewContent = computed(() => {
@@ -364,31 +371,18 @@ const handleSave = () => {
   console.log("Editor saving content - Length:", formattedContent.length);
   console.log("Preview:", formattedContent.substring(0, 100) + "...");
 
-  // Save formatted content to Pinia store
-  editorStore.saveContent(props.filePath, formattedContent);
+  // Save formatted content as draft
+  editorStore.saveDraft(props.filePath, formattedContent);
 
   // Update store's raw text
   store.updateRawText(formattedContent);
 
-  // Also save current content to localStorage for recovery
-  localStorage.setItem("rawText", JSON.stringify(formattedContent));
-
   showToast({
-    title: "Changes Saved",
-    message: "Successfully saved changes",
+    title: "Draft Saved",
+    message: "Changes saved as draft",
     type: "success",
   });
 };
-
-// const saveToLocal = () => {
-//   if (!hasChanges.value || isSaving.value) return;
-//   editorStore.saveContent(props.filePath, localContent.value);
-//   showToast({
-//     title: "Success",
-//     message: "Content saved locally",
-//     type: "success",
-//   });
-// };
 
 const handleCommit = async () => {
   if (!props.filePath || !commitMessage.value.trim()) return;
@@ -404,8 +398,9 @@ const handleCommit = async () => {
       currentBranch.value
     );
 
-    // Update git content in store
+    // Update git content in store and clear draft
     editorStore.updateContent(props.filePath, localContent.value);
+    editorStore.clearDraft(props.filePath);
 
     showToast({
       title: "Success",
@@ -448,7 +443,8 @@ const handleLoadSave = async (content: string) => {
   }
 
   try {
-    editorStore.updateContent(props.filePath || "", content);
+    // Update content and save as draft
+    editorStore.saveDraft(props.filePath || "", content);
     if (editor.value) {
       editor.value.commands.setContent(content);
     }
@@ -457,8 +453,8 @@ const handleLoadSave = async (content: string) => {
     await nextTick();
 
     showToast({
-      title: "Save Loaded",
-      message: "Successfully loaded saved version",
+      title: "Draft Loaded",
+      message: "Successfully loaded draft version",
       type: "success",
     });
   } catch (error) {
@@ -644,7 +640,7 @@ watchEffect(() => {
 
 // Initialize
 onMounted(async () => {
-  editorStore.loadSaves();
+  editorStore.initializeStore();
 
   if (isLoggedIn.value) {
     await fetchBranches();
@@ -923,6 +919,11 @@ onBeforeUnmount(() => {
     editorContent.removeEventListener("scroll", () => {});
   }
 });
+
+// Update the handleExit method
+const handleExit = () => {
+  emit('exit');
+};
 </script>
 
 <template>
@@ -932,6 +933,9 @@ onBeforeUnmount(() => {
         <div class="editor-toolbar">
           <div class="toolbar-left">
             <span class="file-path">{{ props.filePath }}</span>
+            <span class="content-source" :class="contentSource.toLowerCase()">
+              {{ contentSource }}
+            </span>
           </div>
 
           <div class="toolbar-right">
@@ -967,6 +971,12 @@ onBeforeUnmount(() => {
               >
                 Save
               </button>
+              <button
+                class="toolbar-button"
+                @click="handleExit"
+              >
+                Exit
+              </button>
             </template>
 
             <!-- Raw View -->
@@ -991,6 +1001,12 @@ onBeforeUnmount(() => {
               >
                 Save
               </button>
+              <button
+                class="toolbar-button"
+                @click="handleExit"
+              >
+                Exit
+              </button>
             </template>
 
             <!-- Preview View -->
@@ -1011,6 +1027,12 @@ onBeforeUnmount(() => {
                 @click="handleSave"
               >
                 Save
+              </button>
+              <button
+                class="toolbar-button"
+                @click="handleExit"
+              >
+                Exit
               </button>
             </template>
           </div>
@@ -1497,6 +1519,29 @@ onBeforeUnmount(() => {
 .file-path {
   color: #374151;
   font-size: 0.875rem;
+}
+
+.content-source {
+  margin-left: 1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.content-source.draft {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.content-source.committed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.content-source.new {
+  background-color: #e0e7ff;
+  color: #3730a3;
 }
 
 .raw-content-wrapper {

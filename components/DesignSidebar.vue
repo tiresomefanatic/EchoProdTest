@@ -104,9 +104,63 @@
                             v-for="child in item.children"
                             :key="child.path"
                           >
-                            <!-- Show all files, both locked and unlocked -->
+                            <!-- Recursively render nested directories -->
+                            <template v-if="child.type === 'directory'">
+                              <div
+                                class="nav-group-header sub-item"
+                                :class="{
+                                  locked: child.locked,
+                                  active: isActiveSection(child.path),
+                                }"
+                                @click="!child.locked && toggleSection(child.path)"
+                              >
+                                {{ child.title }}
+                                <span
+                                  class="chevron"
+                                  :class="{ rotated: !isCollapsed[child.path] }"
+                                  >›</span
+                                >
+                              </div>
+                              <div
+                                class="nav-section nested"
+                                :class="{ collapsed: isCollapsed[child.path] }"
+                              >
+                                <div class="nav-section-inner">
+                                  <template
+                                    v-for="grandChild in child.children"
+                                    :key="grandChild.path"
+                                  >
+                                    <!-- Files within nested directory -->
+                                    <NuxtLink
+                                      v-if="grandChild.type === 'file' && !grandChild.locked"
+                                      :to="grandChild.path"
+                                      class="nav-item sub-item"
+                                      :class="{
+                                        'router-link-active': route.path === grandChild.path,
+                                      }"
+                                      @click="closeMobileMenu"
+                                    >
+                                      {{ grandChild.title }}
+                                    </NuxtLink>
+                                    <div
+                                      v-else-if="grandChild.type === 'file' && grandChild.locked"
+                                      class="nav-item sub-item locked"
+                                      :title="'This feature is coming soon'"
+                                    >
+                                      {{ grandChild.title }}
+                                      <img
+                                        src="/lock-icon.svg"
+                                        alt="Locked"
+                                        class="lock-icon"
+                                      />
+                                    </div>
+                                  </template>
+                                </div>
+                              </div>
+                            </template>
+                            <!-- Files within directory -->
                             <NuxtLink
-                              v-if="child.type === 'file' && !child.locked"
+                              v-else-if="child.type === 'file' && !child.locked"
                               :to="child.path"
                               class="nav-item sub-item"
                               :class="{
@@ -556,5 +610,20 @@ onMounted(async () => {
   .sidebar-wrapper {
     width: 195px;
   }
+}
+
+.nav-section.nested {
+  padding-left: 12px;
+}
+
+.nav-section.nested .nav-section-inner {
+  border-left: 1px solid #e5e7eb;
+  margin-left: 6px;
+  padding-left: 6px;
+}
+
+.nav-section.nested .nav-item,
+.nav-section.nested .nav-group-header {
+  font-size: 13px;
 }
 </style>
