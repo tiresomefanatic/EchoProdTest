@@ -76,6 +76,13 @@
           ]
         },
         {
+          "title": "NewTest",
+          "path": "/design/NewTest",
+          "type": "directory",
+          "locked": false,
+          "children": []
+        },
+        {
           "title": "Product",
           "path": "/design/product",
           "type": "directory",
