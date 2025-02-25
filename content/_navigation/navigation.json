@@ -92,7 +92,14 @@
               "path": "/design/product/Folder test",
               "type": "directory",
               "locked": false,
-              "children": []
+              "children": [
+                {
+                  "title": "TEstfile",
+                  "path": "/design/product/Folder test/TEstfile",
+                  "type": "file",
+                  "locked": false
+                }
+              ]
             },
             {
               "title": "Case Studies",
