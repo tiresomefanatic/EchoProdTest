@@ -19,6 +19,12 @@
               "locked": false,
               "children": [
                 {
+                  "title": "NEwtest",
+                  "path": "/design/foundation/Logo/NEwtest",
+                  "type": "file",
+                  "locked": false
+                },
+                {
                   "title": "Testets",
                   "path": "/design/foundation/Logo/Testets",
                   "type": "file",
