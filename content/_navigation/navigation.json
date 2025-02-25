@@ -17,7 +17,14 @@
               "path": "/design/foundation/Logo",
               "type": "directory",
               "locked": false,
-              "children": []
+              "children": [
+                {
+                  "title": "Testets",
+                  "path": "/design/foundation/Logo/Testets",
+                  "type": "file",
+                  "locked": false
+                }
+              ]
             },
             {
               "title": "Animation",
