@@ -2,106 +2,59 @@
 <template>
   <div class="page-wrapper">
     <ClientOnly>
+      <!-- Place ActionBar at the top -->
+      <ActionBar v-if="isLoggedIn" />
       <Header class="menu-bar" />
-      <div
-              v-if="isLoggedIn"
-              class="content-header fixed top-[76px] right-6 z-10 flex items-center gap-3"
-            >
-              <ClientOnly>
-                <div v-if="branches.length > 0" class="branch-select-wrapper">
-                  <select
-                    v-model="currentBranch"
-                    @change="handleBranchChange"
-                    class="branch-select px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option
-                      v-for="branch in branches"
-                      :key="branch"
-                      :value="branch"
-                    >
-                      {{ branch }}
-                    </option>
-                  </select>
-                </div>
-                <button
-                  v-if="!isEditing"
-                  @click="handleEditClick"
-                  class="edit-button px-4 py-2 bg-[#0969DA] text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Edit
-                </button>
-                <button
-                  v-else
-                  @click="exitEditor"
-                  class="edit-button px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                >
-                  Exit
-                </button>
-                <ContentCreator
-                  v-if="isLoggedIn"
-                  @content-created="handleContentCreated"
-                />
-              </ClientOnly>
-            </div>
       
       <div class="main-container">
-       
-        
         <div class="content">
-         
-            <DesignSidebar   v-if="!isEditing" class="sidebar" />
-            <div class="text-container">
-              <div class="body-container">
-                <ClientOnly>
-                  <div v-if="isEditing" class="editor-container">
-                    <TiptapEditor
-                      :content="editorContent"
-                      :filePath="contentPath"
-                      @update:content="handleContentChange"
-                      @save="handleSave"
-                      @error="handleEditorError"
-                      @exit="exitEditor"
-                    />
-                    <CollaborationSidebar
-                      v-if="isLoggedIn"
-                      :filePath="contentPath"
-                      @load-save="handleLoadSave"
-                    />
+          <DesignSidebar v-if="!isEditing" class="sidebar" />
+          <div class="text-container">
+            <div class="body-container">
+              <ClientOnly>
+                <div v-if="isEditing" class="editor-container">
+                  <TiptapEditor
+                    :content="editorContent"
+                    :filePath="contentPath"
+                    @update:content="handleContentChange"
+                    @save="handleSave"
+                    @error="handleEditorError"
+                    @exit="exitEditor"
+                  />
+                  <CollaborationSidebar
+                    v-if="isLoggedIn"
+                    :filePath="contentPath"
+                    @load-save="handleLoadSave"
+                  />
+                </div>
+                <div v-else class="prose-content">
+                  <div :key="githubContent">
+                    <template v-if="!isLoggedIn">
+                      <ContentDoc :path="path" :head="false">
+                        <template #empty>
+                          <p>No content found.</p>
+                        </template>
+                        <template #not-found>
+                          <p>Content not found. Path: {{ path }}</p>
+                        </template>
+                      </ContentDoc>
+                    </template>
+                    <template v-else>
+                      <div v-html="githubContent" class="markdown-content"></div>
+                    </template>
                   </div>
-                  <div v-else class="prose-content">
-                    <div :key="githubContent">
-                      <template v-if="!isLoggedIn">
-                        <ContentDoc :path="path" :head="false">
-                          <template #empty>
-                            <p>No content found.</p>
-                          </template>
-                          <template #not-found>
-                            <p>Content not found. Path: {{ path }}</p>
-                          </template>
-                        </ContentDoc>
-                      </template>
-                      <template v-else>
-                        <div v-html="githubContent" class="markdown-content"></div>
-                      </template>
-                    </div>
-                  </div>
-                </ClientOnly>
-              </div>
-           
+                </div>
+              </ClientOnly>
             </div>
-                    
-            <TableOfContents v-if="!isEditing" class="table-of-contents" />
-            
-      
+          </div>
+          <TableOfContents v-if="!isEditing" class="table-of-contents" />
         </div>
-
         <footer class="footer">
           <h1>©2024 ECHO</h1>
         </footer>
       </div>
     </ClientOnly>
   </div>
-  
 </template>
 
 <script setup lang="ts">
@@ -118,6 +71,7 @@ import CollaborationSidebar from "~/components/CollaborationSidebar.vue";
 import ContentCreator from "~/components/ContentCreator.vue";
 import DesignSidebar from "~/components/DesignSidebar.vue";
 import Header from "~/components/Header.vue";
+import ActionBar from "~/components/ActionBar.vue";
 import { useRuntimeConfig, useNuxtApp } from "#app";
 import { marked } from "marked";
 import TableOfContents from "~/components/TableOfContents.vue";
@@ -688,22 +642,23 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .page-wrapper {
+  padding-top: v-bind('isLoggedIn ? "0px" : "0"');
   display: flex;
-width: 1512px;
-min-width: 1380px;
-min-height: 982px;
-padding-bottom: 80px;
-flex-direction: column;
-align-items: center;
+  width: 1512px;
+  min-width: 1380px;
+  min-height: 982px;
+  padding-bottom: 80px;
+  flex-direction: column;
+  align-items: center;
 }
 
 .main-container {
   display: flex;
-padding-top: 40px;
-flex-direction: column;
-align-items: center;
-gap: 64px;
-align-self: stretch;
+  padding-top: 40px;
+  flex-direction: column;
+  align-items: center;
+  gap: 64px;
+  align-self: stretch;
 }
 
 .content {
