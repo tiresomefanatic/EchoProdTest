@@ -7,7 +7,7 @@
         <button class="action-button create-branch">
           Create a branch
         </button>
-        <button class="action-button see-branches">
+        <button class="action-button see-branches" @click="navigateToBranches">
           See branches
         </button>
       </div>
@@ -18,6 +18,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useGithub } from '~/composables/useGithub';
+import { navigateTo } from '#app';
 
 const { currentBranch, branches, switchBranch } = useGithub();
 
@@ -27,6 +28,10 @@ const handleBranchChange = async () => {
   } catch (error) {
     console.error('Error switching branch:', error);
   }
+};
+
+const navigateToBranches = () => {
+  navigateTo('/branches');
 };
 </script>
 
