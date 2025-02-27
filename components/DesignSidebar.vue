@@ -23,8 +23,8 @@
     >
       <!-- Mobile header -->
       <div class="mobile-header">
-        <span class="mobile-title">Menu</span>
-        <button class="close-btn" @click="toggleMobileMenu">
+        <span class="mobile-title">ECHO Design Guidelines</span>
+        <button class="close-btn" @click="closeMobileMenu" aria-label="Close menu">
           <span class="close-icon">×</span>
         </button>
       </div>
@@ -234,6 +234,7 @@ import { ref, onMounted, watch, computed } from "vue";
 import { useRoute } from "vue-router";
 import { useNavigation } from "../composables/useNavigation";
 import { useGithub } from "../composables/useGithub";
+import { useEventBus } from '@vueuse/core';
 
 const route = useRoute();
 const isOpen = ref(false);
@@ -257,15 +258,34 @@ const toggleSection = (path: string) => {
   isCollapsed.value[path] = !isCollapsed.value[path];
 };
 
-// Mobile menu handlers
+// Listen for sidebar toggle events from header
+const sidebarBus = useEventBus('sidebar-toggle');
+sidebarBus.on((value) => {
+  console.log('Sidebar event received in DesignSidebar:', value);
+  
+  // Set isOpen value based on provided value or toggle
+  if (typeof value === 'boolean') {
+    isOpen.value = value;
+  } else {
+    isOpen.value = !isOpen.value;
+  }
+  
+  // Apply body overflow style
+  if (process.client) {
+    document.body.style.overflow = isOpen.value ? "hidden" : "";
+    console.log('DesignSidebar isOpen is now:', isOpen.value);
+  }
+});
+
+// Mobile menu handlers - simplified
 const toggleMobileMenu = () => {
-  isOpen.value = !isOpen.value;
-  document.body.style.overflow = isOpen.value ? "hidden" : "";
+  // Use the event bus instead of direct toggling
+  sidebarBus.emit(!isOpen.value);
 };
 
 const closeMobileMenu = () => {
-  isOpen.value = false;
-  document.body.style.overflow = "";
+  // Use the event bus instead of direct toggling
+  sidebarBus.emit(false);
 };
 
 // Watch for branch changes to refresh navigation
@@ -305,6 +325,7 @@ onMounted(async () => {
 .sidebar-wrapper {
   position: relative;
   width: 195px;
+  flex-shrink: 0;
 }
 
 .design-sidebar {
@@ -319,13 +340,15 @@ onMounted(async () => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 }
 
 .nav-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  width: 195px;
+  width: 100%;
+  padding-right: 8px;
 }
 
 .loading-state {
@@ -359,13 +382,14 @@ onMounted(async () => {
 .nav-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
 .nav-group-header {
   display: flex;
   height: 32px;
-  padding: 0;
+  padding: 4px 0;
   align-items: center;
   gap: 12px;
   align-self: stretch;
@@ -381,6 +405,7 @@ onMounted(async () => {
 
 .nav-group-header:hover:not(.locked) {
   font-weight: 538;
+  color: rgba(0, 0, 0, 0.7);
 }
 
 .nav-group-header.active:not(.locked) {
@@ -390,7 +415,7 @@ onMounted(async () => {
 .nav-item {
   display: flex;
   height: 32px;
-  padding: 0;
+  padding: 4px 0;
   align-items: center;
   gap: 12px;
   align-self: stretch;
@@ -406,6 +431,7 @@ onMounted(async () => {
 
 .nav-item:hover:not(.locked) {
   font-weight: 538;
+  color: rgba(0, 0, 0, 0.7);
 }
 
 .nav-item.router-link-active {
@@ -416,7 +442,7 @@ onMounted(async () => {
   overflow: hidden;
   transition: height 0.3s ease-in-out;
   height: auto;
-  padding-left: 12px;
+  padding-left: 16px;
   margin-top: 0;
 }
 
@@ -428,16 +454,17 @@ onMounted(async () => {
 .nav-section-inner {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .sub-item {
-  padding-left: 12px;
+  padding-left: 16px;
 }
 
 .chevron {
   font-size: 16px;
   transition: transform 0.3s ease;
+  margin-right: 4px;
   margin-left: 0;
   order: -1;
 }
@@ -472,72 +499,25 @@ onMounted(async () => {
   display: none;
 }
 
-@media (max-width: 768px) {
-  .mobile-menu-btn {
-    display: flex;
-    position: fixed;
-    top: 32px;
-    left: 1rem;
-    width: 48px;
-    height: 48px;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    z-index: 1002;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.2s ease;
-  }
-
-  .mobile-menu-btn:hover {
-    background-color: #f8f9fa;
-  }
-
-  .hamburger-lines {
-    width: 24px;
-    height: 18px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
-  }
-
-  .hamburger-line {
-    width: 100%;
-    height: 2px;
-    background-color: #333;
-    transition: all 0.3s ease;
-  }
-
-  .mobile-menu-btn.is-open .hamburger-line:nth-child(1) {
-    transform: translateY(8px) rotate(45deg);
-  }
-
-  .mobile-menu-btn.is-open .hamburger-line:nth-child(2) {
-    opacity: 0;
-  }
-
-  .mobile-menu-btn.is-open .hamburger-line:nth-child(3) {
-    transform: translateY(-8px) rotate(-45deg);
+@media (max-width: 1024px) {
+  .sidebar-wrapper {
+    /* Remove positioning that might interfere */
+    position: static;
+    width: auto;
+    height: 0;
+    overflow: visible;
   }
 
   .design-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
+    /* Fixed positioning handled by the outer sidebar container */
+    background-color: white;
+    padding-top: 0;
     height: 100vh;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
-    z-index: 1001;
-    background: white;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-  }
-
-  .design-sidebar.is-mobile-open {
-    transform: translateX(0);
+    max-width: 100%;
+    display: block !important;
+    visibility: visible !important;
+    overflow-y: auto;
+    z-index: 1; /* Lower z-index as the sidebar container handles stacking */
   }
 
   .mobile-header {
@@ -546,7 +526,10 @@ onMounted(async () => {
     align-items: center;
     padding: 1rem;
     border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
     background: white;
+    z-index: 2;
   }
 
   .mobile-title {
@@ -557,6 +540,7 @@ onMounted(async () => {
   .close-btn {
     background: none;
     border: none;
+    font-size: 24px;
     padding: 8px;
     cursor: pointer;
     display: flex;
@@ -570,45 +554,14 @@ onMounted(async () => {
     line-height: 1;
   }
 
-  .mobile-overlay {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    z-index: 1000;
-  }
-
-  .mobile-overlay.is-visible {
-    opacity: 1;
-    visibility: visible;
-  }
-
   .nav-content {
     height: calc(100vh - 64px);
     overflow-y: auto;
+    overflow-x: hidden;
     margin: 0;
     border-radius: 0;
-  }
-
-  /* iOS-specific fixes */
-  @supports (-webkit-touch-callout: none) {
-    .design-sidebar {
-      height: -webkit-fill-available;
-    }
-
-    .nav-content {
-      height: calc(100vh - 64px - env(safe-area-inset-bottom));
-    }
-  }
-
-  .sidebar-wrapper {
-    width: 195px;
+    padding: 0 16px;
+    box-sizing: border-box;
   }
 }
 

@@ -49,9 +49,7 @@
           </div>
           <TableOfContents v-if="!isEditing" class="table-of-contents" />
         </div>
-        <footer class="footer">
-          <h1>©2024 ECHO</h1>
-        </footer>
+        <Footer class="full-width-footer" />
       </div>
     </ClientOnly>
   </div>
@@ -78,6 +76,8 @@ import TableOfContents from "~/components/TableOfContents.vue";
 import { useNavigationStore } from "~/store/navigation";
 import { useEditorStore } from "~/store/editor";
 import { useStore } from "~/store";
+import Footer from "~/components/Footer.vue";
+import { useEventBus } from '@vueuse/core';
 
 // Initialize GitHub functionality and services
 const {
@@ -112,6 +112,26 @@ const editorStore = useEditorStore();
 
 // Add store initialization
 const store = useStore();
+
+// Initialize sidebar state
+const isSidebarOpen = ref(false);
+
+// Listen for sidebar toggle events
+const sidebarBus = useEventBus('sidebar-toggle');
+sidebarBus.on((value) => {
+  console.log('Received sidebar toggle in page:', value);
+  if (typeof value === 'boolean') {
+    isSidebarOpen.value = value;
+  } else {
+    isSidebarOpen.value = !isSidebarOpen.value;
+  }
+});
+
+// Add function to close sidebar
+const closeSidebar = () => {
+  isSidebarOpen.value = false;
+  sidebarBus.emit(false);
+};
 
 // Redirect to index page if we're at the root
 onMounted(() => {
@@ -541,6 +561,7 @@ onBeforeUnmount(() => {
 });
 </script>
 
+
 <style>
 /* Global prose styles - these are essential */
 .prose-content {
@@ -644,9 +665,7 @@ onBeforeUnmount(() => {
 .page-wrapper {
   padding-top: v-bind('isLoggedIn ? "0px" : "0"');
   display: flex;
-  width: 1512px;
-  min-width: 1380px;
-  min-height: 982px;
+  width: 100%;
   padding-bottom: 80px;
   flex-direction: column;
   align-items: center;
@@ -654,135 +673,234 @@ onBeforeUnmount(() => {
 
 .main-container {
   display: flex;
-  padding-top: 40px;
+  width: 100%;
+  max-width: 100%;
+  padding: 96px 0 60px;
   flex-direction: column;
   align-items: center;
   gap: 64px;
-  align-self: stretch;
 }
 
 .content {
   display: flex;
-  padding: 0px 266px;
-  justify-content: center;
+  width: 100%;
+  padding: 0 266px;
+  box-sizing: border-box;
+  justify-content: flex-start;
   align-items: flex-start;
-  gap: 40px;
-  align-self: stretch;
 }
 
 .sidebar {
-  display: flex;
+  flex-shrink: 0;
   width: 195px;
+  display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .text-container {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  width: 740px;
+  flex-shrink: 0;
+  justify-content: center;
   align-items: flex-start;
-  align-self: stretch;
+  margin-left: 40px;
 }
 
 .body-container {
-  display: flex;
-  width: 740px;
+  width: 100%;
+  max-width: 740px;
   flex-direction: column;
   align-items: flex-start;
-}
-
-/* Editor mode styles */
-.content:has(.editor-container) {
-  padding: 0px 40px;
-}
-
-.content:has(.editor-container) .text-container {
-  width: 100%;
-}
-
-.content:has(.editor-container) .body-container {
-  width: 100%;
-}
-
-.content:has(.editor-container) .editor-container {
-  width: 100%;
-  max-width: none;
-  padding: 40px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-width: 0;
 }
 
 .table-of-contents {
-  width: 195px;
   flex-shrink: 0;
   position: sticky;
-  top: 100px;
+  top: 80px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   height: fit-content;
+  width: 160px;
 }
 
-/* Media queries for responsive layout */
+/* Main styles - 1380px and above */
 @media screen and (min-width: 1380px) {
   .content {
-    padding: 0px 120px;
-  }
-  .content:has(.editor-container) {
-    padding: 0px 40px;
+    padding: 0 266px;
   }
 }
 
-@media screen and (min-width: 1204px) and (max-width: 1379px) {
+/* 1025px - 1379px */
+@media screen and (min-width: 1025px) and (max-width: 1379px) {
   .content {
-    padding: 0px 120px;
+    padding: 0 266px;
   }
-  .content:has(.editor-container) {
-    padding: 0px 40px;
+  
+  .text-container {
+    width: auto;
+    flex: 1;
+  }
+  
+  .sidebar {
+    width: 195px;
   }
 }
 
-@media screen and (min-width: 768px) and (max-width: 1203px) {
+/* 768px - 1024px */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
   .content {
-    padding: 0px 60px;
+    padding: 0 165.5px;
+    justify-content: space-between;
   }
-  .content:has(.editor-container) {
-    padding: 0px 20px;
-  }
-  .body-container {
+  
+  .text-container {
     width: 100%;
+    max-width: 585px;
+    margin-left: 0;
+  }
+  
+  /* Apply the same mobile sidebar styling as for smaller screens */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 80%;
+    max-width: 320px;
+    background-color: white;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.is-mobile-open {
+    transform: translateX(0);
+  }
+  
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  
+  .mobile-overlay.is-visible {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .table-of-contents {
+    display: block;
+    margin-left: 24.5px;
   }
 }
 
+/* Mobile - below 768px */
 @media screen and (max-width: 767px) {
+  .page-wrapper {
+    padding-bottom: 40px;
+    overflow-x: hidden; /* Hide horizontal overflow */
+  }
+
+  .main-container {
+    padding: 20px 0;
+    max-width: 100%;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+  }
+
   .content {
-    padding: 0px 16px;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 0 16px;
+    width: 100%;
+    justify-content: center;
+    overflow-x: hidden; /* Ensure no horizontal scroll */
   }
-  .content:has(.editor-container) {
-    padding: 0px 10px;
+
+  .text-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin-left: 0;
   }
+
   .body-container {
     width: 100%;
+    max-width: 100%;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
   }
-}
 
-.footer {
-  display: flex;
-  width: 100%;
-  max-width: 1512px;
-  padding: 32px 84px;
-  background: #1D1B1B;
-  color: #FFFFFF;
-  justify-content: center;
-  align-items: center;
-}
+  .prose-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    overflow-wrap: break-word; /* Ensure long words don't overflow */
+    word-wrap: break-word;
+  }
 
-.footer h1 {
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 142%;
+  /* Style for the sidebar in mobile view */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 80%;
+    max-width: 320px;
+    background-color: white;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.is-mobile-open {
+    transform: translateX(0);
+  }
+  
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  
+  .mobile-overlay.is-visible {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .table-of-contents {
+    display: none;
+    margin-left: 0;
+  }
+  
+  /* Ensure images and pre blocks don't cause overflow */
+  .prose-content img,
+  .prose-content pre {
+    max-width: 100%;
+    height: auto;
+  }
 }
 
 /* Typography styles */
@@ -838,7 +956,6 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 40px;
-  padding: 0px 266px;
 }
 
 .main-content {
@@ -930,11 +1047,4 @@ onBeforeUnmount(() => {
   @apply ml-0;
 }
 
-.page-footer {
-  position: absolute;
-  bottom: 0;
-  left: 463.3px; /* Same as main content margin-left */
-  right: calc(268.5px + 84px); /* TOC width + right margin */
-  z-index: 10;
-}
 </style>
