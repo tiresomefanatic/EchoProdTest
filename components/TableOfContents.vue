@@ -156,14 +156,17 @@ onMounted(() => {
 <style scoped>
 .toc-nav {
   position: sticky;
-  top: 120px;
+  top: 80px;
   width: 160px;
-  max-height: calc(100vh - 160px);
+  max-height: calc(100vh - 120px);
   overflow-y: auto;
+  overflow-x: hidden;
   background: #FFFFFF;
-  margin-left: 24px;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  margin-left: 24.5px;
+  margin-right: 84px;
+  box-sizing: border-box;
 }
 
 .toc-nav::-webkit-scrollbar {
@@ -181,11 +184,11 @@ onMounted(() => {
 }
 
 .toc-content {
-  padding: 12px 0;
+  padding: 0;
 }
 
 .toc-item {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .toc-item:last-child {
@@ -194,13 +197,14 @@ onMounted(() => {
 
 .toc-link {
   display: block;
-  padding: 4px 16px;
-  color: #000000;
+  padding: 2px 12px;
+  color: rgba(0, 0, 0, 0.6);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 140%;
-  font-weight: 300;
-  border-left: 2px solid transparent;
+  font-weight: 400;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  border-left: 1px solid transparent;
   transition: all 0.2s ease;
 }
 
@@ -215,7 +219,24 @@ onMounted(() => {
   border-left-color: #000000;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1380px) {
+  .toc-nav {
+    width: 160px;
+    margin-left: 24.5px;
+    margin-right: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .toc-nav {
+    display: block;
+    width: 140px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 767px) {
   .toc-nav {
     display: none;
   }
