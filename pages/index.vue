@@ -2,7 +2,10 @@
     <div class="landing-page-wrapper">
       <ClientOnly>
         <div>
+          <!-- Add the ActionBar component when user is logged in -->
+          <ActionBar v-if="isLoggedIn" />
           <Header />
+          
           <div class="landing-content-area">
             <div class="main-content">
               <ClientOnly>
@@ -50,6 +53,7 @@
   import { useGithub } from "~/composables/useGithub";
   import { useToast } from "~/composables/useToast";
   import { marked } from "marked";
+  import ActionBar from '~/components/ActionBar.vue';
   
   const {
     getRawContent,
@@ -142,6 +146,7 @@
   
   <style scoped>
   .landing-page-wrapper {
+    padding-top: v-bind('isLoggedIn ? "0" : "0"');
     display: flex;
     flex-direction: column;
     min-height: 100vh;
