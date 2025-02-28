@@ -2,32 +2,38 @@
 <template>
   <div class="page-wrapper">
     <ClientOnly>
-      <!-- Place ActionBar at the top -->
-      <ActionBar v-if="isLoggedIn" />
-      <Header class="menu-bar" />
+      <ActionBar v-if="isLoggedIn && !isEditing" />
+      <Header v-if="!isEditing" class="menu-bar" />
       
-      <div class="main-container">
+      <div v-if="isEditing" class="editor-fullwidth-container">
+        <TiptapEditor
+          :content="editorContent"
+          :filePath="contentPath"
+          @update:content="handleContentChange"
+          @save="handleSave"
+          @error="handleEditorError"
+          @exit="exitEditor"
+        />
+        <CollaborationSidebar
+          v-if="isLoggedIn"
+          :filePath="contentPath"
+          @load-save="handleLoadSave"
+        />
+      </div>
+      
+      <div v-else class="main-container">
         <div class="content">
-          <DesignSidebar v-if="!isEditing" class="sidebar" />
+          <DesignSidebar class="sidebar" />
           <div class="text-container">
+            <EditBanner 
+              v-if="isLoggedIn" 
+              @edit="startEditing" 
+              class="edit-banner-container"
+            />
+            
             <div class="body-container">
               <ClientOnly>
-                <div v-if="isEditing" class="editor-container">
-                  <TiptapEditor
-                    :content="editorContent"
-                    :filePath="contentPath"
-                    @update:content="handleContentChange"
-                    @save="handleSave"
-                    @error="handleEditorError"
-                    @exit="exitEditor"
-                  />
-                  <CollaborationSidebar
-                    v-if="isLoggedIn"
-                    :filePath="contentPath"
-                    @load-save="handleLoadSave"
-                  />
-                </div>
-                <div v-else class="prose-content">
+                <div class="prose-content">
                   <div :key="githubContent">
                     <template v-if="!isLoggedIn">
                       <ContentDoc :path="path" :head="false">
@@ -47,7 +53,7 @@
               </ClientOnly>
             </div>
           </div>
-          <TableOfContents v-if="!isEditing" class="table-of-contents" />
+          <TableOfContents class="table-of-contents" />
         </div>
         <Footer class="full-width-footer" />
       </div>
@@ -78,6 +84,7 @@ import { useEditorStore } from "~/store/editor";
 import { useStore } from "~/store";
 import Footer from "~/components/Footer.vue";
 import { useEventBus } from '@vueuse/core';
+import EditBanner from '~/components/EditBanner.vue';
 
 // Initialize GitHub functionality and services
 const {
@@ -559,6 +566,11 @@ onBeforeUnmount(() => {
     clearContentPolling(); // Clean up content polling
   }
 });
+
+const startEditing = () => {
+  isEditing.value = true;
+  editorContent.value = githubContent.value ? githubContent.value : '';
+};
 </script>
 
 
@@ -699,7 +711,6 @@ onBeforeUnmount(() => {
 }
 
 .text-container {
-  display: flex;
   width: 740px;
   flex-shrink: 0;
   justify-content: center;
@@ -1045,6 +1056,37 @@ onBeforeUnmount(() => {
 
 .editing-mode .main-content {
   @apply ml-0;
+}
+
+.edit-banner-container {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+/* Full-width editor container */
+.editor-fullwidth-container {
+  width: 75%;
+  display: flex;
+  min-height: calc(100vh - 64px);
+  padding: 0;
+  margin: 0;
+  background: white;
+}
+
+/* Adjust TiptapEditor to take full available width */
+.editor-fullwidth-container :deep(.editor-wrapper) {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Ensure the editor content has some padding */
+.editor-fullwidth-container :deep(.ProseMirror) {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 </style>

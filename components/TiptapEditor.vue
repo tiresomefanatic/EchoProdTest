@@ -1310,7 +1310,6 @@ const handleExit = () => {
   align-items: center;
   padding: 0.5rem 1rem;
   background: white;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .tiptap-toolbar {
@@ -1323,6 +1322,8 @@ const handleExit = () => {
   flex-wrap: wrap;
   background: white;
   border-bottom: 1px solid #e5e7eb;
+  width: 100%;
+  justify-content: center;
 }
 
 .tiptap-toolbar button,

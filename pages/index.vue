@@ -3,7 +3,7 @@
       <ClientOnly>
         <div>
           <!-- Add the ActionBar component when user is logged in -->
-          <ActionBar v-if="isLoggedIn" />
+          <ActionBar v-if="isLoggedIn && !isEditing" />
           <Header />
           
           <div class="landing-content-area">
