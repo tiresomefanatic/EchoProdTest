@@ -251,14 +251,17 @@ onMounted(() => {
 
 <style scoped>
 .header {
-  z-index: 50;
-  display: flex;
+  /* Remove fixed positioning */
+  position: relative;
   width: 100%;
   height: 56px;
+  display: flex;
   justify-content: center;
   align-items: center;
   background: rgba(250, 250, 250, 0.60);
   backdrop-filter: blur(27px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 60;
   overflow-x: hidden;
 }
 

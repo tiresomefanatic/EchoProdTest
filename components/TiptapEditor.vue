@@ -31,7 +31,9 @@ import ImageUploader from "~/components/ImageUploader.vue";
 
 interface Props {
   content?: string;
-  filePath: string;
+  filePath?: string;
+  externalRawMode?: boolean;
+  externalPreviewMode?: boolean;
 }
 
 const handleInsertComponent = (componentId: string) => {
@@ -113,8 +115,8 @@ const emit = defineEmits<{
 const localContent = ref(props.content || "");
 const originalContent = ref("");
 const isSaving = ref(false);
-const previewMode = ref(false);
-const rawMode = ref(false);
+const previewMode = ref(props.externalPreviewMode || false);
+const rawMode = ref(props.externalRawMode || false);
 const editor = ref<Editor | null>(null);
 const editorInitialized = ref(false);
 const previewContent = ref("");
@@ -290,15 +292,15 @@ const editorOptions = {
   theme: "vs",
   language: "html",
   fontSize: 13,
-  lineNumbers: "on",
+  lineNumbers: "on" as const,
   renderWhitespace: "selection",
   minimap: {
     enabled: true,
     scale: 1,
-    showSlider: "mouseover",
+    showSlider: "mouseover" as "mouseover" | "always",
   },
   scrollBeyondLastLine: false,
-  wordWrap: "on",
+  wordWrap: "on" as "on" | "off" | "wordWrapColumn" | "bounded",
   lineHeight: 20,
   padding: { top: 16, bottom: 16 },
   folding: true,
@@ -317,8 +319,8 @@ const editorOptions = {
   tabSize: 2,
   automaticLayout: true,
   scrollbar: {
-    vertical: "visible",
-    horizontal: "visible",
+    vertical: "visible" as const,
+    horizontal: "visible" as const,
     useShadows: false,
     verticalHasArrows: false,
     horizontalHasArrows: false,
@@ -338,6 +340,19 @@ const editorOptions = {
     strings: true,
   },
 };
+
+// Watch for external mode changes via props
+watch(() => props.externalRawMode, (newValue) => {
+  if (newValue !== undefined) {
+    rawMode.value = newValue;
+  }
+});
+
+watch(() => props.externalPreviewMode, (newValue) => {
+  if (newValue !== undefined) {
+    previewMode.value = newValue;
+  }
+});
 
 // Computed properties
 const showCommitButton = computed(() => {
@@ -446,7 +461,21 @@ const handleLoadSave = async (content: string) => {
     // Update content and save as draft
     editorStore.saveDraft(props.filePath || "", content);
     if (editor.value) {
+      // Store current selection if editor is focused
+      const wasEditorFocused = editor.value.isFocused;
+      let savedSelection = null;
+      if (wasEditorFocused) {
+        savedSelection = editor.value.state.selection;
+      }
+      
+      // Update editor content
       editor.value.commands.setContent(content);
+      
+      // Restore selection and focus if editor was focused
+      if (wasEditorFocused && savedSelection) {
+        editor.value.commands.focus();
+        editor.value.chain().setTextSelection(savedSelection.from).run();
+      }
     }
     localContent.value = content;
 
@@ -557,13 +586,34 @@ const handleRawContentChange = (value: string) => {
 // Modify the watch for rawText to be more aggressive in updating
 watch(
   () => rawText.value,
-  (newContent) => {
+  (newContent, oldContent) => {
     if (newContent && editor.value) {
+      // Don't update if content is the same or if the editor has focus
+      // This prevents the cursor from jumping when typing
+      if (editor.value.isFocused && newContent === formatHTML(editor.value.getHTML())) {
+        return;
+      }
+      
       console.log("rawText changed, updating editor content:", newContent.length);
       const formattedContent = formatHTML(newContent);
       
-      // Force editor update
+      // Store current selection if editor is focused
+      const wasEditorFocused = editor.value.isFocused;
+      let savedSelection = null;
+      if (wasEditorFocused) {
+        savedSelection = editor.value.state.selection;
+      }
+      
+      // Force editor update with selection preservation
       editor.value.commands.setContent(formattedContent, false);
+      
+      // Restore selection if editor was focused
+      if (wasEditorFocused && savedSelection) {
+        editor.value.commands.focus();
+        editor.value.chain().setTextSelection(savedSelection.from).run();
+      }
+      
+      // Update local content reference
       localContent.value = formattedContent;
       
       // Also update preview if active
@@ -832,46 +882,16 @@ onMounted(async () => {
       //   return false;
       // },
     },
-    // onUpdate: ({ editor: ed }) => {
-    //   const { selection } = ed.state;
-    //   const { $from } = selection;
-    //   const parent = $from.parent;
-
-    //   if (
-    //     parent.type.name === "styledDiv" &&
-    //     parent.attrs.style?.includes("display: flex")
-    //   ) {
-    //     const currentNode = $from.node();
-    //     const parentPos = $from.before($from.depth);
-
-    //     let targetPos = parentPos;
-    //     let targetDepth = $from.depth;
-
-    //     while (targetDepth > 1) {
-    //       const node = $from.node(targetDepth);
-    //       if (node.attrs.style?.includes("display: flex")) {
-    //         targetPos = $from.before(targetDepth);
-    //         break;
-    //       }
-    //       targetDepth--;
-    //     }
-
-    //     const content = formatHTML(ed.getHTML());
-    //     localContent.value = content;
-    //     previewContent.value = content;
-    //     emit("update:content", content);
-    //   } else {
-    //     const content = formatHTML(ed.getHTML());
-    //     localContent.value = content;
-    //     previewContent.value = content;
-    //     emit("update:content", content);
-    //   }
-    // },
     onUpdate: ({ editor: ed }) => {
       const content = formatHTML(ed.getHTML());
-      localContent.value = content;
-      previewContent.value = content;
-      emit("update:content", content);
+      
+      // Only emit update if content actually changed
+      // This prevents unnecessary update cycles that can affect cursor position
+      if (content !== localContent.value) {
+        localContent.value = content;
+        previewContent.value = content;
+        emit("update:content", content);
+      }
     },
     parseOptions: {
       preserveWhitespace: "full",
@@ -932,13 +952,10 @@ const handleExit = () => {
       <div class="editor-main">
         <div class="editor-toolbar">
           <div class="toolbar-left">
-            <span class="file-path">{{ props.filePath }}</span>
-            <span class="content-source" :class="contentSource.toLowerCase()">
-              {{ contentSource }}
-            </span>
+            <!-- Removed filepath and content source indicators -->
           </div>
 
-          <div class="toolbar-right">
+          <div class="toolbar-right" style="display: none;">
             <!-- Editor View -->
             <template v-if="!previewMode && !rawMode">
               <button class="toolbar-button" @click="rawMode = true">
@@ -1043,18 +1060,21 @@ const handleExit = () => {
           <template v-if="!previewMode && !rawMode">
             <div class="tiptap-toolbar" v-if="editor">
               <button
+                class="menubar-button"
                 @click="editor.chain().focus().toggleBold().run()"
                 :class="{ 'is-active': editor.isActive('bold') }"
               >
                 Bold
               </button>
               <button
+                class="menubar-button"
                 @click="editor.chain().focus().toggleItalic().run()"
                 :class="{ 'is-active': editor.isActive('italic') }"
               >
                 Italic
               </button>
               <button
+                class="menubar-button"
                 @click="
                   editor.chain().focus().toggleHeading({ level: 1 }).run()
                 "
@@ -1065,6 +1085,7 @@ const handleExit = () => {
                 H1
               </button>
               <button
+                class="menubar-button"
                 @click="
                   editor.chain().focus().toggleHeading({ level: 2 }).run()
                 "
@@ -1075,6 +1096,7 @@ const handleExit = () => {
                 H2
               </button>
               <button
+                class="menubar-button"
                 @click="editor.chain().focus().toggleBulletList().run()"
                 :class="{ 'is-active': editor.isActive('bulletList') }"
               >
@@ -1101,6 +1123,7 @@ const handleExit = () => {
               </select>
               <div class="alignment-buttons">
                 <button
+                  class="menubar-button"
                   @click="editor.chain().focus().setTextAlign('left').run()"
                   :class="{
                     'is-active': editor.isActive({ textAlign: 'left' }),
@@ -1110,6 +1133,7 @@ const handleExit = () => {
                   <span class="align-icon">⟵</span>
                 </button>
                 <button
+                  class="menubar-button"
                   @click="editor.chain().focus().setTextAlign('center').run()"
                   :class="{
                     'is-active': editor.isActive({ textAlign: 'center' }),
@@ -1119,6 +1143,7 @@ const handleExit = () => {
                   <span class="align-icon">↔</span>
                 </button>
                 <button
+                  class="menubar-button"
                   @click="editor.chain().focus().setTextAlign('right').run()"
                   :class="{
                     'is-active': editor.isActive({ textAlign: 'right' }),
@@ -1128,6 +1153,7 @@ const handleExit = () => {
                   <span class="align-icon">⟶</span>
                 </button>
                 <button
+                  class="menubar-button"
                   @click="editor.chain().focus().setTextAlign('justify').run()"
                   :class="{
                     'is-active': editor.isActive({ textAlign: 'justify' }),
@@ -1139,6 +1165,7 @@ const handleExit = () => {
               </div>
               <div class="divider"></div>
               <button
+                class="menubar-button"
                 @click="setLink"
                 :class="{ 'is-active': editor.isActive('link') }"
                 title="Add/edit link"
@@ -1146,6 +1173,7 @@ const handleExit = () => {
                 🔗
               </button>
               <button
+                class="menubar-button"
                 v-if="editor.isActive('link')"
                 @click="removeLink"
                 title="Remove link"
@@ -1154,8 +1182,8 @@ const handleExit = () => {
               </button>
               <div class="divider"></div>
               <button
+                class="menubar-button"
                 @click="showImageDialog = true"
-                class="toolbar-button"
                 title="Insert image"
               >
                 <span class="button-icon">🖼️</span>
@@ -1317,29 +1345,34 @@ const handleExit = () => {
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: 0.5rem;
+  padding: 0.5rem 1rem;
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
   background: white;
   border-bottom: 1px solid #e5e7eb;
+  overflow-x: auto;
+  width: 100%;
 }
 
 .tiptap-toolbar button,
 .toolbar-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  padding: 0 0.75rem;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border-radius: 4px;
   background: white;
   color: #374151;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  font-size: 14px;
+  margin: 0 1px;
 }
 
 .toolbar-right {
@@ -1386,14 +1419,16 @@ const handleExit = () => {
 }
 
 .font-size-select {
-  padding: 0.5rem;
+  padding: 4px 6px;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border-radius: 4px;
   background: white;
   color: #374151;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 14px;
   transition: all 0.2s;
+  height: 32px;
+  min-width: 100px;
 }
 
 .font-size-select:hover {
@@ -1409,26 +1444,28 @@ const handleExit = () => {
 
 /* Make sure dropdown aligns with other toolbar items */
 .tiptap-toolbar select {
-  height: 36px; /* Match button height */
-  margin: 0;
+  height: 32px; /* Match button height */
+  margin: 0 1px;
+  padding: 0 6px;
 }
 
 .alignment-buttons {
   display: flex;
-  gap: 0.5rem;
-  padding: 0 0.5rem;
+  gap: 4px;
+  padding: 0 4px;
   border-left: 1px solid #e5e7eb;
   border-right: 1px solid #e5e7eb;
-  margin: 0 0.5rem;
+  margin: 0 4px;
 }
 
 .alignment-buttons button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
+  margin: 0;
 }
 
 .align-icon {
@@ -1727,6 +1764,67 @@ const handleExit = () => {
   .toolbar-button {
     font-size: 0.75rem;
     padding: 0.375rem 0.75rem;
+  }
+
+  .commit-dialog-content {
+    width: 95%;
+    padding: 1rem;
+  }
+}
+
+/* Add menubar-button styling for button consistency */
+.menubar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-size: 14px;
+  margin: 0 1px;
+}
+
+.menubar-button:hover {
+  background: #f9fafb;
+}
+
+.menubar-button.is-active {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .tiptap-toolbar {
+    padding: 4px 8px;
+    overflow-x: auto;
+  }
+
+  .menubar-button,
+  .tiptap-toolbar button,
+  .toolbar-button {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 4px;
+    font-size: 12px;
+  }
+  
+  .font-size-select {
+    height: 28px;
+    min-width: 80px;
+    font-size: 12px;
+  }
+  
+  .toolbar-button {
+    font-size: 12px;
+    padding: 4px 8px;
   }
 
   .commit-dialog-content {

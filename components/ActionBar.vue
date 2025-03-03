@@ -39,14 +39,11 @@ const navigateToBranches = () => {
 .action-bar {
   background-color: #5377D4;
   width: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
+  position: relative;
   height: 56px;
   display: flex;
   align-items: center;
+  z-index: 100;
 }
 
 .action-bar-container {

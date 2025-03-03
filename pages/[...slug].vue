@@ -1,10 +1,67 @@
 # [...slug].vue
 <template>
-  <div class="page-wrapper">
+  <div class="page-wrapper" :class="{ 'editor-mode': isEditing }">
     <ClientOnly>
-      <!-- Place ActionBar at the top -->
+      <!-- Show ActionBar only for logged in users -->
       <ActionBar v-if="isLoggedIn" />
+
+
       <Header class="menu-bar" />
+      
+      <!-- Exit button when editing - shown in different position -->
+      <div v-if="isLoggedIn && isEditing" class="branch-header">
+        <div class="branch-info">
+          <div class="branch-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13.75 2.5C14.1642 2.5 14.5 2.83579 14.5 3.25V4.16667H15.4167C15.8309 4.16667 16.1667 4.50246 16.1667 4.91667C16.1667 5.33088 15.8309 5.66667 15.4167 5.66667H14.5V6.58333C14.5 6.99755 14.1642 7.33333 13.75 7.33333C13.3358 7.33333 13 6.99755 13 6.58333V5.66667H12.0833C11.6691 5.66667 11.3333 5.33088 11.3333 4.91667C11.3333 4.50246 11.6691 4.16667 12.0833 4.16667H13V3.25C13 2.83579 13.3358 2.5 13.75 2.5Z" fill="white"/>
+              <path d="M6.25 2.5C6.66421 2.5 7 2.83579 7 3.25V4.16667H7.91667C8.33088 4.16667 8.66667 4.50246 8.66667 4.91667C8.66667 5.33088 8.33088 5.66667 7.91667 5.66667H7V6.58333C7 6.99755 6.66421 7.33333 6.25 7.33333C5.83579 7.33333 5.5 6.99755 5.5 6.58333V5.66667H4.58333C4.16912 5.66667 3.83333 5.33088 3.83333 4.91667C3.83333 4.50246 4.16912 4.16667 4.58333 4.16667H5.5V3.25C5.5 2.83579 5.83579 2.5 6.25 2.5Z" fill="white"/>
+              <path d="M6.25 17.5C6.66421 17.5 7 17.1642 7 16.75V15.8333H7.91667C8.33088 15.8333 8.66667 15.4975 8.66667 15.0833C8.66667 14.6691 8.33088 14.3333 7.91667 14.3333H7V13.4167C7 13.0024 6.66421 12.6667 6.25 12.6667C5.83579 12.6667 5.5 13.0024 5.5 13.4167V14.3333H4.58333C4.16912 14.3333 3.83333 14.6691 3.83333 15.0833C3.83333 15.4975 4.16912 15.8333 4.58333 15.8333H5.5V16.75C5.5 17.1642 5.83579 17.5 6.25 17.5Z" fill="white"/>
+              <path d="M13.75 17.5C14.1642 17.5 14.5 17.1642 14.5 16.75V15.8333H15.4167C15.8309 15.8333 16.1667 15.4975 16.1667 15.0833C16.1667 14.6691 15.8309 14.3333 15.4167 14.3333H14.5V13.4167C14.5 13.0024 14.1642 12.6667 13.75 12.6667C13.3358 12.6667 13 13.0024 13 13.4167V14.3333H12.0833C11.6691 14.3333 11.3333 14.6691 11.3333 15.0833C11.3333 15.4975 11.6691 15.8333 12.0833 15.8333H13V16.75C13 17.1642 13.3358 17.5 13.75 17.5Z" fill="white"/>
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M10 7.5C10.6903 7.5 11.25 8.05964 11.25 8.75C11.25 9.44036 10.6903 10 10 10C9.30964 10 8.75 9.44036 8.75 8.75C8.75 8.05964 9.30964 7.5 10 7.5ZM10 12.5C10.6903 12.5 11.25 11.9404 11.25 11.25C11.25 10.5596 10.6903 10 10 10C9.30964 10 8.75 10.5596 8.75 11.25C8.75 11.9404 9.30964 12.5 10 12.5Z" fill="white"/>
+            </svg>
+          </div>
+          {{ currentBranch }}
+          <span class="content-status" :class="getContentSourceClass">
+            {{ getContentSource }}
+          </span>
+        </div>
+        
+        <!-- New editor mode controls -->
+        <div class="editor-mode-controls">
+          <button 
+            class="mode-button" 
+            :class="{ 'active': isRawMode }"
+            @click="handleEditorModeChange(isRawMode ? 'normal' : 'raw')"
+          >
+            Raw
+          </button>
+          <button 
+            class="mode-button" 
+            :class="{ 'active': isPreviewMode }"
+            @click="handleEditorModeChange(isPreviewMode ? 'normal' : 'preview')"
+          >
+            <span class="eye-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
+              </svg>
+            </span>
+            Preview
+          </button>
+        </div>
+        
+        <div class="header-actions">
+          <button @click="exitEditor" class="exit-button">
+            Exit branch
+          </button>
+          <button @click="() => handleSave(editorContent)" class="save-button">
+            Save changes
+          </button>
+          <button @click="handleRequestReview" class="review-button">
+            Request review
+          </button>
+        </div>
+      </div>
       
       <div class="main-container">
         <div class="content">
@@ -12,15 +69,30 @@
           <div class="text-container">
             <div class="body-container">
               <ClientOnly>
+                <!-- Move contribution banner here -->
+                <div v-if="isLoggedIn && !isEditing" class="contribution-banner">
+                  <div class="banner-content">
+                    <p class="banner-text">Would you like to contribute to this document?</p>
+                    <button @click="handleEditClick" class="banner-button">
+                      Edit this document
+                    </button>
+                  </div>
+                </div>
+                
                 <div v-if="isEditing" class="editor-container">
-                  <TiptapEditor
-                    :content="editorContent"
-                    :filePath="contentPath"
-                    @update:content="handleContentChange"
-                    @save="handleSave"
-                    @error="handleEditorError"
-                    @exit="exitEditor"
-                  />
+                  <div class="editor-content-wrapper">
+                    <TiptapEditor
+                      :content="editorContent"
+                      :filePath="contentPath"
+                      :externalRawMode="isRawMode"
+                      :externalPreviewMode="isPreviewMode"
+                      @update:content="handleContentChange"
+                      @save="handleSave"
+                      @error="handleEditorError"
+                      @exit="exitEditor"
+                      ref="tiptapEditorRef"
+                    />
+                  </div>
                   <CollaborationSidebar
                     v-if="isLoggedIn"
                     :filePath="contentPath"
@@ -49,7 +121,8 @@
           </div>
           <TableOfContents v-if="!isEditing" class="table-of-contents" />
         </div>
-        <Footer class="full-width-footer" />
+        <!-- Only render Footer when NOT in editing mode -->
+        <Footer v-if="!isEditing" class="full-width-footer" />
       </div>
     </ClientOnly>
   </div>
@@ -97,10 +170,23 @@ const { showToast } = useToast();
 // State management
 const loading = ref(false);
 const isEditing = ref(false);
+const isRawMode = ref(false);
+const isPreviewMode = ref(false);
 const githubContent = ref("");
 const editorContent = ref("");
 const contentKey = ref(0);
 const contentLastModified = ref<string | null>(null);
+
+// Computed properties for content source indicator
+const getContentSource = computed(() => {
+  if (!contentPath.value) return 'New File';
+  if (editorStore.hasDraft(contentPath.value)) return 'Draft';
+  return 'Committed';
+});
+
+const getContentSourceClass = computed(() => {
+  return getContentSource.value.toLowerCase();
+});
 
 // Route handling setup
 const route = useRoute();
@@ -249,6 +335,9 @@ const clearDraftCache = (path: string, branch: string) => {
   }
 };
 
+// Reference to the TiptapEditor component
+const tiptapEditorRef = ref(null);
+
 /**
  * Load GitHub content
  */
@@ -329,6 +418,7 @@ const handleEditClick = async () => {
   await loadGithubContent();
 };
 
+// Make the TiptapEditor component aware of the editor mode controls
 const handleContentChange = (newContent: string) => {
   editorContent.value = newContent;
   store.updateRawText(newContent);
@@ -378,6 +468,17 @@ const handleEditorError = (error: Error) => {
     title: "Editor Error",
     message: error.message,
     type: "error",
+  });
+};
+
+/**
+ * Handles request review action
+ */
+const handleRequestReview = () => {
+  showToast({
+    title: "Review Requested",
+    message: "Your review request has been submitted",
+    type: "success",
   });
 };
 
@@ -559,6 +660,21 @@ onBeforeUnmount(() => {
     clearContentPolling(); // Clean up content polling
   }
 });
+
+// Handle editor mode changes
+const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
+  if (mode === 'normal') {
+    isRawMode.value = false;
+    isPreviewMode.value = false;
+    // The TiptapEditor component will react to these properties internally
+  } else if (mode === 'raw') {
+    isRawMode.value = true;
+    isPreviewMode.value = false;
+  } else if (mode === 'preview') {
+    isRawMode.value = false;
+    isPreviewMode.value = true;
+  }
+};
 </script>
 
 
@@ -663,7 +779,6 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .page-wrapper {
-  padding-top: v-bind('isLoggedIn ? "0px" : "0"');
   display: flex;
   width: 100%;
   padding-bottom: 80px;
@@ -675,7 +790,7 @@ onBeforeUnmount(() => {
   display: flex;
   width: 100%;
   max-width: 100%;
-  padding: 96px 0 60px;
+  padding: 40px 0 60px; /* 40px spacing from header to content */
   flex-direction: column;
   align-items: center;
   gap: 64px;
@@ -718,7 +833,7 @@ onBeforeUnmount(() => {
 .table-of-contents {
   flex-shrink: 0;
   position: sticky;
-  top: 80px;
+  
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -736,7 +851,7 @@ onBeforeUnmount(() => {
 /* 1025px - 1379px */
 @media screen and (min-width: 1025px) and (max-width: 1379px) {
   .content {
-    padding: 0 266px;
+    padding: 0 199.5px;
   }
   
   .text-container {
@@ -942,11 +1057,105 @@ onBeforeUnmount(() => {
 /* Editor styles */
 .editor-container {
   width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-height: calc(100vh - 200px);
-  padding: 40px;
+  min-height: calc(100vh - 64px);
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Style the editor content wrapper to match text-container width exactly */
+.editor-content-wrapper {
+  width: 740px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Create a completely separate styling section for editor view */
+.page-wrapper.editor-mode {
+  padding-bottom: 0;
+}
+
+.page-wrapper.editor-mode .content {
+  padding: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.page-wrapper.editor-mode .text-container {
+  width: 100%;
+  margin-left: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.page-wrapper.editor-mode .body-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Create specific overrides for the TiptapEditor component */
+:deep(.tiptap-editor) {
+  width: 740px;
+  margin: 0 auto;
+  padding: 20px;
+  border: none;
+  box-shadow: none;
+}
+
+:deep(.tiptap-editor .ProseMirror) {
+  padding: 16px;
+  min-height: 300px;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1F2937;
+}
+
+/* Style the document status container separately */
+.document-status {
+  width: 740px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background-color: white;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+/* Specific styling for editor-mode to ensure CollaborationSidebar is positioned correctly */
+.page-wrapper.editor-mode .editor-container {
+  display: flex;
+  width: 100%;
+}
+
+/* Ensure the collaboration sidebar is properly positioned */
+.page-wrapper.editor-mode .editor-container .collaboration-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  height: calc(100vh - 64px);
+  border-left: 1px solid #E5E7EB;
+  overflow-y: auto;
+}
+
+/* Additional responsive styles for editor mode */
+@media screen and (max-width: 767px) {
+  .editor-content-wrapper {
+    width: 100%;
+    padding: 0 16px;
+  }
+  
+  :deep(.tiptap-editor) {
+    width: 100%;
+  }
 }
 
 .content-area {
@@ -1047,4 +1256,424 @@ onBeforeUnmount(() => {
   @apply ml-0;
 }
 
+.edit-document-button {
+  background-color: #4361EE;
+  color: white;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.edit-document-button:hover {
+  background-color: #3651d4;
+}
+
+.exit-button {
+  background-color: #6B7280;
+  color: white;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.exit-button:hover {
+  background-color: #4B5563;
+}
+
+.content-header {
+  background-color: white;
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Contribution banner styles */
+.contribution-banner {
+  width: 100%;
+  background-color: #5377D4;
+  border-radius: 8px;
+  margin: 0 0 24px 0;
+  z-index: 10;
+  position: relative;
+}
+
+.banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+}
+
+.banner-text {
+  color: white;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.banner-button {
+  background-color: transparent;
+  color: white;
+  border: 1px solid white;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.banner-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.exit-button-container {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 32px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.exit-button {
+  background-color: #6B7280;
+  color: white;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.exit-button:hover {
+  background-color: #4B5563;
+}
+
+@media (max-width: 768px) {
+  .banner-content {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+}
+
+/* Remove these styles as they're being replaced */
+.content-header, 
+.edit-document-button {
+  display: none;
+}
+
+/* New styles for Figma design */
+.branch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 64px;
+  padding: 0 32px;
+  background-color: #4361EE;
+  color: white;
+}
+
+.branch-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.branch-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.exit-button {
+  background-color: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.exit-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.save-button {
+  background-color: #10B981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-button:hover {
+  background-color: #059669;
+}
+
+.review-button {
+  background-color: white;
+  color: #4361EE;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.review-button:hover {
+  background-color: #f3f4f6;
+}
+
+.lock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-text {
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+/* Responsive styles for branch header */
+@media (max-width: 768px) {
+  .branch-header {
+    flex-direction: column;
+    padding: 16px;
+    height: auto;
+    gap: 16px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Remove or update the old exit button container */
+.exit-button-container {
+  display: none;
+}
+
+/* Style the TiptapEditor toolbar buttons to fit in a single row */
+:deep(.tiptap-editor .editor-menubar) {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #E5E7EB;
+  overflow-x: auto;
+}
+
+:deep(.tiptap-editor .menubar-button) {
+  background: transparent;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  color: #4B5563;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  min-width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+:deep(.tiptap-editor .menubar-button:hover) {
+  background-color: #F3F4F6;
+}
+
+:deep(.tiptap-editor .menubar-button.is-active) {
+  background-color: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+/* Style the font size dropdown to be compact */
+:deep(.tiptap-editor .font-size-dropdown) {
+  height: 30px;
+  min-width: 110px;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+/* Specific toolbar styling to match Figma design */
+.page-wrapper.editor-mode .editor-toolbar {
+  display: flex;
+  align-items: center;
+  width: 740px;
+  margin: 0 auto;
+  padding: 8px 0;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.page-wrapper.editor-mode .toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Adjust the TiptapEditor content area to have more padding between toolbar and content */
+:deep(.tiptap-editor .ProseMirror) {
+  padding: 20px 16px;
+  min-height: 300px;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1F2937;
+}
+
+/* Override any default button padding/margin that might be causing wrapping */
+:deep(.editor-menubar button),
+:deep(.editor-menubar select) {
+  margin: 0 2px;
+}
+
+/* Path display styling to match Figma */
+.file-path {
+  font-size: 14px;
+  color: #6B7280;
+  margin-right: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 16px;
+}
+
+/* Make buttons more compact */
+:deep(.tiptap-editor .menubar-button) {
+  padding: 4px 6px;
+  margin: 0 1px;
+}
+
+@media screen and (max-width: 767px) {
+  .page-wrapper.editor-mode .editor-toolbar {
+    width: 100%;
+    padding: 8px 16px;
+    overflow-x: auto;
+  }
+}
+
+/* Style for the editor mode controls */
+.editor-mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto;
+}
+
+.mode-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-button.active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.eye-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* Hide the original toolbar buttons in TiptapEditor */
+:deep(.editor-toolbar .toolbar-right) {
+  display: none !important;
+}
+
+/* Content status indicator styles */
+.content-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 8px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.content-status.draft {
+  background-color: #FBBF24;
+  color: #78350F;
+}
+
+.content-status.committed {
+  background-color: #10B981;
+  color: white;
+}
+
+.content-status.new {
+  background-color: #60A5FA;
+  color: white;
+}
 </style>
