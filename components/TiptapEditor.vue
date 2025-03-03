@@ -1354,6 +1354,7 @@ const handleExit = () => {
   border-bottom: 1px solid #e5e7eb;
   overflow-x: auto;
   width: 100%;
+  min-height: 48px;
 }
 
 .tiptap-toolbar button,
