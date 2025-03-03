@@ -6,7 +6,7 @@
       <ActionBar v-if="isLoggedIn" />
 
 
-      <Header class="menu-bar" />
+      <Header v-if="!isEditing" class="menu-bar" />
       
       <!-- Exit button when editing - shown in different position -->
       <div v-if="isLoggedIn && isEditing" class="branch-header">
@@ -46,12 +46,19 @@
                 <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
               </svg>
             </span>
-            Preview
+          </button>
+          <button class="view-main-button">
+            View main
           </button>
         </div>
         
         <div class="header-actions">
           <button @click="exitEditor" class="exit-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 14H12.6667C13.0203 14 13.3594 13.8595 13.6095 13.6095C13.8595 13.3594 14 13.0203 14 12.6667V3.33333C14 2.97971 13.8595 2.64057 13.6095 2.39052C13.3594 2.14048 13.0203 2 12.6667 2H10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5.33203 11.3334L1.9987 8.00008L5.33203 4.66675" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 8H10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
             Exit branch
           </button>
           <button @click="() => handleSave(editorContent)" class="save-button">
@@ -1275,21 +1282,32 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 }
 
 .exit-button {
-  background-color: #6B7280;
-  color: white;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 500;
-  font-size: 16px;
-  border: none;
+  width: 126px;
+  height: 35px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.40);
+  color: #FFF;
+  font-family: "PP Neue Montreal";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 530;
+  line-height: 24px;
+  letter-spacing: 0.15px;
+  background: transparent;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   transition: background-color 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .exit-button:hover {
-  background-color: #4B5563;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.exit-button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .content-header {
@@ -1350,7 +1368,7 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 
 .exit-button {
   background-color: #6B7280;
-  color: white;
+  color: #000;
   border-radius: 8px;
   padding: 12px 24px;
   font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1359,7 +1377,6 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   border: none;
   cursor: pointer;
   transition: background-color 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .exit-button:hover {
@@ -1388,7 +1405,7 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   width: 100%;
   height: 64px;
   padding: 0 32px;
-  background-color: #4361EE;
+  background-color: transparent;
   color: white;
 }
 
@@ -1431,20 +1448,25 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 }
 
 .save-button {
-  background-color: #10B981;
-  color: white;
-  border: none;
+  padding: 8px 12px;
+  justify-content: center;
+  align-items: center;
   border-radius: 8px;
-  padding: 8px 16px;
-  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 500;
+  background: #000;
+  color: #FFF;
+  font-family: "PP Neue Montreal";
   font-size: 14px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: var(--Title-Medium-Tracking, 0.15px);
+  border: none;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .save-button:hover {
-  background-color: #059669;
+  background-color: #333;
 }
 
 .review-button {
@@ -1608,18 +1630,16 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 }
 
 .mode-button {
-  display: flex;
+  padding: 8px 12px;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  border: 1px solid #BABABA;
   background: transparent;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
+  color: #000;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s;
+  max-height: 40px;
 }
 
 .mode-button:hover {
@@ -1638,9 +1658,34 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 }
 
 .eye-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   fill: currentColor;
+}
+
+/* New styles for the right-aligned actions */
+.right-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.view-main-button {
+  display: flex;
+  padding: 8px 12px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid #BABABA;
+  background: transparent;
+  color: #1D1B1B;
+  font-family: "PP Neue Montreal";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 530;
+  line-height: 24px;
+  letter-spacing: var(--Title-Medium-Tracking, 0.15px);
+  cursor: pointer;
 }
 
 /* Hide the original toolbar buttons in TiptapEditor */
