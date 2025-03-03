@@ -13,13 +13,6 @@
           "locked": false,
           "children": [
             {
-              "title": "Logo",
-              "path": "/design/foundation/Logo",
-              "type": "directory",
-              "locked": false,
-              "children": []
-            },
-            {
               "title": "Animation",
               "path": "/design/foundation/animation",
               "type": "file",
@@ -42,6 +35,13 @@
               "path": "/design/foundation/icons",
               "type": "file",
               "locked": true
+            },
+            {
+              "title": "Logo",
+              "path": "/design/foundation/Logo",
+              "type": "directory",
+              "locked": false,
+              "children": []
             },
             {
               "title": "Illustration",
@@ -89,14 +89,14 @@
               "children": []
             },
             {
-              "title": "Case Studies",
-              "path": "/design/product/case-studies",
+              "title": "Creative Spectrum",
+              "path": "/design/product/creative-spectrum",
               "type": "file",
               "locked": false
             },
             {
-              "title": "Creative Spectrum",
-              "path": "/design/product/creative-spectrum",
+              "title": "Case Studies",
+              "path": "/design/product/case-studies",
               "type": "file",
               "locked": false
             }
