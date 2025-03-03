@@ -29,6 +29,19 @@
         </button>
       </div>
 
+      <!-- Sidebar Header with Edit Toggle -->
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Navigation</h2>
+        <button
+          class="edit-toggle-btn"
+          @click="handleToggleEditMode"
+          :class="{ 'active': isEditMode }"
+          aria-label="Toggle edit mode"
+        >
+          {{ isEditMode ? 'Done' : 'Edit' }}
+        </button>
+      </div>
+
       <nav class="design-nav">
         <div class="nav-content">
           <template v-if="isLoading">
@@ -39,6 +52,15 @@
           </template>
 
           <template v-else>
+            <!-- New Category Button (visible only in edit mode) -->
+            <button 
+              v-if="isEditMode" 
+              class="new-category-btn"
+              @click="handleAddNewFolder('/')"
+            >
+              New Category
+            </button>
+
             <div
               v-for="section in navigationStructure"
               :key="section.path"
@@ -51,30 +73,62 @@
                   'main-item': true,
                   locked: section.locked,
                   active: isActiveSection(section.path),
+                  'edit-mode': isEditMode,
                 }"
-                @click="!section.locked && toggleSection(section.path)"
+                @click="!section.locked && !isEditMode && toggleSection(section.path)"
               >
-                {{ section.title }}
-                <template v-if="section.type === 'directory'">
-                  <span
-                    class="chevron"
-                    :class="{ rotated: !isCollapsed[section.path] }"
-                    >›</span
+                <div class="item-content">
+                  {{ section.title }}
+                  <template v-if="section.type === 'directory' && !isEditMode">
+                    <span
+                      class="chevron"
+                      :class="{ rotated: !isCollapsed[section.path] }"
+                      >›</span
+                    >
+                  </template>
+                  <img
+                    v-if="section.locked"
+                    src="/lock-icon.svg"
+                    alt="Locked"
+                    class="lock-icon"
+                  />
+                </div>
+
+                <!-- Edit Mode Controls -->
+                <div v-if="isEditMode && !section.locked" class="item-controls">
+                  <!-- Up/Down arrows for reordering -->
+                  <button 
+                    class="item-control-btn up-btn" 
+                    @click.stop="handleMoveItemUp(section.path)"
+                    aria-label="Move item up"
                   >
-                </template>
-                <img
-                  v-if="section.locked"
-                  src="/lock-icon.svg"
-                  alt="Locked"
-                  class="lock-icon"
-                />
+                    ↑
+                  </button>
+                  <button 
+                    class="item-control-btn down-btn" 
+                    @click.stop="handleMoveItemDown(section.path)"
+                    aria-label="Move item down"
+                  >
+                    ↓
+                  </button>
+
+                  <!-- Add new file button (for directories) -->
+                  <button 
+                    v-if="section.type === 'directory'" 
+                    class="item-control-btn add-btn"
+                    @click.stop="handleAddNewFile(section.path)"
+                    aria-label="Add new file"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
               <!-- Section Content -->
               <div
                 v-if="section.type === 'directory'"
                 class="nav-section"
-                :class="{ collapsed: isCollapsed[section.path] }"
+                :class="{ collapsed: isCollapsed[section.path] && !isEditMode }"
               >
                 <div class="nav-section-inner">
                   <template v-for="item in section.children" :key="item.path">
@@ -85,19 +139,48 @@
                         :class="{
                           locked: item.locked,
                           active: isActiveSection(item.path),
+                          'edit-mode': isEditMode,
                         }"
-                        @click="!item.locked && toggleSection(item.path)"
+                        @click="!item.locked && !isEditMode && toggleSection(item.path)"
                       >
-                        {{ item.title }}
-                        <span
-                          class="chevron"
-                          :class="{ rotated: !isCollapsed[item.path] }"
-                          >›</span
-                        >
+                        <div class="item-content">
+                          {{ item.title }}
+                          <span
+                            v-if="!isEditMode"
+                            class="chevron"
+                            :class="{ rotated: !isCollapsed[item.path] }"
+                            >›</span
+                          >
+                        </div>
+
+                        <!-- Edit Mode Controls -->
+                        <div v-if="isEditMode && !item.locked" class="item-controls">
+                          <button 
+                            class="item-control-btn up-btn" 
+                            @click.stop="handleMoveItemUp(item.path)"
+                            aria-label="Move item up"
+                          >
+                            ↑
+                          </button>
+                          <button 
+                            class="item-control-btn down-btn" 
+                            @click.stop="handleMoveItemDown(item.path)"
+                            aria-label="Move item down"
+                          >
+                            ↓
+                          </button>
+                          <button 
+                            class="item-control-btn add-btn"
+                            @click.stop="handleAddNewFile(item.path)"
+                            aria-label="Add new file"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                       <div
                         class="nav-section nested"
-                        :class="{ collapsed: isCollapsed[item.path] }"
+                        :class="{ collapsed: isCollapsed[item.path] && !isEditMode }"
                       >
                         <div class="nav-section-inner">
                           <template
@@ -111,19 +194,48 @@
                                 :class="{
                                   locked: child.locked,
                                   active: isActiveSection(child.path),
+                                  'edit-mode': isEditMode,
                                 }"
-                                @click="!child.locked && toggleSection(child.path)"
+                                @click="!child.locked && !isEditMode && toggleSection(child.path)"
                               >
-                                {{ child.title }}
-                                <span
-                                  class="chevron"
-                                  :class="{ rotated: !isCollapsed[child.path] }"
-                                  >›</span
-                                >
+                                <div class="item-content">
+                                  {{ child.title }}
+                                  <span
+                                    v-if="!isEditMode"
+                                    class="chevron"
+                                    :class="{ rotated: !isCollapsed[child.path] }"
+                                    >›</span
+                                  >
+                                </div>
+
+                                <!-- Edit Mode Controls -->
+                                <div v-if="isEditMode && !child.locked" class="item-controls">
+                                  <button 
+                                    class="item-control-btn up-btn" 
+                                    @click.stop="handleMoveItemUp(child.path)"
+                                    aria-label="Move item up"
+                                  >
+                                    ↑
+                                  </button>
+                                  <button 
+                                    class="item-control-btn down-btn" 
+                                    @click.stop="handleMoveItemDown(child.path)"
+                                    aria-label="Move item down"
+                                  >
+                                    ↓
+                                  </button>
+                                  <button 
+                                    class="item-control-btn add-btn"
+                                    @click.stop="handleAddNewFile(child.path)"
+                                    aria-label="Add new file"
+                                  >
+                                    +
+                                  </button>
+                                </div>
                               </div>
                               <div
                                 class="nav-section nested"
-                                :class="{ collapsed: isCollapsed[child.path] }"
+                                :class="{ collapsed: isCollapsed[child.path] && !isEditMode }"
                               >
                                 <div class="nav-section-inner">
                                   <template
@@ -131,56 +243,101 @@
                                     :key="grandChild.path"
                                   >
                                     <!-- Files within nested directory -->
-                                    <NuxtLink
-                                      v-if="grandChild.type === 'file' && !grandChild.locked"
-                                      :to="grandChild.path"
-                                      class="nav-item sub-item"
+                                    <div 
+                                      v-if="grandChild.type === 'file'" 
                                       :class="{
+                                        'nav-item sub-item': true,
+                                        locked: grandChild.locked,
                                         'router-link-active': route.path === grandChild.path,
+                                        'edit-mode': isEditMode,
                                       }"
-                                      @click="closeMobileMenu"
                                     >
-                                      {{ grandChild.title }}
-                                    </NuxtLink>
-                                    <div
-                                      v-else-if="grandChild.type === 'file' && grandChild.locked"
-                                      class="nav-item sub-item locked"
-                                      :title="'This feature is coming soon'"
-                                    >
-                                      {{ grandChild.title }}
-                                      <img
-                                        src="/lock-icon.svg"
-                                        alt="Locked"
-                                        class="lock-icon"
-                                      />
+                                      <div class="item-content">
+                                        <NuxtLink
+                                          v-if="!grandChild.locked"
+                                          :to="grandChild.path"
+                                          @click="closeMobileMenu"
+                                        >
+                                          {{ grandChild.title }}
+                                        </NuxtLink>
+                                        <span v-else>
+                                          {{ grandChild.title }}
+                                          <img
+                                            src="/lock-icon.svg"
+                                            alt="Locked"
+                                            class="lock-icon"
+                                          />
+                                        </span>
+                                      </div>
+
+                                      <!-- Edit Mode Controls for Files -->
+                                      <div v-if="isEditMode && !grandChild.locked" class="item-controls">
+                                        <button 
+                                          class="item-control-btn up-btn" 
+                                          @click.stop="handleMoveItemUp(grandChild.path)"
+                                          aria-label="Move item up"
+                                        >
+                                          ↑
+                                        </button>
+                                        <button 
+                                          class="item-control-btn down-btn" 
+                                          @click.stop="handleMoveItemDown(grandChild.path)"
+                                          aria-label="Move item down"
+                                        >
+                                          ↓
+                                        </button>
+                                      </div>
                                     </div>
                                   </template>
                                 </div>
                               </div>
                             </template>
+
                             <!-- Files within directory -->
-                            <NuxtLink
-                              v-else-if="child.type === 'file' && !child.locked"
-                              :to="child.path"
-                              class="nav-item sub-item"
+                            <div 
+                              v-else-if="child.type === 'file'" 
                               :class="{
+                                'nav-item sub-item': true,
+                                locked: child.locked,
                                 'router-link-active': route.path === child.path,
+                                'edit-mode': isEditMode,
                               }"
-                              @click="closeMobileMenu"
                             >
-                              {{ child.title }}
-                            </NuxtLink>
-                            <div
-                              v-else-if="child.type === 'file' && child.locked"
-                              class="nav-item sub-item locked"
-                              :title="'This feature is coming soon'"
-                            >
-                              {{ child.title }}
-                              <img
-                                src="/lock-icon.svg"
-                                alt="Locked"
-                                class="lock-icon"
-                              />
+                              <div class="item-content">
+                                <NuxtLink
+                                  v-if="!child.locked"
+                                  :to="child.path"
+                                  @click="closeMobileMenu"
+                                >
+                                  {{ child.title }}
+                                </NuxtLink>
+                                <span v-else>
+                                  {{ child.title }}
+                                  <img
+                                    src="/lock-icon.svg"
+                                    alt="Locked"
+                                    class="lock-icon"
+                                  />
+                                </span>
+                              </div>
+
+                              <!-- Edit Mode Controls for Files -->
+                              <div v-if="isEditMode && !child.locked" class="item-controls">
+                                <button 
+                                  class="item-control-btn up-btn" 
+                                  @click.stop="handleMoveItemUp(child.path)"
+                                  aria-label="Move item up"
+                                >
+                                  ↑
+                                </button>
+                                <button 
+                                  class="item-control-btn down-btn" 
+                                  @click.stop="handleMoveItemDown(child.path)"
+                                  aria-label="Move item down"
+                                >
+                                  ↓
+                                </button>
+                              </div>
                             </div>
                           </template>
                         </div>
@@ -188,28 +345,50 @@
                     </template>
 
                     <!-- File Items (both locked and unlocked) -->
-                    <NuxtLink
-                      v-else-if="item.type === 'file' && !item.locked"
-                      :to="item.path"
-                      class="nav-item sub-item"
+                    <div 
+                      v-else-if="item.type === 'file'" 
                       :class="{
+                        'nav-item sub-item': true,
+                        locked: item.locked,
                         'router-link-active': route.path === item.path,
+                        'edit-mode': isEditMode,
                       }"
-                      @click="closeMobileMenu"
                     >
-                      {{ item.title }}
-                    </NuxtLink>
-                    <div
-                      v-else-if="item.type === 'file' && item.locked"
-                      class="nav-item sub-item locked"
-                      :title="'This feature is coming soon'"
-                    >
-                      {{ item.title }}
-                      <img
-                        src="/lock-icon.svg"
-                        alt="Locked"
-                        class="lock-icon"
-                      />
+                      <div class="item-content">
+                        <NuxtLink
+                          v-if="!item.locked"
+                          :to="item.path"
+                          @click="closeMobileMenu"
+                        >
+                          {{ item.title }}
+                        </NuxtLink>
+                        <span v-else>
+                          {{ item.title }}
+                          <img
+                            src="/lock-icon.svg"
+                            alt="Locked"
+                            class="lock-icon"
+                          />
+                        </span>
+                      </div>
+
+                      <!-- Edit Mode Controls for Files -->
+                      <div v-if="isEditMode && !item.locked" class="item-controls">
+                        <button 
+                          class="item-control-btn up-btn" 
+                          @click.stop="handleMoveItemUp(item.path)"
+                          aria-label="Move item up"
+                        >
+                          ↑
+                        </button>
+                        <button 
+                          class="item-control-btn down-btn" 
+                          @click.stop="handleMoveItemDown(item.path)"
+                          aria-label="Move item down"
+                        >
+                          ↓
+                        </button>
+                      </div>
                     </div>
                   </template>
                 </div>
@@ -226,6 +405,10 @@
       :class="{ 'is-visible': isOpen }"
       @click="toggleMobileMenu"
     ></div>
+    
+    <!-- Modal Components -->
+    <NewFileModal />
+    <NewFolderModal />
   </div>
 </template>
 
@@ -235,6 +418,7 @@ import { useRoute } from "vue-router";
 import { useNavigation } from "../composables/useNavigation";
 import { useGithub } from "../composables/useGithub";
 import { useEventBus } from '@vueuse/core';
+import { useSidebarEditorStore } from "~/store/sidebarEditor";
 
 const route = useRoute();
 const isOpen = ref(false);
@@ -242,6 +426,10 @@ const isCollapsed = ref<Record<string, boolean>>({});
 
 const { navigationStructure, isLoading, refreshNavigation } = useNavigation();
 const { currentBranch } = useGithub();
+const sidebarEditorStore = useSidebarEditorStore();
+
+// Computed properties
+const isEditMode = computed(() => sidebarEditorStore.isEditMode);
 
 // Create a computed key to force re-render when navigationStructure changes
 const navigationStructureKey = computed(() =>
@@ -256,6 +444,52 @@ const isActiveSection = (sectionPath: string): boolean => {
 // Toggle section collapse state
 const toggleSection = (path: string) => {
   isCollapsed.value[path] = !isCollapsed.value[path];
+};
+
+// Edit mode handlers
+const handleToggleEditMode = () => {
+  sidebarEditorStore.toggleEditMode();
+  
+  // When enabling edit mode, expand all sections
+  if (sidebarEditorStore.isEditMode) {
+    navigationStructure.value.forEach((section) => {
+      if (section.type === "directory") {
+        isCollapsed.value[section.path] = false;
+        // Also expand nested directories
+        section.children?.forEach((child) => {
+          if (child.type === "directory") {
+            isCollapsed.value[child.path] = false;
+            // And grandchildren directories
+            child.children?.forEach((grandChild) => {
+              if (grandChild.type === "directory") {
+                isCollapsed.value[grandChild.path] = false;
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+};
+
+// Add new file handler
+const handleAddNewFile = (parentPath: string) => {
+  sidebarEditorStore.openNewFileModal(parentPath);
+};
+
+// Add new folder handler
+const handleAddNewFolder = (parentPath: string) => {
+  sidebarEditorStore.openNewFolderModal(parentPath);
+};
+
+// Move item up handler
+const handleMoveItemUp = async (itemPath: string) => {
+  await sidebarEditorStore.moveItemUp(itemPath);
+};
+
+// Move item down handler
+const handleMoveItemDown = async (itemPath: string) => {
+  await sidebarEditorStore.moveItemDown(itemPath);
 };
 
 // Listen for sidebar toggle events from header
@@ -297,20 +531,23 @@ watch(currentBranch, async () => {
 watch(
   () => route.path,
   (newPath) => {
-    // Find and expand all parent sections of the current route
-    navigationStructure.value.forEach((section) => {
-      if (section.type === "directory") {
-        if (newPath.startsWith(section.path)) {
-          isCollapsed.value[section.path] = false;
-          // Also expand any nested directories
-          section.children?.forEach((child) => {
-            if (child.type === "directory" && newPath.startsWith(child.path)) {
-              isCollapsed.value[child.path] = false;
-            }
-          });
+    // Only adjust collapse state if not in edit mode
+    if (!sidebarEditorStore.isEditMode) {
+      // Find and expand all parent sections of the current route
+      navigationStructure.value.forEach((section) => {
+        if (section.type === "directory") {
+          if (newPath.startsWith(section.path)) {
+            isCollapsed.value[section.path] = false;
+            // Also expand any nested directories
+            section.children?.forEach((child) => {
+              if (child.type === "directory" && newPath.startsWith(child.path)) {
+                isCollapsed.value[child.path] = false;
+              }
+            });
+          }
         }
-      }
-    });
+      });
+    }
   },
   { immediate: true }
 );
@@ -349,6 +586,103 @@ onMounted(async () => {
   gap: 4px;
   width: 100%;
   padding-right: 8px;
+}
+
+/* Edit Mode Styles */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebar-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.edit-toggle-btn {
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.edit-toggle-btn.active {
+  background-color: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.new-category-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  margin: 8px 0;
+  width: 100%;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.new-category-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.item-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.item-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.item-control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.item-control-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.add-btn {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.nav-group-header.edit-mode,
+.nav-item.edit-mode {
+  padding-right: 8px;
+  border-radius: 4px;
+  background-color: rgba(243, 244, 246, 0.5);
+}
+
+.nav-group-header.edit-mode:hover,
+.nav-item.edit-mode:hover {
+  background-color: rgba(229, 231, 235, 0.8);
 }
 
 .loading-state {
@@ -429,6 +763,13 @@ onMounted(async () => {
   text-decoration: none;
 }
 
+.nav-item a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  width: 100%;
+}
+
 .nav-item:hover:not(.locked) {
   font-weight: 538;
   color: rgba(0, 0, 0, 0.7);
@@ -476,7 +817,7 @@ onMounted(async () => {
 .lock-icon {
   width: 16px;
   height: 16px;
-  margin-left: auto;
+  margin-left: 4px;
 }
 
 .nav-item.locked,
@@ -555,7 +896,7 @@ onMounted(async () => {
   }
 
   .nav-content {
-    height: calc(100vh - 64px);
+    height: calc(100vh - 120px); /* Account for header and edit buttons */
     overflow-y: auto;
     overflow-x: hidden;
     margin: 0;

@@ -4,7 +4,7 @@
         <p class="create-branch-text">Create a branch to make changes</p>
       
       <div class="action-buttons">
-        <button class="action-button create-branch">
+        <button class="action-button create-branch" @click="showBranchModal = true">
           Create a branch
         </button>
         <button class="action-button see-branches" @click="navigateToBranches">
@@ -12,21 +12,100 @@
         </button>
       </div>
     </div>
+
+    <!-- Branch creation modal -->
+    <div v-if="showBranchModal" class="modal-overlay" @click.self="showBranchModal = false">
+      <div class="modal-content">
+        <h3 class="modal-title">Create a new branch</h3>
+        <p class="modal-description">Create a new branch from {{ currentBranch }}</p>
+        
+        <div class="branch-form">
+          <label for="branch-name">Branch name</label>
+          <input 
+            id="branch-name" 
+            v-model="newBranchName" 
+            type="text" 
+            placeholder="feature/my-new-branch"
+            :class="{ 'error': branchNameError }"
+          />
+          <p v-if="branchNameError" class="error-message">{{ branchNameError }}</p>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="cancel-button" @click="showBranchModal = false">Cancel</button>
+          <button 
+            class="create-button" 
+            @click="handleCreateBranch" 
+            :disabled="isCreatingBranch || !newBranchName || !!branchNameError"
+          >
+            <span v-if="isCreatingBranch">Creating...</span>
+            <span v-else>Create branch</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useGithub } from '~/composables/useGithub';
 import { navigateTo } from '#app';
+import { useToast } from '~/composables/useToast';
 
-const { currentBranch, branches, switchBranch } = useGithub();
+const { currentBranch, branches, switchBranch, createBranch } = useGithub();
+const { showToast } = useToast();
 
-const handleBranchChange = async () => {
+// Modal state
+const showBranchModal = ref(false);
+const newBranchName = ref('');
+const isCreatingBranch = ref(false);
+const branchNameError = ref('');
+
+// Watch for branch name changes to validate
+watch(newBranchName, (value) => {
+  if (!value) {
+    branchNameError.value = '';
+    return;
+  }
+  
+  // Basic branch name validation
+  if (!/^[a-zA-Z0-9_\-\/]+$/.test(value)) {
+    branchNameError.value = 'Branch name can only contain letters, numbers, hyphens, underscores, and slashes';
+  } else if (branches.value.includes(value)) {
+    branchNameError.value = 'A branch with this name already exists';
+  } else {
+    branchNameError.value = '';
+  }
+});
+
+const handleCreateBranch = async () => {
+  if (!newBranchName.value || branchNameError.value) {
+    return;
+  }
+  
+  isCreatingBranch.value = true;
+  
   try {
-    await switchBranch(currentBranch.value);
+    const result = await createBranch(newBranchName.value);
+    if (result) {
+      showToast({
+        title: 'Success',
+        message: `Branch "${newBranchName.value}" created successfully`,
+        type: 'success'
+      });
+      showBranchModal.value = false;
+      newBranchName.value = '';
+    }
   } catch (error) {
-    console.error('Error switching branch:', error);
+    console.error('Error creating branch:', error);
+    showToast({
+      title: 'Error',
+      message: `Failed to create branch: ${error.message || 'Unknown error'}`,
+      type: 'error'
+    });
+  } finally {
+    isCreatingBranch.value = false;
   }
 };
 
@@ -118,5 +197,128 @@ const navigateToBranches = () => {
 
 .action-button:hover {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.modal-title {
+  font-family: "PP Neue Montreal", sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #111827;
+}
+
+.modal-description {
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 14px;
+  margin-bottom: 24px;
+  color: #6B7280;
+}
+
+.branch-form {
+  margin-bottom: 24px;
+}
+
+.branch-form label {
+  display: block;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #374151;
+}
+
+.branch-form input {
+  width: 100%;
+  padding: 10px 12px;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 14px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  background-color: #F9FAFB;
+}
+
+.branch-form input:focus {
+  outline: none;
+  border-color: #4361EE;
+  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.1);
+}
+
+.branch-form input.error {
+  border-color: #EF4444;
+}
+
+.error-message {
+  color: #EF4444;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancel-button {
+  padding: 10px 16px;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #374151;
+  background-color: #F3F4F6;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #E5E7EB;
+}
+
+.create-button {
+  padding: 10px 16px;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #FFFFFF;
+  background-color: #4361EE;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.create-button:hover:not(:disabled) {
+  background-color: #3651D4;
+}
+
+.create-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style> 
