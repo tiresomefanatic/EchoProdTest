@@ -29,7 +29,6 @@
 
       <!-- Sidebar Header with Edit Toggle -->
       <div class="sidebar-header">
-        <h2 class="sidebar-title">Navigation</h2>
         <div class="header-actions">
           <button
             v-if="hasDraftChanges"
@@ -60,14 +59,6 @@
           </template>
 
           <template v-else-if="navigationStructure && navigationStructure.length > 0">
-            <!-- New Category Button (visible only in edit mode) -->
-            <button 
-              v-if="isEditMode" 
-              class="new-category-btn"
-              @click="handleAddNewFolder('/')"
-            >
-              New Category
-            </button>
 
             <div
               v-for="section in navigationStructure"
@@ -268,7 +259,7 @@
                                         >
                                           {{ grandChild.title }}
                                         </NuxtLink>
-                                        <span v-else>
+                                        <span v-else class="locked-item-content">
                                           {{ grandChild.title }}
                                           <img
                                             src="/lock-icon.svg"
@@ -319,7 +310,7 @@
                                 >
                                   {{ child.title }}
                                 </NuxtLink>
-                                <span v-else>
+                                <span v-else class="locked-item-content">
                                   {{ child.title }}
                                   <img
                                     src="/lock-icon.svg"
@@ -370,7 +361,7 @@
                         >
                           {{ item.title }}
                         </NuxtLink>
-                        <span v-else>
+                        <span v-else class="locked-item-content">
                           {{ item.title }}
                           <img
                             src="/lock-icon.svg"
@@ -402,6 +393,20 @@
                 </div>
               </div>
             </div>
+            <div v-if="isEditMode" class="nav-section-divider"></div>
+            <!-- New Category Button (visible only in edit mode) -->
+            <button 
+              v-if="isEditMode" 
+              class="new-category-btn"
+              @click="handleAddNewFolder('/')"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10.0013 18.3327C14.6037 18.3327 18.3346 14.6017 18.3346 9.99935C18.3346 5.39698 14.6037 1.66602 10.0013 1.66602C5.39893 1.66602 1.66797 5.39698 1.66797 9.99935C1.66797 14.6017 5.39893 18.3327 10.0013 18.3327Z" fill="#5377D4"/>
+                <path d="M10 6.66699V13.3337" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6.66797 10H13.3346" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              New Category
+            </button>
           </template>
 
           <template v-else>
@@ -652,6 +657,8 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  background-color: #f5f5f5;
+  border-radius: 12px;
 }
 
 .nav-content {
@@ -660,15 +667,16 @@ onMounted(async () => {
   gap: 4px;
   width: 100%;
   padding-right: 8px;
+  padding-left: 8px;
+  padding-top: 8px;
 }
 
 /* Edit Mode Styles */
 .sidebar-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   padding: 12px 8px;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .sidebar-title {
@@ -691,6 +699,7 @@ onMounted(async () => {
   font-size: 12px;
   cursor: pointer;
   font-weight: 500;
+  color: #000;
 }
 
 .edit-toggle-btn.active {
@@ -719,28 +728,62 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 
+.nav-section-divider {
+  border-top: 1px solid #D7D7D7;
+}
+
 .new-category-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 8px 12px;
   background-color: #f3f4f6;
-  border: 1px solid #d1d5db;
   border-radius: 4px;
-  margin: 8px 0;
+  margin: 0;
   width: 100%;
-  font-size: 13px;
   cursor: pointer;
-}
-
-.new-category-btn:hover {
-  background-color: #e5e7eb;
+  gap: 8px;
+  color: #000;
+  font-family: "PP Neue Montreal";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 24px; /* 150% */
+  letter-spacing: 0.15px;
 }
 
 .item-content {
   display: flex;
   align-items: center;
   flex: 1;
+  color: #000;
+  font-family: "PP Neue Montreal";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 24px; /* 150% */
+  letter-spacing: 0.15px;
+}
+
+.locked-item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  color: #757575;
+  font-family: "PP Neue Montreal";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 24px; /* 150% */
+  letter-spacing: 0.15px;
+}
+
+.lock-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .item-controls {
@@ -776,13 +819,14 @@ onMounted(async () => {
 .nav-group-header.edit-mode,
 .nav-item.edit-mode {
   padding-right: 8px;
-  border-radius: 4px;
+  padding-left: 8px;
+  border-radius: 12px;
   background-color: rgba(243, 244, 246, 0.5);
 }
 
 .nav-group-header.edit-mode:hover,
 .nav-item.edit-mode:hover {
-  background-color: rgba(229, 231, 235, 0.8);
+  background-color: #d8d8d8;
 }
 
 .loading-state {
@@ -813,7 +857,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 4px;
 }
 
 .nav-group-header {
@@ -879,7 +922,6 @@ onMounted(async () => {
   overflow: hidden;
   transition: height 0.3s ease-in-out;
   height: auto;
-  padding-left: 16px;
   margin-top: 0;
 }
 
@@ -908,12 +950,6 @@ onMounted(async () => {
 
 .chevron.rotated {
   transform: rotate(90deg);
-}
-
-.lock-icon {
-  width: 16px;
-  height: 16px;
-  margin-left: 4px;
 }
 
 .nav-item.locked,
@@ -1008,8 +1044,6 @@ onMounted(async () => {
 }
 
 .nav-section.nested .nav-section-inner {
-  border-left: 1px solid #e5e7eb;
-  margin-left: 6px;
   padding-left: 6px;
 }
 
