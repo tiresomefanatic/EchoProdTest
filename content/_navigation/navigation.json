@@ -1,6 +1,20 @@
 {
   "navigation": [
     {
+      "title": "Develop",
+      "path": "/develop",
+      "type": "directory",
+      "locked": false,
+      "children": [
+        {
+          "title": "Index",
+          "path": "/develop/index",
+          "type": "file",
+          "locked": false
+        }
+      ]
+    },
+    {
       "title": "Design",
       "path": "/design",
       "type": "directory",
@@ -155,20 +169,6 @@
         {
           "title": "Motion Design",
           "path": "/design/Motion Design",
-          "type": "file",
-          "locked": false
-        }
-      ]
-    },
-    {
-      "title": "Develop",
-      "path": "/develop",
-      "type": "directory",
-      "locked": false,
-      "children": [
-        {
-          "title": "Index",
-          "path": "/develop/index",
           "type": "file",
           "locked": false
         }
