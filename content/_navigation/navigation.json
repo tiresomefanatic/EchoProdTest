@@ -32,16 +32,16 @@
               "locked": true
             },
             {
-              "title": "Color",
-              "path": "/design/foundation/color",
-              "type": "file",
-              "locked": false
-            },
-            {
               "title": "Icons",
               "path": "/design/foundation/icons",
               "type": "file",
               "locked": true
+            },
+            {
+              "title": "Color",
+              "path": "/design/foundation/color",
+              "type": "file",
+              "locked": false
             },
             {
               "title": "Illustration",
