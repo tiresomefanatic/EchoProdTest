@@ -1481,10 +1481,12 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 /* Responsive styles for branch header */
 @media (max-width: 768px) {
   .branch-header {
-    flex-direction: column;
+    flex-direction: row;
     padding: 16px;
     height: auto;
     gap: 16px;
+    align-items: flex-start;
+    justify-content: space-between;
   }
 
   .header-actions {
