@@ -11,6 +11,7 @@ interface SidebarEditorState {
   showNewFolderModal: boolean;
   newItemParentPath: string | null;
   newItemName: string;
+  hasDraftChanges: boolean; // Track if we have unsaved navigation changes
 }
 
 export const useSidebarEditorStore = defineStore("sidebarEditor", {
@@ -20,6 +21,7 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
     showNewFolderModal: false,
     newItemParentPath: null,
     newItemName: "",
+    hasDraftChanges: false,
   }),
 
   actions: {
@@ -36,6 +38,30 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
       this.showNewFolderModal = false;
       this.newItemParentPath = null;
       this.newItemName = "";
+    },
+
+    // Draft navigation structure management
+    saveDraftNavigationStructure(navigationData: any) {
+      if (process.client) {
+        const currentBranch = localStorage.getItem("github-current-branch") || "main";
+        localStorage.setItem(`navigation-draft-${currentBranch}`, JSON.stringify(navigationData));
+        this.hasDraftChanges = true;
+      }
+    },
+
+    getDraftNavigationStructure() {
+      if (!process.client) return null;
+      const currentBranch = localStorage.getItem("github-current-branch") || "main";
+      const draft = localStorage.getItem(`navigation-draft-${currentBranch}`);
+      return draft ? JSON.parse(draft) : null;
+    },
+
+    clearDraftNavigationStructure() {
+      if (process.client) {
+        const currentBranch = localStorage.getItem("github-current-branch") || "main";
+        localStorage.removeItem(`navigation-draft-${currentBranch}`);
+        this.hasDraftChanges = false;
+      }
     },
 
     // Open modal for creating a new file
@@ -60,12 +86,12 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
       this.newItemName = "";
     },
 
-    // Create a new file in the navigation structure
+    // Create a new file in the navigation structure - updated to use draft system
     async createNewFile() {
       if (!this.newItemParentPath || !this.newItemName) return;
       
       const navigationStore = useNavigationStore();
-      const { currentBranch, saveFileContent, createNewContent } = useGithub();
+      const { currentBranch, createNewContent } = useGithub();
       const { showToast } = useToast();
       const config = useRuntimeConfig();
       
@@ -89,17 +115,25 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
         // Create the empty file on GitHub
         await createNewContent(fullPath.replace(/\/+/g, "/"), "", false);
         
-        // Fetch the current navigation.json
-        const navigationJsonPath = "content/_navigation/navigation.json";
-        const navigationJsonUrl = `https://raw.githubusercontent.com/${config.public.githubOwner}/${config.public.githubRepo}/${currentBranch.value}/${navigationJsonPath}`;
-        const response = await fetch(navigationJsonUrl);
+        // Get current navigation structure (either from draft or GitHub)
+        let navigationData;
+        const existingDraft = this.getDraftNavigationStructure();
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch navigation.json: ${response.statusText}`);
+        if (existingDraft) {
+          navigationData = existingDraft;
+        } else {
+          // Fetch the current navigation.json from GitHub
+          const navigationJsonPath = "content/_navigation/navigation.json";
+          const navigationJsonUrl = `https://raw.githubusercontent.com/${config.public.githubOwner}/${config.public.githubRepo}/${currentBranch.value}/${navigationJsonPath}`;
+          const response = await fetch(navigationJsonUrl);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch navigation.json: ${response.statusText}`);
+          }
+          
+          const navigationJsonContent = await response.text();
+          navigationData = JSON.parse(navigationJsonContent);
         }
-        
-        const navigationJsonContent = await response.text();
-        const navigationData = JSON.parse(navigationJsonContent);
         
         // Create the new file entry
         const newFile = {
@@ -142,22 +176,15 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
           addToParent(navigationData.navigation);
         }
         
-        // Save the updated navigation.json
-        await saveFileContent(
-          config.public.githubOwner,
-          config.public.githubRepo,
-          navigationJsonPath,
-          JSON.stringify(navigationData, null, 2),
-          `Add new file: ${normalizedFileName}`,
-          currentBranch.value
-        );
+        // Save to draft instead of immediately committing
+        this.saveDraftNavigationStructure(navigationData);
         
-        // Update the navigation store
-        await navigationStore.updateAfterCommit();
+        // Update the navigation store to use the draft
+        navigationStore.applyDraft(navigationData);
         
         showToast({
           title: "Success",
-          message: "New file created successfully",
+          message: "New file created (draft saved)",
           type: "success",
         });
         
@@ -173,12 +200,12 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
       }
     },
     
-    // Create a new folder in the navigation structure
+    // Create a new folder in the navigation structure - updated to use draft system
     async createNewFolder() {
       if (!this.newItemParentPath || !this.newItemName) return;
       
       const navigationStore = useNavigationStore();
-      const { currentBranch, saveFileContent, createNewContent } = useGithub();
+      const { currentBranch, createNewContent } = useGithub();
       const { showToast } = useToast();
       const config = useRuntimeConfig();
       
@@ -201,17 +228,25 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
         // Create a .gitkeep file in the new folder on GitHub
         await createNewContent(fullPath.replace(/\/+/g, "/"), "", true);
         
-        // Fetch the current navigation.json
-        const navigationJsonPath = "content/_navigation/navigation.json";
-        const navigationJsonUrl = `https://raw.githubusercontent.com/${config.public.githubOwner}/${config.public.githubRepo}/${currentBranch.value}/${navigationJsonPath}`;
-        const response = await fetch(navigationJsonUrl);
+        // Get current navigation structure (either from draft or GitHub)
+        let navigationData;
+        const existingDraft = this.getDraftNavigationStructure();
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch navigation.json: ${response.statusText}`);
+        if (existingDraft) {
+          navigationData = existingDraft;
+        } else {
+          // Fetch the current navigation.json
+          const navigationJsonPath = "content/_navigation/navigation.json";
+          const navigationJsonUrl = `https://raw.githubusercontent.com/${config.public.githubOwner}/${config.public.githubRepo}/${currentBranch.value}/${navigationJsonPath}`;
+          const response = await fetch(navigationJsonUrl);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch navigation.json: ${response.statusText}`);
+          }
+          
+          const navigationJsonContent = await response.text();
+          navigationData = JSON.parse(navigationJsonContent);
         }
-        
-        const navigationJsonContent = await response.text();
-        const navigationData = JSON.parse(navigationJsonContent);
         
         // Create the new folder entry
         const newFolder = {
@@ -255,22 +290,15 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
           addToParent(navigationData.navigation);
         }
         
-        // Save the updated navigation.json
-        await saveFileContent(
-          config.public.githubOwner,
-          config.public.githubRepo,
-          navigationJsonPath,
-          JSON.stringify(navigationData, null, 2),
-          `Add new folder: ${normalizedFolderName}`,
-          currentBranch.value
-        );
+        // Save to draft instead of immediately committing
+        this.saveDraftNavigationStructure(navigationData);
         
-        // Update the navigation store
-        await navigationStore.updateAfterCommit();
+        // Update the navigation store to use the draft
+        navigationStore.applyDraft(navigationData);
         
         showToast({
           title: "Success",
-          message: "New folder created successfully",
+          message: "New category created (draft saved)",
           type: "success",
         });
         
@@ -280,31 +308,41 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
         console.error("Error creating new folder:", error);
         showToast({
           title: "Error",
-          message: `Failed to create folder: ${error.message}`,
+          message: `Failed to create category: ${error.message}`,
           type: "error",
         });
       }
     },
     
-    // Move an item up in the same parent
+    // Move an item up in the same parent - updated to use draft
     async moveItemUp(itemPath: string) {
       const navigationStore = useNavigationStore();
-      const { currentBranch, saveFileContent } = useGithub();
+      const { currentBranch } = useGithub();
       const { showToast } = useToast();
       const config = useRuntimeConfig();
       
       try {
-        // Fetch the current navigation.json
-        const navigationJsonPath = "content/_navigation/navigation.json";
-        const navigationJsonUrl = `https://raw.githubusercontent.com/${config.public.githubOwner}/${config.public.githubRepo}/${currentBranch.value}/${navigationJsonPath}`;
-        const response = await fetch(navigationJsonUrl);
+        // Get the current navigation structure
+        let navigationData;
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch navigation.json: ${response.statusText}`);
+        // First check if we already have a draft
+        const existingDraft = this.getDraftNavigationStructure();
+        
+        if (existingDraft) {
+          navigationData = existingDraft;
+        } else {
+          // Otherwise fetch from GitHub
+          const navigationJsonPath = "content/_navigation/navigation.json";
+          const navigationJsonUrl = `https://raw.githubusercontent.com/${config.public.githubOwner}/${config.public.githubRepo}/${currentBranch.value}/${navigationJsonPath}`;
+          const response = await fetch(navigationJsonUrl);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch navigation.json: ${response.statusText}`);
+          }
+          
+          const navigationJsonContent = await response.text();
+          navigationData = JSON.parse(navigationJsonContent);
         }
-        
-        const navigationJsonContent = await response.text();
-        const navigationData = JSON.parse(navigationJsonContent);
         
         // Find the item and its parent
         let parentCollection = null;
@@ -371,22 +409,15 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
           parentCollection.splice(lastDirIndex + 1, 0, foundItem);
         }
         
-        // Save the updated navigation.json
-        await saveFileContent(
-          config.public.githubOwner,
-          config.public.githubRepo,
-          navigationJsonPath,
-          JSON.stringify(navigationData, null, 2),
-          `Move item up: ${itemPath}`,
-          currentBranch.value
-        );
+        // Save to draft instead of committing to GitHub
+        this.saveDraftNavigationStructure(navigationData);
         
-        // Update the navigation store
-        await navigationStore.updateAfterCommit();
+        // Update the navigation store to use the draft
+        navigationStore.applyDraft(navigationData);
         
         showToast({
           title: "Success",
-          message: "Item moved up successfully",
+          message: "Item moved up successfully (draft saved)",
           type: "success",
         });
       } catch (error) {
@@ -399,25 +430,35 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
       }
     },
     
-    // Move an item down in the same parent
+    // Move an item down in the same parent - updated to use draft
     async moveItemDown(itemPath: string) {
       const navigationStore = useNavigationStore();
-      const { currentBranch, saveFileContent } = useGithub();
+      const { currentBranch } = useGithub();
       const { showToast } = useToast();
       const config = useRuntimeConfig();
       
       try {
-        // Fetch the current navigation.json
-        const navigationJsonPath = "content/_navigation/navigation.json";
-        const navigationJsonUrl = `https://raw.githubusercontent.com/${config.public.githubOwner}/${config.public.githubRepo}/${currentBranch.value}/${navigationJsonPath}`;
-        const response = await fetch(navigationJsonUrl);
+        // Get the current navigation structure
+        let navigationData;
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch navigation.json: ${response.statusText}`);
+        // First check if we already have a draft
+        const existingDraft = this.getDraftNavigationStructure();
+        
+        if (existingDraft) {
+          navigationData = existingDraft;
+        } else {
+          // Otherwise fetch from GitHub
+          const navigationJsonPath = "content/_navigation/navigation.json";
+          const navigationJsonUrl = `https://raw.githubusercontent.com/${config.public.githubOwner}/${config.public.githubRepo}/${currentBranch.value}/${navigationJsonPath}`;
+          const response = await fetch(navigationJsonUrl);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch navigation.json: ${response.statusText}`);
+          }
+          
+          const navigationJsonContent = await response.text();
+          navigationData = JSON.parse(navigationJsonContent);
         }
-        
-        const navigationJsonContent = await response.text();
-        const navigationData = JSON.parse(navigationJsonContent);
         
         // Find the item and its parent
         let parentCollection = null;
@@ -483,22 +524,15 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
           parentCollection.splice(firstFileIndex - 1, 0, foundItem);
         }
         
-        // Save the updated navigation.json
-        await saveFileContent(
-          config.public.githubOwner,
-          config.public.githubRepo,
-          navigationJsonPath,
-          JSON.stringify(navigationData, null, 2),
-          `Move item down: ${itemPath}`,
-          currentBranch.value
-        );
+        // Save to draft instead of committing to GitHub
+        this.saveDraftNavigationStructure(navigationData);
         
-        // Update the navigation store
-        await navigationStore.updateAfterCommit();
+        // Update the navigation store to use the draft
+        navigationStore.applyDraft(navigationData);
         
         showToast({
           title: "Success",
-          message: "Item moved down successfully",
+          message: "Item moved down successfully (draft saved)",
           type: "success",
         });
       } catch (error) {
@@ -509,6 +543,57 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
           type: "error",
         });
       }
+    },
+
+    // New method to commit draft changes to GitHub
+    async commitNavigationChanges() {
+      const navigationStore = useNavigationStore();
+      const { currentBranch, saveFileContent } = useGithub();
+      const { showToast } = useToast();
+      const config = useRuntimeConfig();
+      
+      try {
+        // Get the current draft
+        const draftData = this.getDraftNavigationStructure();
+        
+        if (!draftData) {
+          showToast({
+            title: "Info",
+            message: "No changes to commit",
+            type: "info",
+          });
+          return;
+        }
+        
+        // Save to GitHub
+        const navigationJsonPath = "content/_navigation/navigation.json";
+        await saveFileContent(
+          config.public.githubOwner,
+          config.public.githubRepo,
+          navigationJsonPath,
+          JSON.stringify(draftData, null, 2),
+          `Update navigation structure`,
+          currentBranch.value
+        );
+        
+        // Update the navigation store but keep using the draft until cache refresh
+        navigationStore.updateLastCommitTime();
+        
+        showToast({
+          title: "Success",
+          message: "Navigation changes committed successfully",
+          type: "success",
+        });
+        
+        // Note: We don't clear the draft here to avoid UI jumping due to GitHub's CDN cache
+      } catch (error) {
+        console.error("Error committing navigation changes:", error);
+        showToast({
+          title: "Error",
+          message: `Failed to commit changes: ${error.message}`,
+          type: "error",
+        });
+      }
     }
   }
-}); 
+});

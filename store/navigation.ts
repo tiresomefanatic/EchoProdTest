@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { useToast } from "~/composables/useToast";
 import { useGithub } from "~/composables/useGithub";
 import { useRuntimeConfig } from "#app";
+import { useSidebarEditorStore } from "~/store/sidebarEditor";
 
 // Type definitions
 interface BaseNavigationItem {
@@ -38,6 +39,7 @@ interface NavigationState {
   currentBranch: string;
   isLoading: boolean;
   error: string | null;
+  lastCommitTime: string | null; // Track when changes were committed
 }
 
 // Safe localStorage operations
@@ -67,6 +69,7 @@ export const useNavigationStore = defineStore("navigation", {
     currentBranch: "main",
     isLoading: false,
     error: null,
+    lastCommitTime: null,
   }),
 
   getters: {
@@ -94,10 +97,53 @@ export const useNavigationStore = defineStore("navigation", {
   },
 
   actions: {
+    applyDraft(draftData: any) {
+      if (!draftData) return;
+      
+      // Update the local structure with draft data
+      this.structures[this.currentBranch] = {
+        navigation: draftData.navigation,
+        lastFetched: new Date().toISOString(),
+        branch: this.currentBranch,
+      };
+      
+      // Save to localStorage
+      saveToLocalStorage(this.structures);
+    },
+
+    updateLastCommitTime() {
+      this.lastCommitTime = new Date().toISOString();
+    },
+
+    hasDraftChanges() {
+      if (!process.client) return false;
+      
+      // Use direct import instead of require
+      const sidebarEditorStore = useSidebarEditorStore();
+      return sidebarEditorStore.hasDraftChanges;
+    },
+
     async fetchNavigation(forceFetch = false) {
       const { currentBranch, getRawContent } = useGithub();
       const { showToast } = useToast();
       const config = useRuntimeConfig();
+      
+      // Use direct import instead of require
+      const sidebarEditorStore = useSidebarEditorStore();
+      const draftData = sidebarEditorStore.getDraftNavigationStructure();
+      
+      // Use draft if it exists and we're not forcing a fetch
+      if (draftData && !forceFetch) {
+        this.structures[currentBranch.value] = {
+          navigation: draftData.navigation,
+          lastFetched: new Date().toISOString(),
+          branch: currentBranch.value,
+        };
+        
+        // Save to localStorage
+        saveToLocalStorage(this.structures);
+        return;
+      }
 
       // Skip fetch if data is fresh and not forced
       if (
@@ -124,6 +170,26 @@ export const useNavigationStore = defineStore("navigation", {
         const data = JSON.parse(jsonContent) as NavigationData;
         if (!data.navigation || !Array.isArray(data.navigation)) {
           throw new Error("Invalid navigation data structure");
+        }
+
+        // If we have a draft and it's within the CDN cache period, keep using it
+        if (draftData && this.lastCommitTime) {
+          const cacheTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+          const now = new Date().getTime();
+          const commitTime = new Date(this.lastCommitTime).getTime();
+          if (now - commitTime < cacheTime) {
+            this.structures[currentBranch.value] = {
+              navigation: draftData.navigation,
+              lastFetched: new Date().toISOString(),
+              branch: currentBranch.value,
+            };
+            saveToLocalStorage(this.structures);
+            this.isLoading = false;
+            return;
+          } else {
+            // If cache period has passed, clear the draft
+            sidebarEditorStore.clearDraftNavigationStructure();
+          }
         }
 
         // Update store

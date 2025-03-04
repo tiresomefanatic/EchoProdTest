@@ -1,4 +1,3 @@
-# DesignSidebar.vue
 <template>
   <div class="sidebar-wrapper">
     <!-- Mobile menu button -->
@@ -32,14 +31,24 @@
       <!-- Sidebar Header with Edit Toggle -->
       <div class="sidebar-header">
         <h2 class="sidebar-title">Navigation</h2>
-        <button
-          class="edit-toggle-btn"
-          @click="handleToggleEditMode"
-          :class="{ 'active': isEditMode }"
-          aria-label="Toggle edit mode"
-        >
-          {{ isEditMode ? 'Done' : 'Edit' }}
-        </button>
+        <div class="header-actions">
+          <button
+            v-if="hasDraftChanges"
+            class="commit-button"
+            @click="handleCommitChanges"
+            :disabled="isCommitting"
+          >
+            {{ isCommitting ? "Committing..." : "Commit Changes" }}
+          </button>
+          <button
+            class="edit-toggle-btn"
+            @click="handleToggleEditMode"
+            :class="{ 'active': isEditMode }"
+            aria-label="Toggle edit mode"
+          >
+            {{ isEditMode ? 'Done' : 'Edit' }}
+          </button>
+        </div>
       </div>
 
       <nav class="design-nav">
@@ -419,17 +428,23 @@ import { useNavigation } from "../composables/useNavigation";
 import { useGithub } from "../composables/useGithub";
 import { useEventBus } from '@vueuse/core';
 import { useSidebarEditorStore } from "~/store/sidebarEditor";
+import { useNavigationStore } from "~/store/navigation";
+import NewFileModal from "~/components/modals/NewFileModal.vue";
+import NewFolderModal from "~/components/modals/NewFolderModal.vue";
 
 const route = useRoute();
 const isOpen = ref(false);
 const isCollapsed = ref<Record<string, boolean>>({});
+const isCommitting = ref(false);
 
 const { navigationStructure, isLoading, refreshNavigation } = useNavigation();
 const { currentBranch } = useGithub();
 const sidebarEditorStore = useSidebarEditorStore();
+const navigationStore = useNavigationStore();
 
 // Computed properties
 const isEditMode = computed(() => sidebarEditorStore.isEditMode);
+const hasDraftChanges = computed(() => sidebarEditorStore.hasDraftChanges);
 
 // Create a computed key to force re-render when navigationStructure changes
 const navigationStructureKey = computed(() =>
@@ -444,6 +459,18 @@ const isActiveSection = (sectionPath: string): boolean => {
 // Toggle section collapse state
 const toggleSection = (path: string) => {
   isCollapsed.value[path] = !isCollapsed.value[path];
+};
+
+// Handle committing changes
+const handleCommitChanges = async () => {
+  if (isCommitting.value) return;
+  
+  isCommitting.value = true;
+  try {
+    await sidebarEditorStore.commitNavigationChanges();
+  } finally {
+    isCommitting.value = false;
+  }
 };
 
 // Edit mode handlers
@@ -482,14 +509,16 @@ const handleAddNewFolder = (parentPath: string) => {
   sidebarEditorStore.openNewFolderModal(parentPath);
 };
 
-// Move item up handler
+// Move item up handler - modified to not refresh navigation immediately
 const handleMoveItemUp = async (itemPath: string) => {
   await sidebarEditorStore.moveItemUp(itemPath);
+  // No need to refresh navigation as the store now handles this via draft
 };
 
-// Move item down handler
+// Move item down handler - modified to not refresh navigation immediately
 const handleMoveItemDown = async (itemPath: string) => {
   await sidebarEditorStore.moveItemDown(itemPath);
+  // No need to refresh navigation as the store now handles this via draft
 };
 
 // Listen for sidebar toggle events from header
@@ -603,6 +632,12 @@ onMounted(async () => {
   margin: 0;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .edit-toggle-btn {
   background-color: #f3f4f6;
   border: 1px solid #d1d5db;
@@ -617,6 +652,26 @@ onMounted(async () => {
   background-color: #2563eb;
   color: white;
   border-color: #2563eb;
+}
+
+.commit-button {
+  background-color: #4361ee;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.commit-button:hover {
+  background-color: #3651d4;
+}
+
+.commit-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
 }
 
 .new-category-btn {
