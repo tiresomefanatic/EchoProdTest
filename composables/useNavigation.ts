@@ -50,7 +50,7 @@ export const useNavigation = () => {
 
   // Helper function to check if an item is a directory
   const isDirectory = (item: NavigationItem): item is DirectoryItem => {
-    return navigationStore.isDirectory(item);
+    return item.type === "directory";
   };
 
   // Helper function to find an item by path
@@ -69,8 +69,12 @@ export const useNavigation = () => {
   };
 
   return {
-    // Use computed to ensure reactivity with the store
-    navigationStructure: computed(() => navigationStore.getCurrentStructure),
+    navigationStructure: computed(() => {
+      console.log("useNavigation: Getting current structure");
+      const structure = navigationStore.getCurrentStructure;
+      console.log("useNavigation: Structure length", structure?.length);
+      return structure;
+    }),
     isLoading,
     error,
     refreshNavigation,
