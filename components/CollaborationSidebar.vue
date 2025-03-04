@@ -66,25 +66,7 @@
 
         <!-- Pull Requests Tab -->
         <div v-if="activeTab === 'prs'">
-          <div class="pr-actions-header">
-            <button
-              class="create-pr-button"
-              @click="showCreatePR = true"
-              v-if="!showCreatePR"
-            >
-              Create Pull Request
-            </button>
-          </div>
-
-          <CreatePullRequest
-            v-if="showCreatePR"
-            :branches="branches"
-            :currentBranch="currentBranch"
-            @created="handlePRCreated"
-            @cancel="showCreatePR = false"
-          />
-
-          <div v-else-if="loading" class="loading-state">
+          <div v-if="loading" class="loading-state">
             Loading pull requests...
           </div>
           <div v-else-if="pullRequests.length === 0" class="empty-state">
@@ -216,7 +198,6 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useGithub } from "~/composables/useGithub";
 import { useToast } from "~/composables/useToast";
 import { useEditorStore } from "~/store/editor";
-import CreatePullRequest from "./CreatePullRequest.vue";
 import { useStore } from "~/store";
 
 // Type definitions
@@ -264,7 +245,6 @@ const commits = ref([]);
 const pullRequests = ref<PullRequest[]>([]);
 const showNewBranchInput = ref(false);
 const newBranchName = ref("");
-const showCreatePR = ref(false);
 const showCommitDialog = ref(false);
 const commitMessage = ref("");
 
@@ -484,57 +464,6 @@ const getPRStatus = (pr: PullRequest): string => {
 
 const openPR = (url: string) => {
   window.open(url, "_blank");
-};
-
-const handlePRCreated = async (newPR) => {
-  showCreatePR.value = false;
-
-  // Optimistically add the new PR to the store
-  editorStore.addPullRequest(newPR);
-
-  // Update UI immediately using store data
-  pullRequests.value = editorStore.getPullRequests();
-
-  showToast({
-    title: "Success",
-    message: "Pull request created successfully",
-    type: "success",
-  });
-
-  // Trigger background refresh after a delay
-  setTimeout(async () => {
-    try {
-      const updatedPRs = await getPullRequests();
-      if (updatedPRs && Array.isArray(updatedPRs)) {
-        editorStore.updatePullRequests(updatedPRs);
-        pullRequests.value = updatedPRs;
-      }
-    } catch (error) {
-      console.error("Error refreshing PR list:", error);
-    }
-  }, 5000); // Try to refresh after 5 seconds
-};
-
-const handleResolveConflicts = async (pr: PullRequest) => {
-  loading.value = true;
-  try {
-    await resolveConflict(pr.number);
-    await loadPullRequests();
-    showToast({
-      title: "Success",
-      message: "Conflicts resolved successfully",
-      type: "success",
-    });
-  } catch (error) {
-    console.error("Error resolving conflicts:", error);
-    showToast({
-      title: "Error",
-      message: "Failed to resolve conflicts",
-      type: "error",
-    });
-  } finally {
-    loading.value = false;
-  }
 };
 
 const handleLoadDraft = () => {

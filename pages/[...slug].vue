@@ -5,10 +5,7 @@
       <ActionBar 
         v-if="isLoggedIn" 
         :contentPath="contentPath"
-        :contentSource="getContentSource"
-        :contentSourceClass="getContentSourceClass"
         :isEditing="isEditing"
-        @requestReview="handleRequestReview"
       />
 
       <Header v-if="!isEditing" class="menu-bar" />
@@ -19,6 +16,10 @@
         
         <!-- New editor mode controls -->
         <div class="editor-mode-controls">
+          <!-- Content status indicator -->
+          <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
+            {{ getContentSource }}
+          </span>
           <button 
             class="mode-button" 
             :class="{ 'active': isRawMode }"
@@ -463,17 +464,6 @@ const handleEditorError = (error: Error) => {
     title: "Editor Error",
     message: error.message,
     type: "error",
-  });
-};
-
-/**
- * Handles request review action
- */
-const handleRequestReview = () => {
-  showToast({
-    title: "Review Requested",
-    message: "Your review request has been submitted",
-    type: "success",
   });
 };
 
@@ -1605,7 +1595,7 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 /* Style for the editor mode controls */
 .editor-mode-controls {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   margin: 0;
 }
@@ -1679,13 +1669,14 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  margin-left: 8px;
+  margin-right: 12px;
   background-color: rgba(255, 255, 255, 0.2);
-  color: white;
+  color: #1D1B1B;
+  font-family: "PP Neue Montreal", sans-serif;
 }
 
 .content-status.draft {

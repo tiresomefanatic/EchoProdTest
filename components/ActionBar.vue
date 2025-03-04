@@ -14,9 +14,6 @@
             </svg>
           </div>
           <span class="branch-name">{{ currentBranch }}</span>
-          <span v-if="contentSourceClass" class="content-status" :class="contentSourceClass">
-            {{ contentSource }}
-          </span>
         </div>
         <p v-else class="create-branch-text">Create a branch to make changes</p>
       </div>
@@ -29,7 +26,11 @@
           See branches
         </button>
         <!-- Request review button -->
-        <button class="request-review-button" @click="handleRequestReview">
+        <button 
+          class="request-review-button" 
+          @click="handleOpenCreatePR"
+          :disabled="!isLoggedIn || !currentBranch"
+        >
           Request review
         </button>
       </div>
@@ -66,6 +67,13 @@
         </div>
       </div>
     </div>
+
+    <!-- PR Creation Modal -->
+    <CreatePRModal 
+      :isOpen="showCreatePRModal" 
+      @close="handleClosePRModal"
+      @created="handlePRCreated"
+    />
   </div>
 </template>
 
@@ -75,22 +83,15 @@ import { useGithub } from '~/composables/useGithub';
 import { navigateTo } from '#app';
 import { useToast } from '~/composables/useToast';
 import { useEditorStore } from '~/store/editor';
+import CreatePRModal from './CreatePRModal.vue';
 
-const { currentBranch, branches, switchBranch, createBranch } = useGithub();
+const { currentBranch, branches, switchBranch, createBranch, isLoggedIn } = useGithub();
 const { showToast } = useToast();
 const editorStore = useEditorStore();
 
 // Props to receive content path and status from parent
 const props = defineProps({
   contentPath: {
-    type: String,
-    default: ''
-  },
-  contentSource: {
-    type: String,
-    default: ''
-  },
-  contentSourceClass: {
     type: String,
     default: ''
   },
@@ -101,10 +102,11 @@ const props = defineProps({
 });
 
 // Emit events
-const emit = defineEmits(['requestReview']);
+const emit = defineEmits([]);
 
 // Modal state
 const showBranchModal = ref(false);
+const showCreatePRModal = ref(false);
 const newBranchName = ref('');
 const isCreatingBranch = ref(false);
 const branchNameError = ref('');
@@ -160,9 +162,25 @@ const navigateToBranches = () => {
   navigateTo('/branches');
 };
 
-// Handle request review button click
-const handleRequestReview = () => {
-  emit('requestReview');
+// PR creation modal methods
+const handleOpenCreatePR = () => {
+  if (!isLoggedIn.value || !currentBranch.value) return;
+  showCreatePRModal.value = true;
+};
+
+const handleClosePRModal = () => {
+  showCreatePRModal.value = false;
+};
+
+const handlePRCreated = (newPR) => {
+  showCreatePRModal.value = false;
+  
+  // Show success notification
+  showToast({
+    title: 'Success',
+    message: `Pull request #${newPR.number} created successfully`,
+    type: 'success'
+  });
 };
 </script>
 
@@ -280,6 +298,16 @@ const handleRequestReview = () => {
   cursor: pointer;
   transition: background-color 0.2s;
   max-height: 40px;
+}
+
+/* Create PR button styling */
+.action-button.create-pr {
+  background-color: #3B82F6;
+  border-color: #3B82F6;
+}
+
+.action-button.create-pr:hover {
+  background-color: #2563EB;
 }
 
 /* Review button styling */
@@ -459,5 +487,15 @@ const handleRequestReview = () => {
 
 .request-review-button:hover {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.request-review-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.request-review-button:disabled:hover {
+  background-color: transparent;
 }
 </style> 
