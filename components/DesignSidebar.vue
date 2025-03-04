@@ -1,6 +1,6 @@
 # DesignSidebar.vue
 <template>
-  <div class="sidebar-wrapper">
+  <div class="sidebar-wrapper" :class="{ 'is-mobile-open': isOpen }">
     <!-- Mobile menu button -->
     <button
       class="mobile-menu-btn"
@@ -843,10 +843,11 @@ onMounted(async () => {
 @media (max-width: 1024px) {
   .sidebar-wrapper {
     /* Remove positioning that might interfere */
-    position: static;
+    position: fixed;
     width: auto;
     height: 0;
     overflow: visible;
+    z-index: 1001;
   }
 
   .design-sidebar {
