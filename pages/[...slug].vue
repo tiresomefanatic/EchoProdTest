@@ -1,30 +1,21 @@
-# [...slug].vue
 <template>
   <div class="page-wrapper" :class="{ 'editor-mode': isEditing }">
     <ClientOnly>
-      <!-- Show ActionBar only for logged in users -->
-      <ActionBar v-if="isLoggedIn" />
-
+      <!-- Show ActionBar only for logged in users with branch info -->
+      <ActionBar 
+        v-if="isLoggedIn" 
+        :contentPath="contentPath"
+        :contentSource="getContentSource"
+        :contentSourceClass="getContentSourceClass"
+        :isEditing="isEditing"
+        @requestReview="handleRequestReview"
+      />
 
       <Header v-if="!isEditing" class="menu-bar" />
       
       <!-- Exit button when editing - shown in different position -->
       <div v-if="isLoggedIn && isEditing" class="branch-header">
-        <div class="branch-info">
-          <div class="branch-icon">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M13.75 2.5C14.1642 2.5 14.5 2.83579 14.5 3.25V4.16667H15.4167C15.8309 4.16667 16.1667 4.50246 16.1667 4.91667C16.1667 5.33088 15.8309 5.66667 15.4167 5.66667H14.5V6.58333C14.5 6.99755 14.1642 7.33333 13.75 7.33333C13.3358 7.33333 13 6.99755 13 6.58333V5.66667H12.0833C11.6691 5.66667 11.3333 5.33088 11.3333 4.91667C11.3333 4.50246 11.6691 4.16667 12.0833 4.16667H13V3.25C13 2.83579 13.3358 2.5 13.75 2.5Z" fill="white"/>
-              <path d="M6.25 2.5C6.66421 2.5 7 2.83579 7 3.25V4.16667H7.91667C8.33088 4.16667 8.66667 4.50246 8.66667 4.91667C8.66667 5.33088 8.33088 5.66667 7.91667 5.66667H7V6.58333C7 6.99755 6.66421 7.33333 6.25 7.33333C5.83579 7.33333 5.5 6.99755 5.5 6.58333V5.66667H4.58333C4.16912 5.66667 3.83333 5.33088 3.83333 4.91667C3.83333 4.50246 4.16912 4.16667 4.58333 4.16667H5.5V3.25C5.5 2.83579 5.83579 2.5 6.25 2.5Z" fill="white"/>
-              <path d="M6.25 17.5C6.66421 17.5 7 17.1642 7 16.75V15.8333H7.91667C8.33088 15.8333 8.66667 15.4975 8.66667 15.0833C8.66667 14.6691 8.33088 14.3333 7.91667 14.3333H7V13.4167C7 13.0024 6.66421 12.6667 6.25 12.6667C5.83579 12.6667 5.5 13.0024 5.5 13.4167V14.3333H4.58333C4.16912 14.3333 3.83333 14.6691 3.83333 15.0833C3.83333 15.4975 4.16912 15.8333 4.58333 15.8333H5.5V16.75C5.5 17.1642 5.83579 17.5 6.25 17.5Z" fill="white"/>
-              <path d="M13.75 17.5C14.1642 17.5 14.5 17.1642 14.5 16.75V15.8333H15.4167C15.8309 15.8333 16.1667 15.4975 16.1667 15.0833C16.1667 14.6691 15.8309 14.3333 15.4167 14.3333H14.5V13.4167C14.5 13.0024 14.1642 12.6667 13.75 12.6667C13.3358 12.6667 13 13.0024 13 13.4167V14.3333H12.0833C11.6691 14.3333 11.3333 14.6691 11.3333 15.0833C11.3333 15.4975 11.6691 15.8333 12.0833 15.8333H13V16.75C13 17.1642 13.3358 17.5 13.75 17.5Z" fill="white"/>
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M10 7.5C10.6903 7.5 11.25 8.05964 11.25 8.75C11.25 9.44036 10.6903 10 10 10C9.30964 10 8.75 9.44036 8.75 8.75C8.75 8.05964 9.30964 7.5 10 7.5ZM10 12.5C10.6903 12.5 11.25 11.9404 11.25 11.25C11.25 10.5596 10.6903 10 10 10C9.30964 10 8.75 10.5596 8.75 11.25C8.75 11.9404 9.30964 12.5 10 12.5Z" fill="white"/>
-            </svg>
-          </div>
-          {{ currentBranch }}
-          <span class="content-status" :class="getContentSourceClass">
-            {{ getContentSource }}
-          </span>
-        </div>
+        <!-- Branch info removed from here -->
         
         <!-- New editor mode controls -->
         <div class="editor-mode-controls">
@@ -59,13 +50,10 @@
               <path d="M5.33203 11.3334L1.9987 8.00008L5.33203 4.66675" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M2 8H10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            Exit branch
+            Exit
           </button>
           <button @click="() => handleSave(editorContent)" class="save-button">
             Save changes
-          </button>
-          <button @click="handleRequestReview" class="review-button">
-            Request review
           </button>
         </div>
       </div>
@@ -803,6 +791,10 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   gap: 64px;
 }
 
+.editor-mode .main-container {
+  padding-top: 16px; /* Reduced top padding when in edit mode */
+}
+
 .content {
   display: flex;
   width: 100%;
@@ -1282,32 +1274,36 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 }
 
 .exit-button {
-  width: 126px;
-  height: 35px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.40);
-  color: #FFF;
+  padding: 8px 12px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  background: #000 !important;
+  color: #FFF !important;
   font-family: "PP Neue Montreal";
   font-size: 14px;
   font-style: normal;
-  font-weight: 530;
-  line-height: 24px;
-  letter-spacing: 0.15px;
-  background: transparent;
+  font-weight: 700 !important;
+  line-height: 24px !important;
+  letter-spacing: var(--Title-Medium-Tracking, 0.15px) !important;
+  border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background-color 0.2s;
 }
 
 .exit-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background-color: #333;
 }
 
 .exit-button svg {
   width: 16px;
   height: 16px;
+}
+
+.exit-button svg path {
+  stroke: white;
 }
 
 .content-header {
@@ -1366,23 +1362,6 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   margin: 0 auto;
 }
 
-.exit-button {
-  background-color: #6B7280;
-  color: #000;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 500;
-  font-size: 16px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.exit-button:hover {
-  background-color: #4B5563;
-}
-
 @media (max-width: 768px) {
   .banner-content {
     flex-direction: column;
@@ -1403,7 +1382,7 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  height: 64px;
+  height: 56px;
   padding: 0 32px;
   background-color: transparent;
   color: white;
@@ -1624,9 +1603,9 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 /* Style for the editor mode controls */
 .editor-mode-controls {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .mode-button {
