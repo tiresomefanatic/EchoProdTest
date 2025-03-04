@@ -18,7 +18,6 @@
     <aside
       class="design-sidebar"
       :class="{ 'is-mobile-open': isOpen }"
-      :key="navigationStructureKey"
     >
       <!-- Mobile header -->
       <div class="mobile-header">
@@ -56,11 +55,11 @@
           <template v-if="isLoading">
             <div class="loading-state">
               <div class="loading-spinner"></div>
-              Loading...
+              Loading navigation...
             </div>
           </template>
 
-          <template v-else>
+          <template v-else-if="navigationStructure && navigationStructure.length > 0">
             <!-- New Category Button (visible only in edit mode) -->
             <button 
               v-if="isEditMode" 
@@ -404,6 +403,12 @@
               </div>
             </div>
           </template>
+
+          <template v-else>
+            <div class="empty-state">
+              <p>No navigation items found.</p>
+            </div>
+          </template>
         </div>
       </nav>
     </aside>
@@ -424,11 +429,11 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from "vue";
 import { useRoute } from "vue-router";
-import { useNavigation } from "../composables/useNavigation";
 import { useGithub } from "../composables/useGithub";
 import { useEventBus } from '@vueuse/core';
 import { useSidebarEditorStore } from "~/store/sidebarEditor";
 import { useNavigationStore } from "~/store/navigation";
+import { storeToRefs } from 'pinia';
 import NewFileModal from "~/components/modals/NewFileModal.vue";
 import NewFolderModal from "~/components/modals/NewFolderModal.vue";
 
@@ -437,19 +442,37 @@ const isOpen = ref(false);
 const isCollapsed = ref<Record<string, boolean>>({});
 const isCommitting = ref(false);
 
-const { navigationStructure, isLoading, refreshNavigation } = useNavigation();
+// Direct store references
+const navigationStore = useNavigationStore();
+const { isLoading } = storeToRefs(navigationStore);
 const { currentBranch } = useGithub();
 const sidebarEditorStore = useSidebarEditorStore();
-const navigationStore = useNavigationStore();
+
+// Define a navigation structure directly from the store
+const navigationStructure = computed(() => {
+  console.log("Computing navigation structure in DesignSidebar");
+  const branch = currentBranch.value;
+  console.log("Current branch:", branch);
+  
+  // Access the structure directly
+  if (!navigationStore.structures[branch]) {
+    console.log("No structure found for branch:", branch);
+    return [];
+  }
+  
+  const structure = navigationStore.structures[branch].navigation;
+  console.log("Found navigation structure:", structure);
+  return structure;
+});
 
 // Computed properties
 const isEditMode = computed(() => sidebarEditorStore.isEditMode);
 const hasDraftChanges = computed(() => sidebarEditorStore.hasDraftChanges);
 
-// Create a computed key to force re-render when navigationStructure changes
-const navigationStructureKey = computed(() =>
-  JSON.stringify(navigationStructure.value)
-);
+// Add a debug watcher
+watch(navigationStructure, (newVal) => {
+  console.log("Navigation structure changed:", newVal);
+}, { deep: true });
 
 // Check if a section is currently active
 const isActiveSection = (sectionPath: string): boolean => {
@@ -459,6 +482,12 @@ const isActiveSection = (sectionPath: string): boolean => {
 // Toggle section collapse state
 const toggleSection = (path: string) => {
   isCollapsed.value[path] = !isCollapsed.value[path];
+};
+
+// Define refresh logic instead of using the composable
+const refreshNavigation = async (forceFetch = false) => {
+  console.log("Refreshing navigation, force:", forceFetch);
+  await navigationStore.fetchNavigation(forceFetch);
 };
 
 // Handle committing changes
@@ -479,7 +508,7 @@ const handleToggleEditMode = () => {
   
   // When enabling edit mode, expand all sections
   if (sidebarEditorStore.isEditMode) {
-    navigationStructure.value.forEach((section) => {
+    navigationStructure.value?.forEach((section) => {
       if (section.type === "directory") {
         isCollapsed.value[section.path] = false;
         // Also expand nested directories
@@ -509,16 +538,14 @@ const handleAddNewFolder = (parentPath: string) => {
   sidebarEditorStore.openNewFolderModal(parentPath);
 };
 
-// Move item up handler - modified to not refresh navigation immediately
+// Move item up handler
 const handleMoveItemUp = async (itemPath: string) => {
   await sidebarEditorStore.moveItemUp(itemPath);
-  // No need to refresh navigation as the store now handles this via draft
 };
 
-// Move item down handler - modified to not refresh navigation immediately
+// Move item down handler
 const handleMoveItemDown = async (itemPath: string) => {
   await sidebarEditorStore.moveItemDown(itemPath);
-  // No need to refresh navigation as the store now handles this via draft
 };
 
 // Listen for sidebar toggle events from header
@@ -540,20 +567,19 @@ sidebarBus.on((value) => {
   }
 });
 
-// Mobile menu handlers - simplified
+// Mobile menu handlers
 const toggleMobileMenu = () => {
-  // Use the event bus instead of direct toggling
   sidebarBus.emit(!isOpen.value);
 };
 
 const closeMobileMenu = () => {
-  // Use the event bus instead of direct toggling
   sidebarBus.emit(false);
 };
 
 // Watch for branch changes to refresh navigation
-watch(currentBranch, async () => {
-  await refreshNavigation();
+watch(currentBranch, async (newBranch) => {
+  console.log("Branch changed to:", newBranch);
+  await refreshNavigation(true);
 });
 
 // Watch route changes to expand current section
@@ -563,7 +589,7 @@ watch(
     // Only adjust collapse state if not in edit mode
     if (!sidebarEditorStore.isEditMode) {
       // Find and expand all parent sections of the current route
-      navigationStructure.value.forEach((section) => {
+      navigationStructure.value?.forEach((section) => {
         if (section.type === "directory") {
           if (newPath.startsWith(section.path)) {
             isCollapsed.value[section.path] = false;
@@ -583,7 +609,26 @@ watch(
 
 // Initial setup
 onMounted(async () => {
-  await refreshNavigation();
+  console.log("DesignSidebar mounted");
+  
+  // Set initial open state for desktop
+  if (window.innerWidth > 1024) {
+    isOpen.value = true;
+    console.log("Setting initial desktop open state:", isOpen.value);
+  }
+  
+  console.log("Starting initial navigation refresh");
+  await refreshNavigation(true);
+  console.log("After initial refresh - Navigation structure:", navigationStructure.value);
+  
+  // Add window resize handler
+  if (process.client) {
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 1024) {
+        isOpen.value = true;
+      }
+    });
+  }
 });
 </script>
 
@@ -744,10 +789,6 @@ onMounted(async () => {
   padding: 1rem;
   text-align: center;
   color: #666;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
 }
 
 .loading-spinner {
@@ -974,5 +1015,11 @@ onMounted(async () => {
 .nav-section.nested .nav-item,
 .nav-section.nested .nav-group-header {
   font-size: 13px;
+}
+
+.empty-state {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
 }
 </style>

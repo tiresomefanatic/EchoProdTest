@@ -32,6 +32,7 @@ interface NavigationStructure {
   navigation: NavigationItem[];
   lastFetched: string;
   branch: string;
+  lastGithubFetch: string; // Add timestamp for GitHub fetch
 }
 
 interface NavigationState {
@@ -40,6 +41,7 @@ interface NavigationState {
   isLoading: boolean;
   error: string | null;
   lastCommitTime: string | null; // Track when changes were committed
+  lastGithubStructureHash: string | null;
 }
 
 // Safe localStorage operations
@@ -66,25 +68,48 @@ const saveToLocalStorage = (data: Record<string, NavigationStructure>) => {
 export const useNavigationStore = defineStore("navigation", {
   state: (): NavigationState => ({
     structures: getSavedState() || {},
-    currentBranch: "main",
+    currentBranch: "sidebar", // Default to 'sidebar' since that's what we see in logs
     isLoading: false,
     error: null,
     lastCommitTime: null,
+    lastGithubStructureHash: null,
   }),
 
   getters: {
-    getCurrentStructure: (state) => {
-      return state.structures[state.currentBranch]?.navigation || [];
+    getCurrentStructure: (state): NavigationItem[] => {
+      console.log("Getting current structure for branch:", state.currentBranch);
+      console.log("Available structures:", Object.keys(state.structures));
+      
+      if (!state.structures[state.currentBranch]) {
+        console.log("No structure found for current branch");
+        return [];
+      }
+      
+      const structure = state.structures[state.currentBranch].navigation;
+      console.log("Returning structure:", structure);
+      return structure || [];
     },
 
     isStale: (state) => (branch: string) => {
       const structure = state.structures[branch];
       if (!structure?.lastFetched) return true;
 
-      // Consider data stale after 1 hour
-      const staleTime = 60 * 60 * 1000;
+      // Consider data stale after 6 minutes (to ensure it's longer than GitHub's CDN cache)
+      const staleTime = 6 * 60 * 1000; // 360,000 milliseconds = 6 minutes
       const now = new Date().getTime();
       const lastFetch = new Date(structure.lastFetched).getTime();
+
+      return now - lastFetch > staleTime;
+    },
+
+    isGithubFetchStale: (state) => (branch: string) => {
+      const structure = state.structures[branch];
+      if (!structure?.lastGithubFetch) return true;
+
+      // Consider GitHub data stale after 6 minutes (to ensure it's longer than GitHub's CDN cache)
+      const staleTime = 6 * 60 * 1000; // 360,000 milliseconds = 6 minutes
+      const now = new Date().getTime();
+      const lastFetch = new Date(structure.lastGithubFetch).getTime();
 
       return now - lastFetch > staleTime;
     },
@@ -105,6 +130,7 @@ export const useNavigationStore = defineStore("navigation", {
         navigation: draftData.navigation,
         lastFetched: new Date().toISOString(),
         branch: this.currentBranch,
+        lastGithubFetch: this.structures[this.currentBranch]?.lastGithubFetch || new Date().toISOString(),
       };
       
       // Save to localStorage
@@ -128,36 +154,54 @@ export const useNavigationStore = defineStore("navigation", {
       const { showToast } = useToast();
       const config = useRuntimeConfig();
       
-      // Use direct import instead of require
+      console.log("Starting fetchNavigation, forceFetch:", forceFetch);
+      console.log("Current branch:", currentBranch.value);
+      
+      // Set loading state at the start
+      this.isLoading = true;
+      this.error = null;
+      
+      // Set current branch
+      this.currentBranch = currentBranch.value;
+      
       const sidebarEditorStore = useSidebarEditorStore();
       const draftData = sidebarEditorStore.getDraftNavigationStructure();
       
-      // Use draft if it exists and we're not forcing a fetch
-      if (draftData && !forceFetch) {
+      // Force fetch from GitHub if forceFetch is true or GitHub data is stale
+      const shouldFetchFromGithub = forceFetch || 
+        this.isGithubFetchStale(currentBranch.value) || 
+        !this.structures[currentBranch.value]?.navigation.length;
+      
+      // Use draft if it exists and we're not forcing a fetch from GitHub
+      if (draftData && !shouldFetchFromGithub) {
+        console.log("Using draft navigation structure");
         this.structures[currentBranch.value] = {
           navigation: draftData.navigation,
           lastFetched: new Date().toISOString(),
           branch: currentBranch.value,
+          lastGithubFetch: this.structures[currentBranch.value]?.lastGithubFetch || new Date().toISOString(),
         };
         
         // Save to localStorage
         saveToLocalStorage(this.structures);
+        // Set loading state to false before returning
+        this.isLoading = false;
         return;
       }
 
       // Skip fetch if data is fresh and not forced
       if (
-        !forceFetch &&
+        !shouldFetchFromGithub &&
         !this.isStale(currentBranch.value) &&
         this.structures[currentBranch.value]?.navigation.length > 0
       ) {
+        // Set loading state to false before returning
+        this.isLoading = false;
         return;
       }
 
-      this.isLoading = true;
-      this.error = null;
-
       try {
+        console.log("Fetching navigation from GitHub");
         // Fetch the navigation.json from GitHub
         const jsonContent = await getRawContent(
           config.public.githubOwner,
@@ -173,41 +217,43 @@ export const useNavigationStore = defineStore("navigation", {
         }
 
         // If we have a draft and it's within the CDN cache period, keep using it
-        if (draftData && this.lastCommitTime) {
-          const cacheTime = 5 * 60 * 1000; // 5 minutes in milliseconds
-          const now = new Date().getTime();
-          const commitTime = new Date(this.lastCommitTime).getTime();
-          if (now - commitTime < cacheTime) {
-            this.structures[currentBranch.value] = {
-              navigation: draftData.navigation,
-              lastFetched: new Date().toISOString(),
-              branch: currentBranch.value,
-            };
-            saveToLocalStorage(this.structures);
-            this.isLoading = false;
-            return;
-          } else {
-            // If cache period has passed, clear the draft
+        const shouldKeepDraft = draftData && this.lastCommitTime && (
+          new Date().getTime() - new Date(this.lastCommitTime).getTime() < 6 * 60 * 1000 // 6 minutes
+        );
+        
+        if (shouldKeepDraft) {
+          console.log("Using draft navigation structure (within cache period)");
+          this.structures[currentBranch.value] = {
+            navigation: draftData.navigation,
+            lastFetched: new Date().toISOString(),
+            branch: currentBranch.value,
+            lastGithubFetch: new Date().toISOString(), // Update GitHub fetch time
+          };
+        } else {
+          // Clear any draft if we're using GitHub data
+          if (draftData) {
+            console.log("Clearing draft navigation structure");
             sidebarEditorStore.clearDraftNavigationStructure();
           }
+          
+          // Update store with GitHub data
+          console.log("Using GitHub navigation structure");
+          this.structures[currentBranch.value] = {
+            navigation: data.navigation,
+            lastFetched: new Date().toISOString(),
+            branch: currentBranch.value,
+            lastGithubFetch: new Date().toISOString(), // Update GitHub fetch time
+          };
         }
-
-        // Update store
-        this.structures[currentBranch.value] = {
-          navigation: data.navigation,
-          lastFetched: new Date().toISOString(),
-          branch: currentBranch.value,
-        };
 
         // Save to localStorage
         saveToLocalStorage(this.structures);
       } catch (e) {
         console.error("Error loading navigation structure:", e);
-        this.error =
-          e instanceof Error ? e.message : "Failed to load navigation";
+        this.error = e instanceof Error ? e.message : "Failed to load navigation";
         showToast({
           title: "Error",
-          description: "Failed to load navigation structure",
+          message: "Failed to load navigation structure", // Changed from description to message
           type: "error",
         });
       } finally {
@@ -217,7 +263,7 @@ export const useNavigationStore = defineStore("navigation", {
 
     setBranch(branch: string) {
       this.currentBranch = branch;
-      this.fetchNavigation(false);
+      this.fetchNavigation(true); // Force fetch when changing branch
     },
 
     addFile(path: string, title: string) {
@@ -403,5 +449,23 @@ export const useNavigationStore = defineStore("navigation", {
     async updateAfterCommit() {
       await this.fetchNavigation(true);
     },
+    
+    // New method to force clear local storage and reload from GitHub
+    async forceClearAndReload() {
+      console.log("Force clearing and reloading navigation");
+      
+      // First clear all local storage related to navigation
+      this.clearAllStructures();
+      
+      // Also clear any drafts
+      if (process.client) {
+        const sidebarEditorStore = useSidebarEditorStore();
+        sidebarEditorStore.clearDraftNavigationStructure();
+        sidebarEditorStore.hasDraftChanges = false;
+      }
+      
+      // Force fetch from GitHub
+      await this.fetchNavigation(true);
+    }
   },
 });
