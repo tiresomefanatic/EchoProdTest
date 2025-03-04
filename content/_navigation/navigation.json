@@ -32,12 +32,6 @@
               "locked": true
             },
             {
-              "title": "Color",
-              "path": "/design/foundation/color",
-              "type": "file",
-              "locked": false
-            },
-            {
               "title": "Icons",
               "path": "/design/foundation/icons",
               "type": "file",
@@ -48,6 +42,12 @@
               "path": "/design/foundation/illustration",
               "type": "file",
               "locked": true
+            },
+            {
+              "title": "Color",
+              "path": "/design/foundation/color",
+              "type": "file",
+              "locked": false
             },
             {
               "title": "Imagery",
