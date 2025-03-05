@@ -555,41 +555,35 @@ const handleMoveItemDown = async (itemPath: string) => {
 
 // Listen for sidebar toggle events from header
 const sidebarBus = useEventBus('sidebar-toggle');
+const isFirstEvent = ref(true);
 
-// Completely rewrite the event handling
-onMounted(() => {
-  console.log("DesignSidebar mounted");
-  
-  // Set initial open state based on screen size
-  if (process.client) {
-    isOpen.value = true;
-    // For mobile, explicitly start with closed sidebar
-    
-    console.log("Setting initial open state based on screen width:", isOpen.value);
+// Setup event listeners
+sidebarBus.on(() => {
+  console.log('Toggle event received, current state:', isOpen.value);
+  if (isFirstEvent.value) {
+    // Skip the first event that happens on component mount
+    isFirstEvent.value = false;
+    return;
   }
   
-  // Add event listener for sidebar toggle
-  sidebarBus.on(() => {
-    console.log('Toggle event received, current state:', isOpen.value);
-    isOpen.value = !isOpen.value;
-    console.log('New state:', isOpen.value);
-    
-    // Apply body overflow style
-    if (process.client) {
-      document.body.style.overflow = isOpen.value ? "hidden" : "";
-    }
-  });
+  // Process normal toggle for subsequent events
+  toggleMobileMenu();
+});
+
+onMounted(() => {
   
-  console.log("Starting initial navigation refresh");
+  // Always start with sidebar closed on mobile
+  if (process.client) {
+    isOpen.value = false;
+  }
+  
   refreshNavigation(true);
   
   // Add window resize handler
   if (process.client) {
     window.addEventListener('resize', () => {
       if (window.innerWidth < 1024) {
-        isOpen.value = true;
-      } else {
-        // Ensure sidebar is closed when resizing to mobile
+        // Close sidebar when in mobile view
         isOpen.value = false;
       }
     });
