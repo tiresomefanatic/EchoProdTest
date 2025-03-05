@@ -872,8 +872,7 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
     top: 0;
     left: 0;
     height: 100%;
-    width: 80%;
-    max-width: 320px;
+    width: 100%;
     background-color: white;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
     z-index: 1001;
@@ -961,8 +960,7 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
     top: 0;
     left: 0;
     height: 100%;
-    width: 80%;
-    max-width: 320px;
+    width: 100%;
     background-color: white;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
     z-index: 1001;
