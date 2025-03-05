@@ -555,30 +555,64 @@ const handleMoveItemDown = async (itemPath: string) => {
 
 // Listen for sidebar toggle events from header
 const sidebarBus = useEventBus('sidebar-toggle');
-sidebarBus.on((value) => {
-  console.log('Sidebar event received in DesignSidebar:', value);
+
+// Completely rewrite the event handling
+onMounted(() => {
+  console.log("DesignSidebar mounted");
   
-  // Set isOpen value based on provided value or toggle
-  if (typeof value === 'boolean') {
-    isOpen.value = value;
-  } else {
-    isOpen.value = !isOpen.value;
+  // Set initial open state based on screen size
+  if (process.client) {
+    isOpen.value = true;
+    // For mobile, explicitly start with closed sidebar
+    
+    console.log("Setting initial open state based on screen width:", isOpen.value);
   }
+  
+  // Add event listener for sidebar toggle
+  sidebarBus.on(() => {
+    console.log('Toggle event received, current state:', isOpen.value);
+    isOpen.value = !isOpen.value;
+    console.log('New state:', isOpen.value);
+    
+    // Apply body overflow style
+    if (process.client) {
+      document.body.style.overflow = isOpen.value ? "hidden" : "";
+    }
+  });
+  
+  console.log("Starting initial navigation refresh");
+  refreshNavigation(true);
+  
+  // Add window resize handler
+  if (process.client) {
+    window.addEventListener('resize', () => {
+      if (window.innerWidth < 1024) {
+        isOpen.value = true;
+      } else {
+        // Ensure sidebar is closed when resizing to mobile
+        isOpen.value = false;
+      }
+    });
+  }
+});
+
+// Mobile menu handlers - simplified
+const toggleMobileMenu = () => {
+  isOpen.value = !isOpen.value;
   
   // Apply body overflow style
   if (process.client) {
     document.body.style.overflow = isOpen.value ? "hidden" : "";
-    console.log('DesignSidebar isOpen is now:', isOpen.value);
   }
-});
-
-// Mobile menu handlers
-const toggleMobileMenu = () => {
-  sidebarBus.emit(!isOpen.value);
 };
 
 const closeMobileMenu = () => {
-  sidebarBus.emit(false);
+  isOpen.value = false;
+  
+  // Apply body overflow style
+  if (process.client) {
+    document.body.style.overflow = "";
+  }
 };
 
 // Watch for branch changes to refresh navigation
@@ -611,30 +645,6 @@ watch(
   },
   { immediate: true }
 );
-
-// Initial setup
-onMounted(async () => {
-  console.log("DesignSidebar mounted");
-  
-  // Set initial open state for desktop
-  if (window.innerWidth > 1024) {
-    isOpen.value = true;
-    console.log("Setting initial desktop open state:", isOpen.value);
-  }
-  
-  console.log("Starting initial navigation refresh");
-  await refreshNavigation(true);
-  console.log("After initial refresh - Navigation structure:", navigationStructure.value);
-  
-  // Add window resize handler
-  if (process.client) {
-    window.addEventListener('resize', () => {
-      if (window.innerWidth > 1024) {
-        isOpen.value = true;
-      }
-    });
-  }
-});
 </script>
 
 <style scoped>
