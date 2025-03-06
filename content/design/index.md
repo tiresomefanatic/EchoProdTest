@@ -1,6 +1,7 @@
 <h2 style="text-align: left"><strong>Introduction.testnow</strong>
 </h2>
-<p style="text-align: left">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.
+<p style="text-align: left">
+<span style="font-size: 12px">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.</span>
 </p>
 <p style="text-align: left">
 <img src="/images/echo-dna.png" alt="Echo DNA">
