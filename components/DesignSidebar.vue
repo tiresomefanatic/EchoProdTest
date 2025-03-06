@@ -97,29 +97,34 @@
                 <div v-if="isEditMode && !section.locked" class="item-controls">
                   <!-- Up/Down arrows for reordering -->
                   <button 
-                    class="item-control-btn up-btn" 
+                    class="up-btn" 
                     @click.stop="handleMoveItemUp(section.path)"
                     aria-label="Move item up"
                   >
                     ↑
                   </button>
                   <button 
-                    class="item-control-btn down-btn" 
+                    class="down-btn" 
                     @click.stop="handleMoveItemDown(section.path)"
                     aria-label="Move item down"
                   >
                     ↓
                   </button>
 
-                  <!-- Add new file button (for directories) -->
-                  <button 
-                    v-if="section.type === 'directory'" 
-                    class="item-control-btn add-btn"
-                    @click.stop="handleAddNewFile(section.path)"
-                    aria-label="Add new file"
-                  >
-                    +
-                  </button>
+                  <!-- Dropdown for directories -->
+                  <div v-if="section.type === 'directory'" class="dropdown-container">
+                    <button 
+                      class="dropdown-toggle"
+                      @click.stop="toggleDropdown(section.path, $event)"
+                      aria-label="Show more options"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 6C12.5523 6 13 5.55228 13 5C13 4.44772 12.5523 4 12 4C11.4477 4 11 4.44772 11 5C11 5.55228 11.4477 6 12 6Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 20C12.5523 20 13 19.5523 13 19C13 18.4477 12.5523 18 12 18C11.4477 18 11 18.4477 11 19C11 19.5523 11.4477 20 12 20Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -155,26 +160,32 @@
                         <!-- Edit Mode Controls -->
                         <div v-if="isEditMode && !item.locked" class="item-controls">
                           <button 
-                            class="item-control-btn up-btn" 
+                            class="up-btn" 
                             @click.stop="handleMoveItemUp(item.path)"
                             aria-label="Move item up"
                           >
                             ↑
                           </button>
                           <button 
-                            class="item-control-btn down-btn" 
+                            class="down-btn" 
                             @click.stop="handleMoveItemDown(item.path)"
                             aria-label="Move item down"
                           >
                             ↓
                           </button>
-                          <button 
-                            class="item-control-btn add-btn"
-                            @click.stop="handleAddNewFile(item.path)"
-                            aria-label="Add new file"
-                          >
-                            +
-                          </button>
+                          <div class="dropdown-container">
+                            <button 
+                              class="dropdown-toggle"
+                              @click.stop="toggleDropdown(item.path, $event)"
+                              aria-label="Show more options"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 6C12.5523 6 13 5.55228 13 5C13 4.44772 12.5523 4 12 4C11.4477 4 11 4.44772 11 5C11 5.55228 11.4477 6 12 6Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 20C12.5523 20 13 19.5523 13 19C13 18.4477 12.5523 18 12 18C11.4477 18 11 18.4477 11 19C11 19.5523 11.4477 20 12 20Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       </div>
                       <div
@@ -210,26 +221,32 @@
                                 <!-- Edit Mode Controls -->
                                 <div v-if="isEditMode && !child.locked" class="item-controls">
                                   <button 
-                                    class="item-control-btn up-btn" 
+                                    class="up-btn" 
                                     @click.stop="handleMoveItemUp(child.path)"
                                     aria-label="Move item up"
                                   >
                                     ↑
                                   </button>
                                   <button 
-                                    class="item-control-btn down-btn" 
+                                    class="down-btn" 
                                     @click.stop="handleMoveItemDown(child.path)"
                                     aria-label="Move item down"
                                   >
                                     ↓
                                   </button>
-                                  <button 
-                                    class="item-control-btn add-btn"
-                                    @click.stop="handleAddNewFile(child.path)"
-                                    aria-label="Add new file"
-                                  >
-                                    +
-                                  </button>
+                                  <div class="dropdown-container">
+                                    <button 
+                                      class="dropdown-toggle"
+                                      @click.stop="toggleDropdown(child.path, $event)"
+                                      aria-label="Show more options"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                        <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M12 6C12.5523 6 13 5.55228 13 5C13 4.44772 12.5523 4 12 4C11.4477 4 11 4.44772 11 5C11 5.55228 11.4477 6 12 6Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M12 20C12.5523 20 13 19.5523 13 19C13 18.4477 12.5523 18 12 18C11.4477 18 11 18.4477 11 19C11 19.5523 11.4477 20 12 20Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                      </svg>
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                               <div
@@ -272,14 +289,14 @@
                                       <!-- Edit Mode Controls for Files -->
                                       <div v-if="isEditMode && !grandChild.locked" class="item-controls">
                                         <button 
-                                          class="item-control-btn up-btn" 
+                                          class="up-btn" 
                                           @click.stop="handleMoveItemUp(grandChild.path)"
                                           aria-label="Move item up"
                                         >
                                           ↑
                                         </button>
                                         <button 
-                                          class="item-control-btn down-btn" 
+                                          class="down-btn" 
                                           @click.stop="handleMoveItemDown(grandChild.path)"
                                           aria-label="Move item down"
                                         >
@@ -323,14 +340,14 @@
                               <!-- Edit Mode Controls for Files -->
                               <div v-if="isEditMode && !child.locked" class="item-controls">
                                 <button 
-                                  class="item-control-btn up-btn" 
+                                  class="up-btn" 
                                   @click.stop="handleMoveItemUp(child.path)"
                                   aria-label="Move item up"
                                 >
                                   ↑
                                 </button>
                                 <button 
-                                  class="item-control-btn down-btn" 
+                                  class="down-btn" 
                                   @click.stop="handleMoveItemDown(child.path)"
                                   aria-label="Move item down"
                                 >
@@ -374,14 +391,14 @@
                       <!-- Edit Mode Controls for Files -->
                       <div v-if="isEditMode && !item.locked" class="item-controls">
                         <button 
-                          class="item-control-btn up-btn" 
+                          class="up-btn" 
                           @click.stop="handleMoveItemUp(item.path)"
                           aria-label="Move item up"
                         >
                           ↑
                         </button>
                         <button 
-                          class="item-control-btn down-btn" 
+                          class="down-btn" 
                           @click.stop="handleMoveItemDown(item.path)"
                           aria-label="Move item down"
                         >
@@ -428,6 +445,39 @@
     <!-- Modal Components -->
     <NewFileModal />
     <NewFolderModal />
+
+    <Teleport to="body">
+      <div 
+        v-if="activeDropdown" 
+        class="global-dropdown-menu"
+        :style="{
+          top: `${dropdownPosition.top}px`,
+          left: `${dropdownPosition.left}px`
+        }"
+        @click.stop
+      >
+        <button 
+          class="dropdown-item"
+          @click.stop="handleAddNewFile(activeDropdown)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3.33325V12.6666" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3.33203 8H12.6654" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Add File
+        </button>
+        <button 
+          class="dropdown-item delete"
+          @click.stop="handleDeleteItem(activeDropdown)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 4H3.33333H14" stroke="#E53935" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5.33203 4.00065V2.66732C5.33203 2.31369 5.47251 1.97456 5.72256 1.72451C5.97261 1.47446 6.31174 1.33398 6.66536 1.33398H9.33203C9.68566 1.33398 10.0248 1.47446 10.2748 1.72451C10.5249 1.97456 10.6654 2.31369 10.6654 2.66732V4.00065M12.6654 4.00065V13.334C12.6654 13.6876 12.5249 14.0267 12.2748 14.2768C12.0248 14.5268 11.6857 14.6673 11.332 14.6673H4.66536C4.31174 14.6673 3.97261 14.5268 3.72256 14.2768C3.47251 14.0267 3.33203 13.6876 3.33203 13.334V4.00065H12.6654Z" stroke="#E53935" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Delete
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -639,6 +689,49 @@ watch(
   },
   { immediate: true }
 );
+
+const activeDropdown = ref<string | null>(null);
+const dropdownPosition = ref({ top: 0, left: 0 });
+
+const toggleDropdown = (path: string, event: MouseEvent) => {
+  if (activeDropdown.value === path) {
+    activeDropdown.value = null;
+  } else {
+    // Get position from the event target
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    
+    // Calculate position
+    dropdownPosition.value = {
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX
+    };
+    
+    // Set the active dropdown
+    activeDropdown.value = path;
+  }
+  
+  // Stop event propagation
+  event.stopPropagation();
+};
+
+// click handler to close the dropdown when clicking outside
+onMounted(() => {
+  
+  if (process.client) {
+    document.addEventListener('click', () => {
+      activeDropdown.value = null;
+    });
+  }
+});
+
+// delete handler
+const handleDeleteItem = (itemPath: string) => {
+  // For now, just close the dropdown
+  activeDropdown.value = null;
+  
+  console.log('Delete item:', itemPath);
+};
 </script>
 
 <style scoped>
@@ -673,6 +766,7 @@ watch(
   padding-right: 8px;
   padding-left: 8px;
   padding-top: 8px;
+  padding-bottom: 8px;
 }
 
 /* Edit Mode Styles */
@@ -793,31 +887,20 @@ watch(
 .item-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   margin-left: auto;
 }
 
-.item-control-btn {
+.up-btn, 
+.down-btn,
+.add-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  font-size: 12px;
-  background-color: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   cursor: pointer;
-}
-
-.item-control-btn:hover {
-  background-color: #e5e7eb;
-}
-
-.add-btn {
-  font-size: 14px;
-  font-weight: bold;
 }
 
 .nav-group-header.edit-mode,
@@ -860,13 +943,12 @@ watch(
 .nav-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .nav-group-header {
   display: flex;
-  height: 32px;
-  padding: 4px 0;
+  height: 40px;
+  padding: 12px 0;
   align-items: center;
   gap: 12px;
   align-self: stretch;
@@ -891,8 +973,8 @@ watch(
 
 .nav-item {
   display: flex;
-  height: 32px;
-  padding: 4px 0;
+  height: 40px;
+  padding: 12px 0;
   align-items: center;
   gap: 12px;
   align-self: stretch;
@@ -919,7 +1001,31 @@ watch(
 }
 
 .nav-item.router-link-active {
-  font-weight: 538;
+  color: #303030;
+  font-family: "PP Neue Montreal";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 530 !important;
+  line-height: 24px; /* 150% */
+  letter-spacing: 0.15px;
+  background-color: #D8D8D8;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 8px;
+  padding-left: 16px;
+}
+
+.nav-item.router-link-active .item-content,
+.nav-item.router-link-active .item-content a,
+.nav-item.router-link-active a {
+  color: #303030;
+  font-family: "PP Neue Montreal";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 530 !important;
+  line-height: 24px; /* 150% */
+  letter-spacing: 0.15px;
 }
 
 .nav-section {
@@ -937,7 +1043,6 @@ watch(
 .nav-section-inner {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .sub-item {
@@ -1060,5 +1165,104 @@ watch(
   padding: 1rem;
   text-align: center;
   color: #666;
+}
+
+.dropdown-container {
+  position: relative;
+}
+
+.dropdown-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dropdown-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right:75%;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 9999 !important;
+  min-width: 120px;
+  overflow: hidden;
+  transform: translateZ(0);
+  isolation: isolate;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  z-index: 1002even afte !important;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.dropdown-item.delete {
+  color: #E53935;
+}
+
+.dropdown-item.delete:hover {
+  background-color: #ffebee;
+}
+
+.global-dropdown-menu {
+  position: absolute;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 99999;
+  min-width: 120px;
+  overflow: hidden;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.15));
+}
+
+.global-dropdown-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+
+.global-dropdown-menu .dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.global-dropdown-menu .dropdown-item.delete {
+  color: #E53935;
+}
+
+.global-dropdown-menu .dropdown-item.delete:hover {
+  background-color: #ffebee;
 }
 </style>
