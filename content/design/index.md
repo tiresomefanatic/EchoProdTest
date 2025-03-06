@@ -1,4 +1,4 @@
-<h1 style="text-align: left"><strong>Introduction.asdasd</strong>
+<h1 style="text-align: left"><strong>Introduction.</strong>
 </h1>
 <p style="text-align: left">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.
 </p>
