@@ -106,9 +106,9 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   "update:content": [content: string];
-  save: [content: string];
   error: [error: Error];
   exit: [];
+  save: [];
 }>();
 
 // State management

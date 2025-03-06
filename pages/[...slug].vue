@@ -16,10 +16,6 @@
         
         <!-- New editor mode controls -->
         <div class="editor-mode-controls">
-          <!-- Content status indicator -->
-          <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
-            {{ getContentSource }}
-          </span>
           <button 
             class="mode-button" 
             :class="{ 'active': isRawMode }"
@@ -39,9 +35,10 @@
               </svg>
             </span>
           </button>
-          <button class="view-main-button">
-            View main
-          </button>
+          <!-- Content status indicator moved here -->
+          <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
+            {{ getContentSource }}
+          </span>
         </div>
         
         <div class="header-actions">
@@ -53,7 +50,7 @@
             </svg>
             Exit
           </button>
-          <button @click="() => handleSave(editorContent)" class="save-button">
+          <button @click="handleShowCommitModal" class="save-button">
             Save changes
           </button>
         </div>
@@ -83,7 +80,7 @@
                       :externalRawMode="isRawMode"
                       :externalPreviewMode="isPreviewMode"
                       @update:content="handleContentChange"
-                      @save="handleSave"
+                      @save="handleShowCommitModal"
                       @error="handleEditorError"
                       @exit="exitEditor"
                       ref="tiptapEditorRef"
@@ -121,6 +118,15 @@
         <Footer v-if="!isEditing" class="full-width-footer" />
       </div>
     </ClientOnly>
+
+    <!-- Add the CommitModal component -->
+    <CommitModal 
+      :is-open="isCommitModalOpen" 
+      :file-path="contentPath"
+      :content="editorContent"
+      @close="handleCloseCommitModal"
+      @commit="handleCommit"
+    />
   </div>
 </template>
 
@@ -147,6 +153,7 @@ import { useEditorStore } from "~/store/editor";
 import { useStore } from "~/store";
 import Footer from "~/components/Footer.vue";
 import { useEventBus } from '@vueuse/core';
+import CommitModal from "~/components/CommitModal.vue";
 
 // Initialize GitHub functionality and services
 const {
@@ -172,12 +179,13 @@ const githubContent = ref("");
 const editorContent = ref("");
 const contentKey = ref(0);
 const contentLastModified = ref<string | null>(null);
+const isCommitModalOpen = ref(false);
 
 // Computed properties for content source indicator
 const getContentSource = computed(() => {
   if (!contentPath.value) return 'New File';
-  if (editorStore.hasDraft(contentPath.value)) return 'Draft';
-  return 'Committed';
+  if (editorStore.hasDraft(contentPath.value)) return 'You are now viewing a draft from local save';
+  return 'You are now viewing content from GitHub';
 });
 
 const getContentSourceClass = computed(() => {
@@ -343,10 +351,15 @@ const loadGithubContent = async () => {
   try {
     let contentPathToLoad = contentPath.value;
     
-    // Only check for drafts if we're in editing mode
+    // Check for cached git content first (regardless of edit mode)
+    // This ensures we always show the latest committed content
+    const cachedGitContent = editorStore.getGitContent(contentPathToLoad, currentBranch.value);
+    
     if (isEditing.value) {
+      // In editing mode, prioritize drafts over committed content
       const draftContent = editorStore.getDraft(contentPathToLoad);
       if (draftContent) {
+        console.log("Using draft content");
         editorContent.value = draftContent.content;
         // @ts-ignore - Ignoring type error from marked function
         githubContent.value = marked(draftContent.content);
@@ -354,9 +367,32 @@ const loadGithubContent = async () => {
         contentKey.value++;
         return;
       }
+      
+      // No draft found, check for cached git content to bypass GitHub CDN cache
+      if (cachedGitContent) {
+        console.log("Using cached git content from local store (edit mode)");
+        editorContent.value = cachedGitContent.content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(cachedGitContent.content);
+        store.updateRawText(cachedGitContent.content);
+        contentKey.value++;
+        return;
+      }
+    } else {
+      // In view mode, check for cached git content to bypass GitHub CDN cache
+      if (cachedGitContent) {
+        console.log("Using cached git content from local store (view mode)");
+        editorContent.value = cachedGitContent.content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(cachedGitContent.content);
+        store.updateRawText(cachedGitContent.content);
+        contentKey.value++;
+        return;
+      }
     }
     
-    // If no draft content or not in editing mode, load from GitHub
+    // If no draft or cached git content, load from GitHub
+    console.log("Fetching content from GitHub API");
     const content = await getRawContent(
       "tiresomefanatic",
       "EchoProdTest",
@@ -421,9 +457,32 @@ const handleContentChange = (newContent: string) => {
 };
 
 /**
- * Handles saving content to GitHub.
+ * Shows the commit modal
  */
-const handleSave = async (content: string) => {
+const handleShowCommitModal = () => {
+  if (!editorContent.value || !isLoggedIn.value) {
+    showToast({
+      title: "Error",
+      message: "Please sign in to save changes",
+      type: "error",
+    });
+    return;
+  }
+  
+  isCommitModalOpen.value = true;
+};
+
+/**
+ * Closes the commit modal
+ */
+const handleCloseCommitModal = () => {
+  isCommitModalOpen.value = false;
+};
+
+/**
+ * Handles saving content locally as a draft.
+ */
+const handleSave = (content: string) => {
   if (!content || !isLoggedIn.value) {
     showToast({
       title: "Error",
@@ -658,6 +717,78 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   } else if (mode === 'preview') {
     isRawMode.value = false;
     isPreviewMode.value = true;
+  }
+};
+
+/**
+ * Handles committing changes to GitHub with a message
+ */
+const handleCommit = async (commitMessage: string) => {
+  if (!commitMessage || !isLoggedIn.value) {
+    showToast({
+      title: "Error",
+      message: "Please provide a commit message",
+      type: "error",
+    });
+    return;
+  }
+
+  try {
+    const contentToCommit = editorContent.value;
+    
+    // Commit to GitHub
+    const response = await saveFileContent(
+      "tiresomefanatic",
+      "EchoProdTest",
+      contentPath.value,
+      contentToCommit,
+      commitMessage,
+      currentBranch.value
+    );
+    
+    // Save to editor store's gitContent to bypass GitHub CDN cache
+    if (response && response.content) {
+      const fileSha = response.content.sha || '';
+      
+      editorStore.saveGitContent(
+        contentPath.value,
+        contentToCommit,
+        currentBranch.value,
+        fileSha
+      );
+      
+      // Update the display content
+      editorContent.value = contentToCommit;
+      // @ts-ignore - Ignoring type error from marked function
+      githubContent.value = marked(contentToCommit);
+      store.updateRawText(contentToCommit);
+    }
+    
+    // Clear draft after successful commit
+    editorStore.clearDraft(contentPath.value);
+    
+    showToast({
+      title: "Success",
+      message: "Changes committed successfully",
+      type: "success",
+    });
+    
+    // Exit editor mode
+    isEditing.value = false;
+    
+    // Refresh navigation
+    await refreshNavigation();
+    
+  } catch (error) {
+    console.error("Error committing content:", error);
+    showToast({
+      title: "Error",
+      message: "Failed to commit changes",
+      type: "error",
+    });
+    
+    // Save as draft if commit fails
+    editorStore.saveDraft(contentPath.value, editorContent.value);
   }
 };
 </script>
@@ -1596,6 +1727,7 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   align-items: center;
   gap: 12px;
   margin: 0;
+  flex-wrap: nowrap;
 }
 
 .mode-button {
@@ -1639,24 +1771,6 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   gap: 12px;
 }
 
-.view-main-button {
-  display: flex;
-  padding: 8px 12px;
-  justify-content: center;
-  align-items: center;
-  border-radius: 8px;
-  border: 1px solid #BABABA;
-  background: transparent;
-  color: #1D1B1B;
-  font-family: "PP Neue Montreal";
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 530;
-  line-height: 24px;
-  letter-spacing: var(--Title-Medium-Tracking, 0.15px);
-  cursor: pointer;
-}
-
 /* Hide the original toolbar buttons in TiptapEditor */
 :deep(.editor-toolbar .toolbar-right) {
   display: none !important;
@@ -1667,14 +1781,18 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 8px;
+  padding: 4px 12px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  margin-right: 12px;
+  margin-left: 4px;
   background-color: rgba(255, 255, 255, 0.2);
   color: #1D1B1B;
   font-family: "PP Neue Montreal", sans-serif;
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .content-status.draft {
