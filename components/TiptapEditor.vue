@@ -915,15 +915,56 @@ onMounted(async () => {
 });
 
 onMounted(() => {
-  const editorContent = document.querySelector(".editor-content");
-  if (editorContent) {
-    editorContent.addEventListener("scroll", () => {
-      editorContent.setAttribute(
-        "data-scroll-top",
-        editorContent.scrollTop.toString()
-      );
-    });
+  // Get the scroll container
+  const scrollContainer = document.querySelector(".editor-scroll-container");
+  
+  if (scrollContainer) {
+    // Create a single wheel event handler that will be used for all wheel events
+    const handleWheel = (e: WheelEvent) => {
+      // Skip handling if the editor is not visible or in a modal
+      if (!(scrollContainer as HTMLElement).offsetParent) return;
+      
+      // Don't handle wheel events inside modals or in the collaboration sidebar
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('.modal-overlay') || 
+        target.closest('.commit-dialog') ||
+        target.closest('div[class*="collaboration"]')
+      ) {
+        return;
+      }
+      
+      // Adjust scroll speed based on deltaMode
+      let scrollAmount = e.deltaY;
+      
+      // If the deltaMode is line (1) or page (2), adjust the scroll amount
+      if (e.deltaMode === 1) {
+        // Line mode - multiply by 20 for line height
+        scrollAmount *= 20;
+      } else if (e.deltaMode === 2) {
+        // Page mode - multiply by the height of the container
+        scrollAmount *= (scrollContainer as HTMLElement).clientHeight;
+      }
+      
+      // Apply a scaling factor for smoother scrolling
+      scrollAmount *= 0.5;
+      
+      // Directly scroll the container by the calculated amount
+      (scrollContainer as HTMLElement).scrollTop += scrollAmount;
+      
+      // Prevent the default scroll behavior to avoid double scrolling
+      e.preventDefault();
+    };
+    
+    // Add the wheel event listener to the document to capture all wheel events
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    
+    // Store the handler for cleanup
+    (window as any)._editorWheelHandler = handleWheel;
   }
+  
+  // Prevent body scrolling when editor is mounted
+  document.body.style.overflow = 'hidden';
 });
 
 // Cleanup
@@ -934,10 +975,16 @@ onBeforeUnmount(() => {
   if (monacoEditor.value) {
     monacoEditor.value.dispose();
   }
-  const editorContent = document.querySelector(".editor-content");
-  if (editorContent) {
-    editorContent.removeEventListener("scroll", () => {});
+  
+  // Remove the document-level wheel event listener
+  const handleWheel = (window as any)._editorWheelHandler;
+  if (handleWheel) {
+    document.removeEventListener('wheel', handleWheel);
+    delete (window as any)._editorWheelHandler;
   }
+  
+  // Restore body scrolling when editor is unmounted
+  document.body.style.overflow = '';
 });
 
 // Update the handleExit method
@@ -1055,166 +1102,170 @@ const handleExit = () => {
           </div>
         </div>
 
-        <div class="editor-content">
-          <!-- Editor View -->
-          <template v-if="!previewMode && !rawMode">
-            <div class="tiptap-toolbar" v-if="editor">
-              <button
-                class="menubar-button"
-                @click="editor.chain().focus().toggleBold().run()"
-                :class="{ 'is-active': editor.isActive('bold') }"
-              >
-                Bold
-              </button>
-              <button
-                class="menubar-button"
-                @click="editor.chain().focus().toggleItalic().run()"
-                :class="{ 'is-active': editor.isActive('italic') }"
-              >
-                Italic
-              </button>
-              <button
-                class="menubar-button"
-                @click="
-                  editor.chain().focus().toggleHeading({ level: 1 }).run()
-                "
-                :class="{
-                  'is-active': editor.isActive('heading', { level: 1 }),
-                }"
-              >
-                H1
-              </button>
-              <button
-                class="menubar-button"
-                @click="
-                  editor.chain().focus().toggleHeading({ level: 2 }).run()
-                "
-                :class="{
-                  'is-active': editor.isActive('heading', { level: 2 }),
-                }"
-              >
-                H2
-              </button>
-              <button
-                class="menubar-button"
-                @click="editor.chain().focus().toggleBulletList().run()"
-                :class="{ 'is-active': editor.isActive('bulletList') }"
-              >
-                List
-              </button>
-              <select
-                class="font-size-select"
-                @change="
-                  (e) =>
-                    editor.chain().focus().setFontSize(e.target.value).run()
-                "
-              >
-                <option value="">Font Size</option>
-                <option
-                  v-for="option in fontSizeOptions"
-                  :key="option.value"
-                  :value="option.value"
-                  :selected="
-                    editor.isActive('textStyle', { fontSize: option.value })
-                  "
-                >
-                  {{ option.label }}
-                </option>
-              </select>
-              <div class="alignment-buttons">
-                <button
-                  class="menubar-button"
-                  @click="editor.chain().focus().setTextAlign('left').run()"
-                  :class="{
-                    'is-active': editor.isActive({ textAlign: 'left' }),
-                  }"
-                  title="Align left"
-                >
-                  <span class="align-icon">⟵</span>
-                </button>
-                <button
-                  class="menubar-button"
-                  @click="editor.chain().focus().setTextAlign('center').run()"
-                  :class="{
-                    'is-active': editor.isActive({ textAlign: 'center' }),
-                  }"
-                  title="Align center"
-                >
-                  <span class="align-icon">↔</span>
-                </button>
-                <button
-                  class="menubar-button"
-                  @click="editor.chain().focus().setTextAlign('right').run()"
-                  :class="{
-                    'is-active': editor.isActive({ textAlign: 'right' }),
-                  }"
-                  title="Align right"
-                >
-                  <span class="align-icon">⟶</span>
-                </button>
-                <button
-                  class="menubar-button"
-                  @click="editor.chain().focus().setTextAlign('justify').run()"
-                  :class="{
-                    'is-active': editor.isActive({ textAlign: 'justify' }),
-                  }"
-                  title="Justify"
-                >
-                  <span class="align-icon">☰</span>
-                </button>
-              </div>
-              <div class="divider"></div>
-              <button
-                class="menubar-button"
-                @click="setLink"
-                :class="{ 'is-active': editor.isActive('link') }"
-                title="Add/edit link"
-              >
-                🔗
-              </button>
-              <button
-                class="menubar-button"
-                v-if="editor.isActive('link')"
-                @click="removeLink"
-                title="Remove link"
-              >
-                ✖️
-              </button>
-              <div class="divider"></div>
-              <button
-                class="menubar-button"
-                @click="showImageDialog = true"
-                title="Insert image"
-              >
-                <span class="button-icon">🖼️</span>
-              </button>
-              <AddContentDialog
-                :onInsertComponent="handleInsertComponent"
-                :onInsertSection="handleInsertSection"
+        <!-- Editor View Toolbar - Fixed at top -->
+        <div class="tiptap-toolbar" v-if="editor && !previewMode && !rawMode">
+          <button
+            class="menubar-button"
+            @click="editor.chain().focus().toggleBold().run()"
+            :class="{ 'is-active': editor.isActive('bold') }"
+          >
+            Bold
+          </button>
+          <button
+            class="menubar-button"
+            @click="editor.chain().focus().toggleItalic().run()"
+            :class="{ 'is-active': editor.isActive('italic') }"
+          >
+            Italic
+          </button>
+          <button
+            class="menubar-button"
+            @click="
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+            "
+            :class="{
+              'is-active': editor.isActive('heading', { level: 1 }),
+            }"
+          >
+            H1
+          </button>
+          <button
+            class="menubar-button"
+            @click="
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            "
+            :class="{
+              'is-active': editor.isActive('heading', { level: 2 }),
+            }"
+          >
+            H2
+          </button>
+          <button
+            class="menubar-button"
+            @click="editor.chain().focus().toggleBulletList().run()"
+            :class="{ 'is-active': editor.isActive('bulletList') }"
+          >
+            List
+          </button>
+          <select
+            class="font-size-select"
+            @change="
+              (e) =>
+                editor.chain().focus().setFontSize(e.target.value).run()
+            "
+          >
+            <option value="">Font Size</option>
+            <option
+              v-for="option in fontSizeOptions"
+              :key="option.value"
+              :value="option.value"
+              :selected="
+                editor.isActive('textStyle', { fontSize: option.value })
+              "
+            >
+              {{ option.label }}
+            </option>
+          </select>
+          <div class="alignment-buttons">
+            <button
+              class="menubar-button"
+              @click="editor.chain().focus().setTextAlign('left').run()"
+              :class="{
+                'is-active': editor.isActive({ textAlign: 'left' }),
+              }"
+              title="Align left"
+            >
+              <span class="align-icon">⟵</span>
+            </button>
+            <button
+              class="menubar-button"
+              @click="editor.chain().focus().setTextAlign('center').run()"
+              :class="{
+                'is-active': editor.isActive({ textAlign: 'center' }),
+              }"
+              title="Align center"
+            >
+              <span class="align-icon">↔</span>
+            </button>
+            <button
+              class="menubar-button"
+              @click="editor.chain().focus().setTextAlign('right').run()"
+              :class="{
+                'is-active': editor.isActive({ textAlign: 'right' }),
+              }"
+              title="Align right"
+            >
+              <span class="align-icon">⟶</span>
+            </button>
+            <button
+              class="menubar-button"
+              @click="editor.chain().focus().setTextAlign('justify').run()"
+              :class="{
+                'is-active': editor.isActive({ textAlign: 'justify' }),
+              }"
+              title="Justify"
+            >
+              <span class="align-icon">☰</span>
+            </button>
+          </div>
+          <div class="divider"></div>
+          <button
+            class="menubar-button"
+            @click="setLink"
+            :class="{ 'is-active': editor.isActive('link') }"
+            title="Add/edit link"
+          >
+            🔗
+          </button>
+          <button
+            class="menubar-button"
+            v-if="editor.isActive('link')"
+            @click="removeLink"
+            title="Remove link"
+          >
+            ✖️
+          </button>
+          <div class="divider"></div>
+          <button
+            class="menubar-button"
+            @click="showImageDialog = true"
+            title="Insert image"
+          >
+            <span class="button-icon">🖼️</span>
+          </button>
+          <AddContentDialog
+            :onInsertComponent="handleInsertComponent"
+            :onInsertSection="handleInsertSection"
+          />
+        </div>
+
+        <div class="editor-scroll-container">
+          <div class="editor-content">
+            <!-- Editor View -->
+            <template v-if="!previewMode && !rawMode">
+              <editor-content
+                v-if="editorInitialized"
+                :editor="editor"
+                class="content-wrapper"
+                :class="{ 'has-changes': hasChanges }"
+              />
+            </template>
+
+            <!-- Raw View -->
+            <div v-else-if="rawMode" class="raw-content-wrapper">
+              <MonacoEditor
+                v-model="localContent"
+                class="monaco-editor"
+                :options="editorOptions"
+                @change="handleRawContentChange"
+                @mount="(editor) => (monacoEditor = editor)"
               />
             </div>
-            <editor-content
-              v-if="editorInitialized"
-              :editor="editor"
-              class="content-wrapper"
-              :class="{ 'has-changes': hasChanges }"
-            />
-          </template>
 
-          <!-- Raw View -->
-          <div v-else-if="rawMode" class="raw-content-wrapper">
-            <MonacoEditor
-              v-model="localContent"
-              class="monaco-editor"
-              :options="editorOptions"
-              @change="handleRawContentChange"
-              @mount="(editor) => (monacoEditor = editor)"
-            />
-          </div>
-
-          <!-- Preview View -->
-          <div v-else class="preview-wrapper">
-            <div class="content-wrapper" v-html="previewContent"></div>
+            <!-- Preview View -->
+            <div v-else class="preview-wrapper">
+              <div class="content-wrapper" v-html="previewContent"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1300,10 +1351,11 @@ const handleExit = () => {
 }
 
 .editor-wrapper {
-  height: calc(100vh - 64px);
+  height: 100vh;
   display: flex;
   flex-direction: row;
   background: white;
+  overflow: hidden;
 }
 
 .editor-layout {
@@ -1311,6 +1363,7 @@ const handleExit = () => {
   display: flex;
   overflow: hidden;
   width: 100%;
+  background: white;
 }
 
 .editor-main {
@@ -1319,6 +1372,16 @@ const handleExit = () => {
   flex-direction: column;
   min-width: 0;
   background: white;
+  overflow: hidden;
+}
+
+.editor-scroll-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: 100%;
+  min-height: 0;
 }
 
 .editor-content {
@@ -1327,7 +1390,8 @@ const handleExit = () => {
   display: flex;
   flex-direction: column;
   background: white;
-  overflow: auto;
+  overflow: visible;
+  min-height: 0;
 }
 
 /* Editor toolbar styles */
@@ -1338,11 +1402,12 @@ const handleExit = () => {
   align-items: center;
   padding: 0.5rem 1rem;
   background: white;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .tiptap-toolbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 10;
   padding: 0.5rem 1rem;
   display: flex;
@@ -1354,6 +1419,7 @@ const handleExit = () => {
   overflow-x: auto;
   width: 100%;
   min-height: 48px;
+  flex-shrink: 0;
 }
 
 .tiptap-toolbar button,
@@ -1587,19 +1653,20 @@ const handleExit = () => {
   background: #1e1e1e;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .monaco-editor {
   width: 100%;
   height: 100%;
-  min-height: calc(100vh - 120px); /* Ensure editor has enough height */
+  min-height: 100%;
 }
 
 .preview-wrapper {
   flex: 1;
-  overflow: auto;
+  overflow: visible;
   background: white;
+  width: 100%;
 }
 
 .preview-content {
@@ -1634,6 +1701,9 @@ const handleExit = () => {
   -webkit-font-variant-ligatures: none;
   font-variant-ligatures: none;
   padding: 1rem;
+  /* Allow content to expand but not force container to expand */
+  min-height: auto;
+  flex: 1;
 }
 
 .ProseMirror img {
@@ -1669,18 +1739,16 @@ const handleExit = () => {
     rgba(0, 0, 0, 0) 100%
   );
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.editor-content:not([data-scroll-top="0"]) .tiptap-toolbar::after {
   opacity: 1;
+  transition: opacity 0.2s;
 }
 
 .content-wrapper {
   padding: 1rem;
-  min-height: 100%;
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  min-height: 200px;
 }
 
 /* Commit Dialog Styles */

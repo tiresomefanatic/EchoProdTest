@@ -66,7 +66,7 @@
             <div class="body-container">
               <ClientOnly>
                 <!-- Move contribution banner here -->
-                <div v-if="isLoggedIn && !isEditing" class="contribution-banner">
+                <div v-if="isLoggedIn && !isEditing && currentBranch !== 'main'" class="contribution-banner">
                   <div class="banner-content">
                     <p class="banner-text">Would you like to contribute to this document?</p>
                     <button @click="handleEditClick" class="banner-button">
