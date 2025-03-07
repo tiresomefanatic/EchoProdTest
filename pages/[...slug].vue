@@ -39,6 +39,44 @@
           <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
             {{ getContentSource }}
           </span>
+          
+          <!-- Device preview buttons -->
+          <div class="device-preview-controls">
+            <button 
+              class="device-button" 
+              :class="{ active: previewDevice === 'desktop' }"
+              @click="setPreviewDevice('desktop')"
+              title="Desktop view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </button>
+            <button 
+              class="device-button" 
+              :class="{ active: previewDevice === 'tablet' }"
+              @click="setPreviewDevice('tablet')"
+              title="Tablet view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12" y2="18.01"></line>
+              </svg>
+            </button>
+            <button 
+              class="device-button" 
+              :class="{ active: previewDevice === 'mobile' }"
+              @click="setPreviewDevice('mobile')"
+              title="Mobile view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="7" y="4" width="10" height="16" rx="1" ry="1"></rect>
+                <line x1="12" y1="17" x2="12" y2="17.01"></line>
+              </svg>
+            </button>
+          </div>
         </div>
         
         <div class="header-actions">
@@ -73,7 +111,7 @@
                 </div>
                 
                 <div v-if="isEditing" class="editor-container">
-                  <div class="editor-content-wrapper">
+                  <div class="editor-content-wrapper" :style="editorContentStyle">
                     <TiptapEditor
                       :content="editorContent"
                       :filePath="contentPath"
@@ -180,6 +218,7 @@ const editorContent = ref("");
 const contentKey = ref(0);
 const contentLastModified = ref<string | null>(null);
 const isCommitModalOpen = ref(false);
+const previewDevice = ref(null);
 
 // Computed properties for content source indicator
 const getContentSource = computed(() => {
@@ -791,13 +830,74 @@ const handleCommit = async (commitMessage: string) => {
     editorStore.saveDraft(contentPath.value, editorContent.value);
   }
 };
+
+// Update the editorContentStyle computed property to handle null previewDevice
+const editorContentStyle = computed(() => {
+  if (!isEditing.value) {
+    return { minWidth: '100%' };
+  }
+  
+  switch (previewDevice.value) {
+    case 'desktop':
+      return { 
+        minWidth: '804px', //base + 64 (16x4) to account for padding
+        maxWidth: '804px', //base + 64 (16x4) to account for padding
+        width: '100%',
+        border: 'none',
+        margin: '0',
+      };
+    case 'tablet':
+      return { 
+        minWidth: 'auto', 
+        maxWidth: '555px',
+        width: '100%',
+        margin: '0 auto',
+      };
+    case 'mobile':
+      return { 
+        minWidth: 'auto', 
+        maxWidth: '375px',
+        width: '100%',
+        margin: '0 auto',
+      };
+    default: // No device selected - default state
+      return { 
+        minWidth: 'auto',
+        maxWidth: '100%',
+        width: '100%',
+        border: 'none',
+        margin: '0 auto',
+      };
+  }
+});
+
+// Set the active preview device
+const setPreviewDevice = (device) => {
+  // Only allow changing device preview in edit mode
+  if (!isEditing.value) return;
+  
+  // If clicking on the current active device, deactivate it (return to null/unselected)
+  if (previewDevice.value === device) {
+    previewDevice.value = null;
+  } else {
+    // Set the active device
+    previewDevice.value = device;
+  }
+};
+
+// Add a watcher to reset the preview when exiting edit mode
+watch(isEditing, (newValue) => {
+  if (!newValue) {
+    previewDevice.value = null; // Reset to no device selected
+  }
+});
 </script>
 
 
 <style>
 /* Global prose styles - these are essential */
 .prose-content {
-  max-width: 740px; /* From Figma measurement */
+  max-width: 100%; /* From Figma measurement */
   margin: 0;
   padding: 0;
   color: #000000;
@@ -971,12 +1071,12 @@ const handleCommit = async (commitMessage: string) => {
 /* 1025px - 1379px */
 @media screen and (min-width: 1025px) and (max-width: 1379px) {
   .content {
-    padding: 0 199.5px;
+    padding: 0 calc(100px + (199.5 - 100) * ((100vw - 1025px) / (1379 - 1025)));
   }
   
   .text-container {
-    width: auto;
-    flex: 1;
+    flex:0;
+    min-width:539px
   }
   
   .sidebar {
@@ -987,14 +1087,15 @@ const handleCommit = async (commitMessage: string) => {
 /* 768px - 1024px */
 @media screen and (min-width: 768px) and (max-width: 1024px) {
   .content {
-    padding: 0 165.5px;
+    padding: 0 calc(50px + (165.5 - 50) * ((100vw - 768px) / (1024 - 768)));
     justify-content: space-between;
   }
   
   .text-container {
-    width: 100%;
     max-width: 585px;
+    min-width: 491px;
     margin-left: 0;
+    flex:0;
   }
   
   /* Apply the same mobile sidebar styling as for smaller screens */
@@ -1138,7 +1239,7 @@ const handleCommit = async (commitMessage: string) => {
 
 /* Typography styles */
 .prose-content {
-  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "PP Neue Montreal", sans-serif;
 }
 
 .prose-content h1 {
@@ -1182,16 +1283,19 @@ const handleCommit = async (commitMessage: string) => {
   min-height: calc(100vh - 64px);
   padding: 0;
   border-radius: 0;
-  box-shadow: none;
+  box-sizing: border-box;
 }
 
 /* Style the editor content wrapper to match text-container width exactly */
 .editor-content-wrapper {
-  width: 740px;
+  width:100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   flex: 1;
+  transition: all 0.3s ease !important;
+  max-width: 740px; /* Default max width */
+  box-sizing: border-box;
 }
 
 /* Create a completely separate styling section for editor view */
@@ -1221,17 +1325,17 @@ const handleCommit = async (commitMessage: string) => {
 
 /* Create specific overrides for the TiptapEditor component */
 :deep(.tiptap-editor) {
-  width: 740px;
+  width: 100%;
+  max-width: 100%; /* Use 100% of parent container */
   margin: 0 auto;
-  padding: 20px;
-  border: none;
-  box-shadow: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 :deep(.tiptap-editor .ProseMirror) {
-  padding: 16px;
+  padding: 20px 16px;
   min-height: 300px;
-  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "PP Neue Montreal", sans-serif;
   font-size: 16px;
   line-height: 1.6;
   color: #1F2937;
@@ -1684,7 +1788,7 @@ const handleCommit = async (commitMessage: string) => {
 :deep(.tiptap-editor .ProseMirror) {
   padding: 20px 16px;
   min-height: 300px;
-  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'PP Neue Montreal', sans-serif;
   font-size: 16px;
   line-height: 1.6;
   color: #1F2937;
@@ -1809,4 +1913,42 @@ const handleCommit = async (commitMessage: string) => {
   background-color: #60A5FA;
   color: white;
 }
+
+/* Device preview controls */
+.device-preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.device-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: 6px;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.device-button:hover {
+  background: #fff;
+  color: #000;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.device-button.active {
+  background: #fff;
+  color: #000;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Device preview width classes */
+
 </style>
