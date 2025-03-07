@@ -28,5 +28,6 @@ const components = {
 <style>
 .markdown-renderer :deep(*) {
   white-space: normal;
+  font-family: "PP Neue Montreal", sans-serif;
 }
 </style>
