@@ -1413,7 +1413,7 @@ const handleExit = () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   background: white;
   border-bottom: 1px solid #e5e7eb;
   overflow-x: auto;
