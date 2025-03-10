@@ -218,7 +218,7 @@ const editorContent = ref("");
 const contentKey = ref(0);
 const contentLastModified = ref<string | null>(null);
 const isCommitModalOpen = ref(false);
-const previewDevice = ref(null);
+const previewDevice = ref('desktop');
 
 // Computed properties for content source indicator
 const getContentSource = computed(() => {
@@ -876,19 +876,14 @@ const setPreviewDevice = (device) => {
   // Only allow changing device preview in edit mode
   if (!isEditing.value) return;
   
-  // If clicking on the current active device, deactivate it (return to null/unselected)
-  if (previewDevice.value === device) {
-    previewDevice.value = null;
-  } else {
-    // Set the active device
-    previewDevice.value = device;
-  }
+  // Always set to the selected device, regardless of current state
+  previewDevice.value = device;
 };
 
 // Add a watcher to reset the preview when exiting edit mode
 watch(isEditing, (newValue) => {
   if (!newValue) {
-    previewDevice.value = null; // Reset to no device selected
+    previewDevice.value = 'desktop'; // Reset to desktop instead of null
   }
 });
 </script>
