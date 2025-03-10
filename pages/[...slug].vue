@@ -111,7 +111,7 @@
                 </div>
                 
                 <div v-if="isEditing" class="editor-container">
-                  <div class="editor-scroll-container" :style="editorContentStyle">
+                  <div class="editor-content-wrapper" :style="editorContentStyle">
                     <TiptapEditor
                       :content="editorContent"
                       :filePath="contentPath"
@@ -842,7 +842,7 @@ const editorContentStyle = computed(() => {
       return { 
         minWidth: '804px', //base + 64 (16x4) to account for padding
         maxWidth: '804px', //base + 64 (16x4) to account for padding
-        width: '100%',
+        width: '804px',
         border: 'none',
         margin: '0',
       };
