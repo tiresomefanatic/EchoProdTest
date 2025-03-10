@@ -23,7 +23,7 @@
           >
             Raw
           </button>
-          <button 
+          <!-- <button 
             class="mode-button" 
             :class="{ 'active': isPreviewMode }"
             @click="handleEditorModeChange(isPreviewMode ? 'normal' : 'preview')"
@@ -34,7 +34,7 @@
                 <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
               </svg>
             </span>
-          </button>
+          </button> -->
           <!-- Content status indicator moved here -->
           <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
             {{ getContentSource }}
@@ -111,7 +111,7 @@
                 </div>
                 
                 <div v-if="isEditing" class="editor-container">
-                  <div class="editor-content-wrapper" :style="editorContentStyle">
+                  <div class="editor-scroll-container" :style="editorContentStyle">
                     <TiptapEditor
                       :content="editorContent"
                       :filePath="contentPath"
