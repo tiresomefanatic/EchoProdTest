@@ -906,19 +906,20 @@ watch(isEditing, (newValue) => {
 }
 
 .prose-content h1 {
-  font-size: 2em;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120%;
+  letter-spacing: -0.96px;
   margin: 1.2em 0 0.6em;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #000000;
 }
 
 .prose-content h2 {
-  font-size: 1.5em;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 530;
+  line-height: 120%;
   margin: 1em 0 0.5em;
-  font-weight: 600;
-  line-height: 1.3;
-  color: #000000;
 }
 
 .prose-content h3 {
@@ -930,8 +931,11 @@ watch(isEditing, (newValue) => {
 }
 
 .prose-content p {
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 140%;
   margin: 1em 0;
-  color: #000000;
 }
 
 .prose-content ul,
@@ -1242,20 +1246,23 @@ watch(isEditing, (newValue) => {
   font-family: "PP Neue Montreal", sans-serif;
 }
 
+/* to be updated as per system */
+
 .prose-content h1 {
-  font-size: 60px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin-bottom: 24px;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120%;
+  letter-spacing: -0.96px;
+  margin: 1.2em 0 0.6em;
 }
 
 .prose-content h2 {
-  font-size: 48px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin: 48px 0 24px;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 530;
+  line-height: 120%;
+  margin: 1em 0 0.5em;
 }
 
 .prose-content h3 {
@@ -1268,9 +1275,10 @@ watch(isEditing, (newValue) => {
 
 .prose-content p {
   font-size: 16px;
-  line-height: 1.6;
-  margin: 16px 0;
-  color: #1F2937;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 140%;
+  margin: 1em 0;
 }
 
 /* Editor styles */
