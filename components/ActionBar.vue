@@ -1,9 +1,36 @@
 <template>
-  <div class="action-bar">
-    <div class="action-bar-container">
+  <div class="action-bar" :class="{ 'main-branch': isMainBranch }" :key="currentBranch">
+    <!-- Main branch view (blue) with centered buttons -->
+    <div v-if="isMainBranch" class="action-bar-container centered">
+      <div class="centered-content">
+        <p class="create-branch-text">Create a branch to make changes</p>
+        
+        <div class="action-buttons">
+          <button class="action-button create-branch" @click="showBranchModal = true">
+            Create a branch
+          </button>
+          <button class="action-button see-branches" @click="navigateToBranches">
+            See branches
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Non-main branch view (black) with branch name display -->
+    <div v-else class="action-bar-container">
+      <!-- Left side with Exit branch button -->
       <div class="left-section">
-        <!-- Branch info display -->
-        <div v-if="currentBranch" class="branch-info">
+        <button class="action-button exit-branch" @click="handleExitBranch">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;">
+            <path d="M7.5 12L3.5 8L7.5 4M3.5 8H12.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Exit branch
+        </button>
+      </div>
+      
+      <!-- Center section with branch name -->
+      <div class="branch-center">
+        <div class="branch-info">
           <div class="branch-icon">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M13.75 2.5C14.1642 2.5 14.5 2.83579 14.5 3.25V4.16667H15.4167C15.8309 4.16667 16.1667 4.50246 16.1667 4.91667C16.1667 5.33088 15.8309 5.66667 15.4167 5.66667H14.5V6.58333C14.5 6.99755 14.1642 7.33333 13.75 7.33333C13.3358 7.33333 13 6.99755 13 6.58333V5.66667H12.0833C11.6691 5.66667 11.3333 5.33088 11.3333 4.91667C11.3333 4.50246 11.6691 4.16667 12.0833 4.16667H13V3.25C13 2.83579 13.3358 2.5 13.75 2.5Z" fill="white"/>
@@ -15,17 +42,10 @@
           </div>
           <span class="branch-name">{{ currentBranch }}</span>
         </div>
-        <p v-else class="create-branch-text">Create a branch to make changes</p>
       </div>
       
-      <div class="action-buttons">
-        <button class="action-button create-branch" @click="showBranchModal = true">
-          Create a branch
-        </button>
-        <button class="action-button see-branches" @click="navigateToBranches">
-          See branches
-        </button>
-        <!-- Request review button -->
+      <!-- Right section with request review button -->
+      <div class="right-section">
         <button 
           class="request-review-button" 
           @click="handleOpenCreatePR"
@@ -78,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { useGithub } from '~/composables/useGithub';
 import { navigateTo } from '#app';
 import { useToast } from '~/composables/useToast';
@@ -104,6 +124,17 @@ const props = defineProps({
 // Emit events
 const emit = defineEmits([]);
 
+// Computed property to check if the current branch is main
+const isMainBranch = computed(() => {
+  if (!currentBranch.value) return false;
+  
+  // Check for multiple main branch naming variations (case insensitive)
+  const mainBranchNames = ['main', 'master'];
+  return mainBranchNames.some(name => 
+    currentBranch.value.toLowerCase().trim() === name
+  );
+});
+
 // Modal state
 const showBranchModal = ref(false);
 const showCreatePRModal = ref(false);
@@ -126,6 +157,16 @@ watch(newBranchName, (value) => {
   } else {
     branchNameError.value = '';
   }
+});
+
+// Watch for branch changes to update the UI
+watch(currentBranch, () => {
+  forceUpdate();
+});
+
+// Run on component mount
+onMounted(() => {
+  forceUpdate();
 });
 
 const handleCreateBranch = async () => {
@@ -182,6 +223,44 @@ const handlePRCreated = (newPR) => {
     type: 'success'
   });
 };
+
+// Force style update
+const forceUpdate = async () => {
+  await nextTick();
+  const bar = document.querySelector('.action-bar');
+  if (bar) {
+    if (isMainBranch.value) {
+      bar.classList.add('main-branch');
+    } else {
+      bar.classList.remove('main-branch');
+    }
+  }
+};
+
+const handleExitBranch = async () => {
+  try {
+    // First switch to main branch
+    await switchBranch('main');
+    
+    // Then navigate to branches page
+    navigateTo('/branches');
+    
+    showToast({
+      title: 'Success',
+      message: 'Switched back to main branch',
+      type: 'success'
+    });
+  } catch (error) {
+    console.error('Error switching to main branch:', error);
+    showToast({
+      title: 'Error',
+      message: `Failed to switch to main branch: ${error.message || 'Unknown error'}`,
+      type: 'error'
+    });
+    // Still navigate to branches page even if switching failed
+    navigateTo('/branches');
+  }
+};
 </script>
 
 <style scoped>
@@ -195,6 +274,11 @@ const handlePRCreated = (newPR) => {
   z-index: 100;
 }
 
+/* Style for main branch (blue background) */
+.action-bar.main-branch {
+  background-color: #5377D4 !important;
+}
+
 .action-bar-container {
   max-width: 1280px;
   margin: 0 auto;
@@ -205,9 +289,46 @@ const handlePRCreated = (newPR) => {
   width: 100%;
 }
 
+/* Centered container for main branch view */
+.action-bar-container.centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.centered-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.action-bar-container.centered .action-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 8px;
+}
+
 .left-section {
   display: flex;
   align-items: center;
+}
+
+.right-section {
+  display: flex;
+  align-items: center;
+}
+
+.branch-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .create-branch-text {
@@ -217,7 +338,7 @@ const handlePRCreated = (newPR) => {
   line-height: 24px;
   letter-spacing: 0.15px;
   color: #FFFFFF; 
-  margin-right: 16px;
+  margin: 0;
 }
 
 .branch-info {
@@ -497,5 +618,12 @@ const handlePRCreated = (newPR) => {
 
 .request-review-button:disabled:hover {
   background-color: transparent;
+}
+
+.action-button.exit-branch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 </style> 

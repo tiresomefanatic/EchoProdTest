@@ -16,10 +16,6 @@
         
         <!-- New editor mode controls -->
         <div class="editor-mode-controls">
-          <!-- Content status indicator -->
-          <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
-            {{ getContentSource }}
-          </span>
           <button 
             class="mode-button" 
             :class="{ 'active': isRawMode }"
@@ -27,7 +23,7 @@
           >
             Raw
           </button>
-          <button 
+          <!-- <button 
             class="mode-button" 
             :class="{ 'active': isPreviewMode }"
             @click="handleEditorModeChange(isPreviewMode ? 'normal' : 'preview')"
@@ -38,10 +34,49 @@
                 <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
               </svg>
             </span>
-          </button>
-          <button class="view-main-button">
-            View main
-          </button>
+          </button> -->
+          <!-- Content status indicator moved here -->
+          <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
+            {{ getContentSource }}
+          </span>
+          
+          <!-- Device preview buttons -->
+          <div class="device-preview-controls">
+            <button 
+              class="device-button" 
+              :class="{ active: previewDevice === 'desktop' }"
+              @click="setPreviewDevice('desktop')"
+              title="Desktop view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </button>
+            <button 
+              class="device-button" 
+              :class="{ active: previewDevice === 'tablet' }"
+              @click="setPreviewDevice('tablet')"
+              title="Tablet view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12" y2="18.01"></line>
+              </svg>
+            </button>
+            <button 
+              class="device-button" 
+              :class="{ active: previewDevice === 'mobile' }"
+              @click="setPreviewDevice('mobile')"
+              title="Mobile view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="7" y="4" width="10" height="16" rx="1" ry="1"></rect>
+                <line x1="12" y1="17" x2="12" y2="17.01"></line>
+              </svg>
+            </button>
+          </div>
         </div>
         
         <div class="header-actions">
@@ -53,7 +88,7 @@
             </svg>
             Exit
           </button>
-          <button @click="() => handleSave(editorContent)" class="save-button">
+          <button @click="handleShowCommitModal" class="save-button">
             Save changes
           </button>
         </div>
@@ -66,7 +101,7 @@
             <div class="body-container">
               <ClientOnly>
                 <!-- Move contribution banner here -->
-                <div v-if="isLoggedIn && !isEditing" class="contribution-banner">
+                <div v-if="isLoggedIn && !isEditing && currentBranch !== 'main'" class="contribution-banner">
                   <div class="banner-content">
                     <p class="banner-text">Would you like to contribute to this document?</p>
                     <button @click="handleEditClick" class="banner-button">
@@ -76,14 +111,14 @@
                 </div>
                 
                 <div v-if="isEditing" class="editor-container">
-                  <div class="editor-content-wrapper">
+                  <div class="editor-content-wrapper" :style="editorContentStyle">
                     <TiptapEditor
                       :content="editorContent"
                       :filePath="contentPath"
                       :externalRawMode="isRawMode"
                       :externalPreviewMode="isPreviewMode"
                       @update:content="handleContentChange"
-                      @save="handleSave"
+                      @save="handleShowCommitModal"
                       @error="handleEditorError"
                       @exit="exitEditor"
                       ref="tiptapEditorRef"
@@ -121,6 +156,15 @@
         <Footer v-if="!isEditing" class="full-width-footer" />
       </div>
     </ClientOnly>
+
+    <!-- Add the CommitModal component -->
+    <CommitModal 
+      :is-open="isCommitModalOpen" 
+      :file-path="contentPath"
+      :content="editorContent"
+      @close="handleCloseCommitModal"
+      @commit="handleCommit"
+    />
   </div>
 </template>
 
@@ -147,6 +191,7 @@ import { useEditorStore } from "~/store/editor";
 import { useStore } from "~/store";
 import Footer from "~/components/Footer.vue";
 import { useEventBus } from '@vueuse/core';
+import CommitModal from "~/components/CommitModal.vue";
 
 // Initialize GitHub functionality and services
 const {
@@ -172,12 +217,14 @@ const githubContent = ref("");
 const editorContent = ref("");
 const contentKey = ref(0);
 const contentLastModified = ref<string | null>(null);
+const isCommitModalOpen = ref(false);
+const previewDevice = ref('desktop');
 
 // Computed properties for content source indicator
 const getContentSource = computed(() => {
   if (!contentPath.value) return 'New File';
-  if (editorStore.hasDraft(contentPath.value)) return 'Draft';
-  return 'Committed';
+  if (editorStore.hasDraft(contentPath.value)) return 'You are now viewing a draft from local save';
+  return 'You are now viewing content from GitHub';
 });
 
 const getContentSourceClass = computed(() => {
@@ -343,10 +390,15 @@ const loadGithubContent = async () => {
   try {
     let contentPathToLoad = contentPath.value;
     
-    // Only check for drafts if we're in editing mode
+    // Check for cached git content first (regardless of edit mode)
+    // This ensures we always show the latest committed content
+    const cachedGitContent = editorStore.getGitContent(contentPathToLoad, currentBranch.value);
+    
     if (isEditing.value) {
+      // In editing mode, prioritize drafts over committed content
       const draftContent = editorStore.getDraft(contentPathToLoad);
       if (draftContent) {
+        console.log("Using draft content");
         editorContent.value = draftContent.content;
         // @ts-ignore - Ignoring type error from marked function
         githubContent.value = marked(draftContent.content);
@@ -354,9 +406,32 @@ const loadGithubContent = async () => {
         contentKey.value++;
         return;
       }
+      
+      // No draft found, check for cached git content to bypass GitHub CDN cache
+      if (cachedGitContent) {
+        console.log("Using cached git content from local store (edit mode)");
+        editorContent.value = cachedGitContent.content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(cachedGitContent.content);
+        store.updateRawText(cachedGitContent.content);
+        contentKey.value++;
+        return;
+      }
+    } else {
+      // In view mode, check for cached git content to bypass GitHub CDN cache
+      if (cachedGitContent) {
+        console.log("Using cached git content from local store (view mode)");
+        editorContent.value = cachedGitContent.content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(cachedGitContent.content);
+        store.updateRawText(cachedGitContent.content);
+        contentKey.value++;
+        return;
+      }
     }
     
-    // If no draft content or not in editing mode, load from GitHub
+    // If no draft or cached git content, load from GitHub
+    console.log("Fetching content from GitHub API");
     const content = await getRawContent(
       "tiresomefanatic",
       "EchoProdTest",
@@ -421,9 +496,32 @@ const handleContentChange = (newContent: string) => {
 };
 
 /**
- * Handles saving content to GitHub.
+ * Shows the commit modal
  */
-const handleSave = async (content: string) => {
+const handleShowCommitModal = () => {
+  if (!editorContent.value || !isLoggedIn.value) {
+    showToast({
+      title: "Error",
+      message: "Please sign in to save changes",
+      type: "error",
+    });
+    return;
+  }
+  
+  isCommitModalOpen.value = true;
+};
+
+/**
+ * Closes the commit modal
+ */
+const handleCloseCommitModal = () => {
+  isCommitModalOpen.value = false;
+};
+
+/**
+ * Handles saving content locally as a draft.
+ */
+const handleSave = (content: string) => {
   if (!content || !isLoggedIn.value) {
     showToast({
       title: "Error",
@@ -660,13 +758,141 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
     isPreviewMode.value = true;
   }
 };
+
+/**
+ * Handles committing changes to GitHub with a message
+ */
+const handleCommit = async (commitMessage: string) => {
+  if (!commitMessage || !isLoggedIn.value) {
+    showToast({
+      title: "Error",
+      message: "Please provide a commit message",
+      type: "error",
+    });
+    return;
+  }
+
+  try {
+    const contentToCommit = editorContent.value;
+    
+    // Commit to GitHub
+    const response = await saveFileContent(
+      "tiresomefanatic",
+      "EchoProdTest",
+      contentPath.value,
+      contentToCommit,
+      commitMessage,
+      currentBranch.value
+    );
+    
+    // Save to editor store's gitContent to bypass GitHub CDN cache
+    if (response && response.content) {
+      const fileSha = response.content.sha || '';
+      
+      editorStore.saveGitContent(
+        contentPath.value,
+        contentToCommit,
+        currentBranch.value,
+        fileSha
+      );
+      
+      // Update the display content
+      editorContent.value = contentToCommit;
+      // @ts-ignore - Ignoring type error from marked function
+      githubContent.value = marked(contentToCommit);
+      store.updateRawText(contentToCommit);
+    }
+    
+    // Clear draft after successful commit
+    editorStore.clearDraft(contentPath.value);
+    
+    showToast({
+      title: "Success",
+      message: "Changes committed successfully",
+      type: "success",
+    });
+    
+    // Exit editor mode
+    isEditing.value = false;
+    
+    // Refresh navigation
+    await refreshNavigation();
+    
+  } catch (error) {
+    console.error("Error committing content:", error);
+    showToast({
+      title: "Error",
+      message: "Failed to commit changes",
+      type: "error",
+    });
+    
+    // Save as draft if commit fails
+    editorStore.saveDraft(contentPath.value, editorContent.value);
+  }
+};
+
+// Update the editorContentStyle computed property to handle null previewDevice
+const editorContentStyle = computed(() => {
+  if (!isEditing.value) {
+    return { minWidth: '100%' };
+  }
+  
+  switch (previewDevice.value) {
+    case 'desktop':
+      return { 
+        minWidth: '804px', //base + 64 (16x4) to account for padding
+        maxWidth: '804px', //base + 64 (16x4) to account for padding
+        width: '804px',
+        border: 'none',
+        margin: '0',
+      };
+    case 'tablet':
+      return { 
+        minWidth: 'auto', 
+        maxWidth: '555px',
+        width: '100%',
+        margin: '0 auto',
+      };
+    case 'mobile':
+      return { 
+        minWidth: 'auto', 
+        maxWidth: '375px',
+        width: '100%',
+        margin: '0 auto',
+      };
+    default: // No device selected - default state
+      return { 
+        minWidth: 'auto',
+        maxWidth: '100%',
+        width: '100%',
+        border: 'none',
+        margin: '0 auto',
+      };
+  }
+});
+
+// Set the active preview device
+const setPreviewDevice = (device) => {
+  // Only allow changing device preview in edit mode
+  if (!isEditing.value) return;
+  
+  // Always set to the selected device, regardless of current state
+  previewDevice.value = device;
+};
+
+// Add a watcher to reset the preview when exiting edit mode
+watch(isEditing, (newValue) => {
+  if (!newValue) {
+    previewDevice.value = 'desktop'; // Reset to desktop instead of null
+  }
+});
 </script>
 
 
 <style>
 /* Global prose styles - these are essential */
 .prose-content {
-  max-width: 740px; /* From Figma measurement */
+  max-width: 100%; /* From Figma measurement */
   margin: 0;
   padding: 0;
   color: #000000;
@@ -675,19 +901,20 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 }
 
 .prose-content h1 {
-  font-size: 2em;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120%;
+  letter-spacing: -0.96px;
   margin: 1.2em 0 0.6em;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #000000;
 }
 
 .prose-content h2 {
-  font-size: 1.5em;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 530;
+  line-height: 120%;
   margin: 1em 0 0.5em;
-  font-weight: 600;
-  line-height: 1.3;
-  color: #000000;
 }
 
 .prose-content h3 {
@@ -699,8 +926,11 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 }
 
 .prose-content p {
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 140%;
   margin: 1em 0;
-  color: #000000;
 }
 
 .prose-content ul,
@@ -840,12 +1070,12 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 /* 1025px - 1379px */
 @media screen and (min-width: 1025px) and (max-width: 1379px) {
   .content {
-    padding: 0 199.5px;
+    padding: 0 calc(100px + (199.5 - 100) * ((100vw - 1025px) / (1379 - 1025)));
   }
   
   .text-container {
-    width: auto;
-    flex: 1;
+    flex:0;
+    min-width:539px
   }
   
   .sidebar {
@@ -856,14 +1086,15 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 /* 768px - 1024px */
 @media screen and (min-width: 768px) and (max-width: 1024px) {
   .content {
-    padding: 0 165.5px;
+    padding: 0 calc(50px + (165.5 - 50) * ((100vw - 768px) / (1024 - 768)));
     justify-content: space-between;
   }
   
   .text-container {
-    width: 100%;
     max-width: 585px;
+    min-width: 491px;
     margin-left: 0;
+    flex:0;
   }
   
   /* Apply the same mobile sidebar styling as for smaller screens */
@@ -1007,23 +1238,26 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 
 /* Typography styles */
 .prose-content {
-  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "PP Neue Montreal", sans-serif;
 }
 
+/* to be updated as per system */
+
 .prose-content h1 {
-  font-size: 60px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin-bottom: 24px;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120%;
+  letter-spacing: -0.96px;
+  margin: 1.2em 0 0.6em;
 }
 
 .prose-content h2 {
-  font-size: 48px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin: 48px 0 24px;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 530;
+  line-height: 120%;
+  margin: 1em 0 0.5em;
 }
 
 .prose-content h3 {
@@ -1036,9 +1270,10 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 
 .prose-content p {
   font-size: 16px;
-  line-height: 1.6;
-  margin: 16px 0;
-  color: #1F2937;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 140%;
+  margin: 1em 0;
 }
 
 /* Editor styles */
@@ -1051,16 +1286,19 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   min-height: calc(100vh - 64px);
   padding: 0;
   border-radius: 0;
-  box-shadow: none;
+  box-sizing: border-box;
 }
 
 /* Style the editor content wrapper to match text-container width exactly */
 .editor-content-wrapper {
-  width: 740px;
+  width:100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   flex: 1;
+  transition: all 0.3s ease !important;
+  max-width: 740px; /* Default max width */
+  box-sizing: border-box;
 }
 
 /* Create a completely separate styling section for editor view */
@@ -1090,17 +1328,17 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 
 /* Create specific overrides for the TiptapEditor component */
 :deep(.tiptap-editor) {
-  width: 740px;
+  width: 100%;
+  max-width: 100%; /* Use 100% of parent container */
   margin: 0 auto;
-  padding: 20px;
-  border: none;
-  box-shadow: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 :deep(.tiptap-editor .ProseMirror) {
-  padding: 16px;
+  padding: 20px 16px;
   min-height: 300px;
-  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "PP Neue Montreal", sans-serif;
   font-size: 16px;
   line-height: 1.6;
   color: #1F2937;
@@ -1553,7 +1791,7 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
 :deep(.tiptap-editor .ProseMirror) {
   padding: 20px 16px;
   min-height: 300px;
-  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'PP Neue Montreal', sans-serif;
   font-size: 16px;
   line-height: 1.6;
   color: #1F2937;
@@ -1596,6 +1834,7 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   align-items: center;
   gap: 12px;
   margin: 0;
+  flex-wrap: nowrap;
 }
 
 .mode-button {
@@ -1639,24 +1878,6 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   gap: 12px;
 }
 
-.view-main-button {
-  display: flex;
-  padding: 8px 12px;
-  justify-content: center;
-  align-items: center;
-  border-radius: 8px;
-  border: 1px solid #BABABA;
-  background: transparent;
-  color: #1D1B1B;
-  font-family: "PP Neue Montreal";
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 530;
-  line-height: 24px;
-  letter-spacing: var(--Title-Medium-Tracking, 0.15px);
-  cursor: pointer;
-}
-
 /* Hide the original toolbar buttons in TiptapEditor */
 :deep(.editor-toolbar .toolbar-right) {
   display: none !important;
@@ -1667,14 +1888,18 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 8px;
+  padding: 4px 12px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  margin-right: 12px;
+  margin-left: 4px;
   background-color: rgba(255, 255, 255, 0.2);
   color: #1D1B1B;
   font-family: "PP Neue Montreal", sans-serif;
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .content-status.draft {
@@ -1691,4 +1916,42 @@ const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
   background-color: #60A5FA;
   color: white;
 }
+
+/* Device preview controls */
+.device-preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.device-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: 6px;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.device-button:hover {
+  background: #fff;
+  color: #000;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.device-button.active {
+  background: #fff;
+  color: #000;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Device preview width classes */
+
 </style>
