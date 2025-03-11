@@ -160,8 +160,18 @@ watch(newBranchName, (value) => {
 });
 
 // Watch for branch changes to update the UI
-watch(currentBranch, () => {
-  forceUpdate();
+
+watch(currentBranch, (newBranch, oldBranch) => {
+  if (newBranch !== oldBranch) {
+    console.log(`Branch changed from ${oldBranch} to ${newBranch}`);
+    
+    // Force an immediate update of the UI
+    nextTick(() => {
+      forceUpdate();
+    });
+  }
+
+
 });
 
 // Run on component mount
@@ -175,17 +185,38 @@ const handleCreateBranch = async () => {
   }
   
   isCreatingBranch.value = true;
+  const branchToCreate = newBranchName.value.trim();
   
   try {
-    const result = await createBranch(newBranchName.value);
+    const result = await createBranch(branchToCreate);
     if (result) {
       showToast({
         title: 'Success',
-        message: `Branch "${newBranchName.value}" created successfully`,
+        message: `Branch "${branchToCreate}" created successfully`,
         type: 'success'
       });
+      
+      // Reset the form
       showBranchModal.value = false;
       newBranchName.value = '';
+      
+      // Manually update UI immediately, don't wait for reactive updates
+      // This ensures the branch name appears right away in the action bar
+      if (currentBranch.value !== branchToCreate) {
+        // If the composable's automatic branch switching didn't work,
+        // let's manually switch to the new branch
+        try {
+          await switchBranch(branchToCreate);
+          console.log(`Switched to branch: ${branchToCreate}`);
+        } catch (switchError) {
+          console.error('Error switching branch:', switchError);
+        }
+      }
+      
+      // Force UI update after a short delay to ensure DOM has updated
+      setTimeout(() => {
+        forceUpdate();
+      }, 150);
     }
   } catch (error) {
     console.error('Error creating branch:', error);
@@ -227,6 +258,13 @@ const handlePRCreated = (newPR) => {
 // Force style update
 const forceUpdate = async () => {
   await nextTick();
+
+  
+  // Log the current branch to help with debugging
+  console.log('Force updating UI with branch:', currentBranch.value);
+  
+
+
   const bar = document.querySelector('.action-bar');
   if (bar) {
     if (isMainBranch.value) {
@@ -234,6 +272,15 @@ const forceUpdate = async () => {
     } else {
       bar.classList.remove('main-branch');
     }
+
+    
+    // Force a re-render of the branch name section
+    const branchNameElement = document.querySelector('.branch-name');
+    if (branchNameElement) {
+      branchNameElement.textContent = currentBranch.value;
+    }
+
+
   }
 };
 
@@ -245,9 +292,13 @@ const handleExitBranch = async () => {
     // Then navigate to branches page
     navigateTo('/branches');
     
+
+    // Keep single toast for branch switching feedback
     showToast({
-      title: 'Success',
-      message: 'Switched back to main branch',
+      title: 'Branch Switched',
+      message: 'Successfully switched to main branch',
+
+ 
       type: 'success'
     });
   } catch (error) {
