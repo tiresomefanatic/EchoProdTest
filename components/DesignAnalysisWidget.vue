@@ -14,93 +14,136 @@ const isLoading = ref(false);
 const scanProgress = ref(0);
 const content = ref(props.initialContent || '');
 const uploadedFiles = ref([]);
+const error = ref('');
 
-const mockTypographyFeedback = [
-  {
-    category: "Font Usage",
-    icon: "type",
-    items: [
-      { type: "success", message: "Consistent use of PP Neue Montreal as the primary typeface" },
-      { type: "warning", message: "Consider using a secondary typeface for better hierarchy" },
-      { type: "error", message: "Inconsistent font weight usage in navigation items" },
-    ],
-  },
-  {
-    category: "Accessibility",
-    icon: "eye",
-    items: [
-      { type: "success", message: "Good contrast ratio for main body text" },
-      { type: "warning", message: "Increase contrast for muted text in the sidebar" },
-      { type: "error", message: "Font size too small for mobile devices in some sections" },
-    ],
-  },
-  {
-    category: "Hierarchy",
-    icon: "scale",
-    items: [
-      { type: "success", message: "Clear distinction between heading levels" },
-      { type: "warning", message: "Consider increasing size difference between h1 and h2" },
-      { type: "success", message: "Effective use of font weight for emphasis" },
-    ],
-  },
-  {
-    category: "Spacing",
-    icon: "ruler",
-    items: [
-      { type: "success", message: "Consistent line height across body text" },
-      { type: "warning", message: "Increase paragraph spacing for better readability" },
-      { type: "error", message: "Inconsistent margin between headings and paragraphs" },
-    ],
-  },
-];
+
 
 onMounted(() => {
   if (props.initialContent) {
-    analyzeDesign(props.initialContent);
+    analyzeDesign();
   }
 });
 
-const analyzeDesign = (textToAnalyze = '') => {
+const analyzeDesign = async () => {
+  if (!uploadedFiles.value.length && !content.value.trim()) {
+    error.value = 'Please upload at least one image or provide some content to analyze';
+    return;
+  }
+  
+  error.value = '';
   isLoading.value = true;
   scanProgress.value = 0;
-  content.value = textToAnalyze;
-
+  
   // Simulate scanning progress
   const interval = setInterval(() => {
-    scanProgress.value += 10;
-    if (scanProgress.value >= 100) {
+    scanProgress.value += 5;
+    if (scanProgress.value >= 95) {
       clearInterval(interval);
-      isLoading.value = false;
-      feedback.value = mockTypographyFeedback;
     }
   }, 200);
+  
+  try {
+    // Prepare form data with files and content
+    const formData = new FormData();
+    
+    // Add text content if available
+    if (content.value.trim()) {
+      formData.append('content', content.value);
+    }
+    
+    // Add all uploaded files
+    uploadedFiles.value.forEach(file => {
+      if (file.fileObj) {
+        formData.append('files', file.fileObj);
+      }
+    });
+    
+    // Send to backend
+    const response = await fetch('/api/design-analysis', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to analyze design');
+    }
+    
+    const result = await response.json();
+    scanProgress.value = 100;
+    
+    // Process the feedback from LLM
+    feedback.value = processLLMFeedback(result.feedback);
+    
+    setTimeout(() => {
+      isLoading.value = false;
+    }, 500);
+    
+  } catch (err) {
+    console.error('Error analyzing design:', err);
+    error.value = err.message || 'Failed to analyze design';
+    isLoading.value = false;
+    clearInterval(interval);
+  }
+}
+
+const processLLMFeedback = (llmFeedback) => {
+  // This processes the raw LLM response into the expected format
+  // We're expecting categories with items
+  
+  if (typeof llmFeedback === 'string') {
+    // If it's just a string, create a simple feedback structure
+    return [{
+      category: "Design Analysis",
+      icon: "eye",
+      items: [{ type: "default", message: llmFeedback }]
+    }];
+  }
+  
+  // If it's already structured, return it
+  return llmFeedback.categories || llmFeedback;
 }
 
 const handleFileUpload = (event) => {
   const files = event.target.files;
   if (files?.length) {
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        uploadedFiles.value.push({
-          id: Date.now() + i,
-          name: file.name,
-          size: formatFileSize(file.size),
-          preview: file.type.startsWith('image/') ? e.target?.result : null,
-          type: file.type
-        });
-      };
-      
-      if (file.type.startsWith('image/')) {
-        reader.readAsDataURL(file);
-      } else {
-        reader.readAsText(file);
-      }
-    }
-    analyzeDesign();
+    processFiles(files);
   }
+}
+
+const handleDrop = (event) => {
+  event.preventDefault();
+  const files = event.dataTransfer.files;
+  if (files?.length) {
+    processFiles(files);
+  }
+}
+
+const processFiles = (files) => {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    
+    // Check if file is an image or SVG
+    if (!file.type.startsWith('image/')) {
+      error.value = 'Only image files are allowed';
+      continue;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      uploadedFiles.value.push({
+        id: Date.now() + i,
+        name: file.name,
+        size: formatFileSize(file.size),
+        preview: e.target?.result,
+        type: file.type,
+        fileObj: file // Store the actual file object for uploading
+      });
+    };
+    
+    reader.readAsDataURL(file);
+  }
+  error.value = '';
 }
 
 const removeFile = (fileId) => {
@@ -206,30 +249,33 @@ const getIconForCategory = (iconName) => {
           
           <!-- Content textarea -->
           <div class="form-group">
-            <label for="content-textarea" class="input-label">Content to analyze</label>
+            <label for="content-textarea" class="input-label">Content to analyze (optional)</label>
             <textarea
               id="content-textarea"
               v-model="content"
-              placeholder="Paste your content here for analysis..."
+              placeholder="Add any context about the design you're uploading..."
               class="content-textarea"
             ></textarea>
           </div>
           
           <!-- File upload area -->
           <div class="form-group">
-            <label for="file-upload" class="input-label">Upload files for analysis</label>
-            <div class="upload-area" :class="{ 'has-files': uploadedFiles.length > 0 }">
+            <label for="file-upload" class="input-label">Upload images for analysis</label>
+            <div 
+              class="upload-area" 
+              :class="{ 'has-files': uploadedFiles.length > 0 }"
+              @dragover.prevent
+              @dragenter.prevent
+              @drop="handleDrop"
+            >
+              <!-- Error message -->
+              <div v-if="error" class="error-message">{{ error }}</div>
+              
               <!-- Uploaded files list -->
               <div v-if="uploadedFiles.length > 0" class="uploaded-files">
                 <div v-for="file in uploadedFiles" :key="file.id" class="file-item">
                   <div class="file-preview">
                     <img v-if="file.preview" :src="file.preview" alt="Preview" class="file-thumbnail" />
-                    <div v-else class="file-icon">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                      </svg>
-                    </div>
                   </div>
                   <div class="file-info">
                     <span class="file-name">{{ file.name }}</span>
@@ -257,12 +303,12 @@ const getIconForCategory = (iconName) => {
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" x2="12" y1="3" y2="15" />
                 </svg>
-                <span>Drag & drop files or click to browse</span>
+                <span>Drag & drop image files or click to browse</span>
                 <input 
                   id="file-input" 
                   type="file" 
                   class="hidden-input" 
-                  accept="image/*,.html,.css" 
+                  accept="image/*" 
                   multiple
                   @change="handleFileUpload" 
                 />
@@ -272,10 +318,11 @@ const getIconForCategory = (iconName) => {
           
           <button 
             class="analyze-button"
-            @click="analyzeDesign(content)"
+            @click="analyzeDesign"
             aria-label="Analyze design"
             tabindex="0"
-            @keydown.enter="analyzeDesign(content)"
+            @keydown.enter="analyzeDesign"
+            :disabled="uploadedFiles.length === 0 && !content.trim()"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
@@ -316,9 +363,12 @@ const getIconForCategory = (iconName) => {
             <li v-for="(item, index) in category.items" :key="index" 
                 :class="`feedback-item ${
                   item.type === 'success' ? 'success' : 
-                  item.type === 'warning' ? 'warning' : 'error'
+                  item.type === 'warning' ? 'warning' : 
+                  item.type === 'error' ? 'error' : 'default'
                 }`">
-              <span class="feedback-icon">{{ item.type === 'success' ? '✓' : item.type === 'warning' ? '⚠' : '✗' }}</span>
+              <span class="feedback-icon">
+                {{ item.type === 'success' ? '✓' : item.type === 'warning' ? '⚠' : item.type === 'error' ? '✗' : 'ℹ' }}
+              </span>
               <span class="feedback-message">{{ item.message }}</span>
             </li>
           </ul>
@@ -687,6 +737,10 @@ const getIconForCategory = (iconName) => {
   color: #dc2626;
 }
 
+.feedback-item.default {
+  color: #6b7280;
+}
+
 .feedback-icon {
   margin-top: 0.25rem;
 }
@@ -708,6 +762,33 @@ const getIconForCategory = (iconName) => {
 
 .new-analysis-button:hover {
   background-color: rgba(255, 83, 16, 0.9);
+}
+
+.error-message {
+  color: #ef4444;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.feedback-item.default {
+  border-left: 3px solid #6b7280;
+}
+
+.feedback-item.default .feedback-icon {
+  color: #6b7280;
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make the analyze button disabled when no files/content */
+.analyze-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #9ca3af;
 }
 </style>
 
