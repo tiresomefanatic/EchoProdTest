@@ -100,10 +100,13 @@ const analyzeDesign = async () => {
     // Process the feedback from LLM
     feedback.value = processLLMFeedback(result.feedback);
     
+    // Extract text content from feedback for conversation history
+    const feedbackText = extractFeedbackAsText(feedback.value);
+    
     // Add bot response to conversation
     conversation.value.push({
       role: 'assistant',
-      content: '',
+      content: feedbackText, // Store the text content for history
       feedback: feedback.value
     });
     
@@ -117,6 +120,28 @@ const analyzeDesign = async () => {
     isLoading.value = false;
     clearInterval(interval);
   }
+}
+
+// Helper function to extract text from feedback for conversation history
+const extractFeedbackAsText = (feedbackCategories) => {
+  let textContent = '';
+  
+  feedbackCategories.forEach(category => {
+    textContent += `${category.category}:\n`;
+    
+    if (category.items && category.items.length) {
+      category.items.forEach(item => {
+        const prefix = item.type === 'success' ? '✓ ' : 
+                      item.type === 'warning' ? '⚠ ' :
+                      item.type === 'error' ? '✗ ' : 'ℹ ';
+        textContent += `${prefix}${item.message}\n`;
+      });
+    }
+    
+    textContent += '\n';
+  });
+  
+  return textContent.trim();
 }
 
 const processLLMFeedback = (llmFeedback) => {
@@ -262,11 +287,14 @@ const sendMessage = async () => {
     // Process the feedback from LLM
     feedback.value = processLLMFeedback(result.feedback);
     
+    // Extract text content from feedback for conversation history
+    const feedbackText = extractFeedbackAsText(feedback.value);
+    
     // Replace loading message with actual response
     conversation.value.pop(); // Remove the loading message
     conversation.value.push({
       role: 'assistant',
-      content: '',
+      content: feedbackText, // Store the text content for history
       feedback: feedback.value
     });
     
