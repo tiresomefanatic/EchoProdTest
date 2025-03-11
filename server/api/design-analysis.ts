@@ -190,23 +190,46 @@ export default defineEventHandler(async (event) => {
                  
                  Format your response in easily digestible bullet points. Be specific about what works well and what could be improved.
                  For each point, indicate if it's a success, warning, or issue.`
-      },
-      {
-        role: 'user',
-        content: [
-          { 
-            type: "text", 
-            text: "Please analyze the following design against Hero Vida's design principles. " 
-          },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:${imageDataList[0].mimeType};base64,${imageDataList[0].base64Image}`
-            }
-          }
-        ]
       }
     ];
+    
+    // Create the user message content
+    let userMessageContent: any = [];
+    
+    // Always add text content first if available
+    if (textContent) {
+      userMessageContent.push({ 
+        type: "text", 
+        text: textContent 
+      });
+    } else if (imageDataList.length > 0) {
+      // If no text but images exist, add default text
+      userMessageContent.push({ 
+        type: "text", 
+        text: "Please analyze the following design against Hero Vida's design principles." 
+      });
+    } else {
+      // Fallback for conversation continuation
+      userMessageContent = "Please analyze this design based on our previous conversation.";
+    }
+    
+    // Add all images if they exist
+    if (imageDataList.length > 0) {
+      for (const imageData of imageDataList) {
+        userMessageContent.push({
+          type: "image_url",
+          image_url: {
+            url: `data:${imageData.mimeType};base64,${imageData.base64Image}`
+          }
+        });
+      }
+    }
+    
+    // Add the user message to the messages array
+    messages.push({
+      role: 'user',
+      content: userMessageContent
+    });
 
     console.log(messages);
 
