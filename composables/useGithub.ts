@@ -568,7 +568,7 @@ export const useGithub = () => {
       });
 
       updateToast(toastId, {
-        message: "Branch created, waiting for GitHub to process...",
+        message: "Waiting for GitHub to process...",
       });
 
       // Verify branch exists with longer timeout and less frequent polling
@@ -599,7 +599,7 @@ export const useGithub = () => {
 
         // Update toast with attempt count
         updateToast(toastId, {
-          message: `Branch created, waiting for GitHub to process... (Attempt ${attempts}/6)`,
+          message: ` Waiting for GitHub to process... (Attempt ${attempts}/6)`,
         });
       }
 
@@ -619,6 +619,179 @@ export const useGithub = () => {
       updateToast(toastId, {
         title: "Error",
         message: "Failed to create branch. Please try again.",
+        type: "error",
+        duration: 3000,
+      });
+
+      return null;
+    }
+  };
+
+  // Delete an existing branch
+  const deleteBranch = async (branchName: string) => {
+    if (!isLoggedIn.value) return null;
+
+    const { showToast, updateToast, dismissToast } = useToast();
+    const toastId = 'branch-deletion';
+
+    try {
+      showToast({
+        id: toastId,
+        title: "Deleting Branch",
+        message: `Deleting branch: ${branchName}...`,
+        type: "loading",
+        duration: 0,
+      });
+
+      // Delete the branch
+      await octokit.rest.git.deleteRef({
+        owner: "tiresomefanatic",
+        repo: "EchoProdTest",
+        ref: `heads/${branchName}`,
+      });
+
+      updateToast(toastId, {
+        message: " Waiting for GitHub to process...",
+      });
+
+      // Verify branch is removed with longer timeout and less frequent polling
+      let attempts = 0;
+      while (attempts < 6) { // Try for 3 minutes (6 attempts * 30 seconds)
+        const { data } = await octokit.rest.repos.listBranches({
+          owner: "tiresomefanatic",
+          repo: "EchoProdTest",
+          per_page: 100,
+        });
+        
+        // Check if branch is no longer in the list
+        if (!data.some(b => b.name === branchName)) {
+          branches.value = data.map(b => b.name);
+
+          updateToast(toastId, {
+            title: "Branch Deleted",
+            message: `Successfully deleted and verified removal of branch: ${branchName}`,
+            type: "success",
+            duration: 3000,
+          });
+
+          return true;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
+        attempts++;
+
+        // Update toast with attempt count
+        updateToast(toastId, {
+          message: ` Waiting for GitHub to process... (Attempt ${attempts}/6)`,
+        });
+      }
+
+      // If we get here, verification timed out
+      updateToast(toastId, {
+        title: "Branch Deleted",
+        message: `Branch has been deleted but might take a few more minutes to be fully removed. Please refresh the page later.`,
+        type: "warning",
+        duration: 5000,
+      });
+
+      return true;
+
+    } catch (error) {
+      console.error("Error deleting branch:", error);
+      
+      updateToast(toastId, {
+        title: "Error",
+        message: "Failed to delete branch. Please try again.",
+        type: "error",
+        duration: 3000,
+      });
+
+      return null;
+    }
+  };
+
+  // Duplicate an existing branch
+  const duplicateBranch = async (sourceBranchName: string, newBranchName: string) => {
+    if (!isLoggedIn.value) return null;
+
+    const { showToast, updateToast, dismissToast } = useToast();
+    const toastId = 'branch-duplication';
+
+    try {
+      showToast({
+        id: toastId,
+        title: "Duplicating Branch",
+        message: `Duplicating branch "${sourceBranchName}" to "${newBranchName}"...`,
+        type: "loading",
+        duration: 0,
+      });
+
+      // Get source branch's latest commit
+      const { data: sourceRef } = await octokit.rest.git.getRef({
+        owner: "tiresomefanatic",
+        repo: "EchoProdTest",
+        ref: `heads/${sourceBranchName}`,
+      });
+
+      // Create new branch based on the source branch's commit
+      await octokit.rest.git.createRef({
+        owner: "tiresomefanatic",
+        repo: "EchoProdTest",
+        ref: `refs/heads/${newBranchName}`,
+        sha: sourceRef.object.sha,
+      });
+
+      updateToast(toastId, {
+        message: " Waiting for GitHub to process...",
+      });
+
+      // Verify branch exists with longer timeout and less frequent polling
+      let attempts = 0;
+      while (attempts < 6) { // Try for 3 minutes (6 attempts * 30 seconds)
+        const { data } = await octokit.rest.repos.listBranches({
+          owner: "tiresomefanatic",
+          repo: "EchoProdTest",
+          per_page: 100,
+        });
+        
+        if (data.some(b => b.name === newBranchName)) {
+          branches.value = data.map(b => b.name);
+          
+          updateToast(toastId, {
+            title: "Branch Duplicated",
+            message: `Successfully duplicated "${sourceBranchName}" to "${newBranchName}"`,
+            type: "success",
+            duration: 3000,
+          });
+
+          return true;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
+        attempts++;
+
+        // Update toast with attempt count
+        updateToast(toastId, {
+          message: `Waiting for GitHub to process... (Attempt ${attempts}/6)`,
+        });
+      }
+
+      // If we get here, verification timed out
+      updateToast(toastId, {
+        title: "Branch Duplicated",
+        message: `Branch has been duplicated but might take a few more minutes to be available. Please refresh the page later.`,
+        type: "warning",
+        duration: 5000,
+      });
+
+      return true;
+
+    } catch (error) {
+      console.error("Error duplicating branch:", error);
+      
+      updateToast(toastId, {
+        title: "Error",
+        message: "Failed to duplicate branch. Please try again.",
         type: "error",
         duration: 3000,
       });
@@ -867,6 +1040,8 @@ export const useGithub = () => {
     uploadImage,
     getRepoInfo,
     clearContentPolling,
+    deleteBranch,
+    duplicateBranch,
   };
 };
 

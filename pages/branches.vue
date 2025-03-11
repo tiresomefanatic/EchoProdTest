@@ -61,9 +61,9 @@
                   </svg>
                 </button>
                 <div v-if="activeMenu === index" class="menu-dropdown">
-                  <div class="menu-option">Duplicate</div>
+                  <div class="menu-option" @click="showDuplicateConfirmation(branch)">Duplicate</div>
                   <div class="menu-divider"></div>
-                  <div class="menu-option delete">Delete</div>
+                  <div class="menu-option delete" @click="showDeleteConfirmation(branch)">Delete</div>
                 </div>
               </div>
             </div>
@@ -102,6 +102,84 @@
           </div>
         </div>
       </div>
+
+      <!-- Branch deletion confirmation modal -->
+      <div v-if="showDeleteBranchModal" class="modal-overlay" @click.self="showDeleteBranchModal = false">
+        <div class="modal-content">
+          <h3 class="modal-title">Delete branch</h3>
+          <p class="modal-description">
+            Are you sure you want to delete branch "{{ branchToDelete }}"? This cannot be undone.
+          </p>
+          
+          <div class="modal-actions">
+            <button class="cancel-button" @click="showDeleteBranchModal = false">Cancel</button>
+            <button 
+              class="delete-button" 
+              @click="handleDeleteBranch" 
+              :disabled="isDeletingBranch"
+            >
+              <span v-if="isDeletingBranch">Deleting...</span>
+              <span v-else>Delete branch</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Branch duplication modal -->
+      <div v-if="showDuplicateBranchModal" class="modal-overlay" @click.self="showDuplicateBranchModal = false">
+        <div class="modal-content">
+          <h3 class="modal-title">Duplicate branch</h3>
+          <p class="modal-description">
+            Create a new branch based on "{{ branchToDuplicate }}"
+          </p>
+          
+          <div class="branch-form">
+            <label for="duplicate-branch-name">New branch name</label>
+            <input 
+              id="duplicate-branch-name" 
+              v-model="duplicateBranchName" 
+              type="text" 
+              placeholder="feature/my-new-branch"
+              :class="{ 'error': duplicateBranchNameError }"
+            />
+            <p v-if="duplicateBranchNameError" class="error-message">{{ duplicateBranchNameError }}</p>
+          </div>
+          
+          <div class="modal-actions">
+            <button class="cancel-button" @click="showDuplicateBranchModal = false">Cancel</button>
+            <button 
+              class="create-button" 
+              @click="handleDuplicateBranch" 
+              :disabled="isDuplicatingBranch || !duplicateBranchName || !!duplicateBranchNameError"
+            >
+              <span v-if="isDuplicatingBranch">Duplicating...</span>
+              <span v-else>Duplicate branch</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Switch to duplicated branch confirmation modal -->
+      <div v-if="showSwitchToDuplicatedBranchModal" class="modal-overlay" @click.self="showSwitchToDuplicatedBranchModal = false">
+        <div class="modal-content">
+          <h3 class="modal-title">Switch to new branch?</h3>
+          <p class="modal-description">
+            Do you want to switch to the newly created branch "{{ duplicatedBranchName }}"?
+          </p>
+          
+          <div class="modal-actions">
+            <button class="cancel-button" @click="showSwitchToDuplicatedBranchModal = false">No, stay here</button>
+            <button 
+              class="create-button" 
+              @click="handleSwitchToDuplicatedBranch"
+              :disabled="isSwitchingBranch"
+            >
+              <span v-if="isSwitchingBranch">Switching...</span>
+              <span v-else>Yes, switch branch</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </ClientOnly>
   </div>
 </template>
@@ -115,7 +193,7 @@ import { useEditorStore } from '~/store/editor';
 import { useNavigation } from '~/composables/useNavigation';
 
 const router = useRouter();
-const { branches, fetchBranches, currentBranch, switchBranch, createBranch } = useGithub();
+const { branches, fetchBranches, currentBranch, switchBranch, createBranch, deleteBranch, duplicateBranch } = useGithub();
 const { showToast } = useToast();
 const editorStore = useEditorStore();
 const { refreshNavigation } = useNavigation();
@@ -128,6 +206,18 @@ const showCreateBranchModal = ref(false);
 const newBranchName = ref('');
 const isCreatingBranch = ref(false);
 const branchNameError = ref('');
+const showDeleteBranchModal = ref(false);
+const branchToDelete = ref('');
+const isDeletingBranch = ref(false);
+
+// Duplicate branch related state
+const showDuplicateBranchModal = ref(false);
+const branchToDuplicate = ref('');
+const duplicateBranchName = ref('');
+const duplicateBranchNameError = ref('');
+const isDuplicatingBranch = ref(false);
+const showSwitchToDuplicatedBranchModal = ref(false);
+const duplicatedBranchName = ref('');
 
 // Watch for branch name changes to validate
 watch(newBranchName, (value) => {
@@ -146,6 +236,23 @@ watch(newBranchName, (value) => {
   }
 });
 
+// Watch for duplicate branch name changes to validate
+watch(duplicateBranchName, (value) => {
+  if (!value) {
+    duplicateBranchNameError.value = '';
+    return;
+  }
+  
+  // Basic branch name validation
+  if (!/^[a-zA-Z0-9_\-\/]+$/.test(value)) {
+    duplicateBranchNameError.value = 'Branch name can only contain letters, numbers, hyphens, underscores, and slashes';
+  } else if (branches.value.includes(value)) {
+    duplicateBranchNameError.value = 'A branch with this name already exists';
+  } else {
+    duplicateBranchNameError.value = '';
+  }
+});
+
 // Handle branch creation
 const handleCreateBranch = async () => {
   if (!newBranchName.value || branchNameError.value) {
@@ -153,20 +260,40 @@ const handleCreateBranch = async () => {
   }
   
   isCreatingBranch.value = true;
+  const branchToCreate = newBranchName.value.trim();
   
   try {
-    const result = await createBranch(newBranchName.value);
+    const result = await createBranch(branchToCreate);
     if (result) {
-      showToast({
-        title: 'Success',
-        message: `Branch "${newBranchName.value}" created successfully`,
-        type: 'success'
-      });
       showCreateBranchModal.value = false;
       newBranchName.value = '';
       
-      // Switch to the new branch
-      await handleSwitchBranch(newBranchName.value);
+      // Explicitly route back and switch to the created branch
+      isSwitchingBranch.value = true;
+      
+      try {
+        // First ensure the currentBranch value is updated
+        await switchBranch(branchToCreate);
+        console.log(`Switched to created branch: ${branchToCreate}`);
+        
+        // Update navigation to reflect new branch content
+        await refreshNavigation();
+        
+        // Add a small delay to ensure UI is updated before navigation
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Navigate back to the previous page
+        router.back();
+      } catch (switchError) {
+        console.error('Error switching to created branch:', switchError);
+        showToast({
+          title: 'Error',
+          message: `Branch created but failed to switch to it: ${switchError.message || 'Unknown error'}`,
+          type: 'error'
+        });
+      } finally {
+        isSwitchingBranch.value = false;
+      }
     }
   } catch (error) {
     console.error('Error creating branch:', error);
@@ -225,6 +352,7 @@ const handleSwitchBranch = async (branchName) => {
     // Update navigation to reflect new branch content
     await refreshNavigation();
     
+    // Keep single toast for branch switching feedback
     showToast({
       title: 'Branch Switched',
       message: `Successfully switched to branch "${branchName}"`,
@@ -259,6 +387,139 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', closeMenuOnOutsideClick);
 });
+
+// Show delete confirmation modal
+const showDeleteConfirmation = (branch) => {
+  if (branch === currentBranch.value) {
+    showToast({
+      title: 'Cannot Delete',
+      message: 'You cannot delete the current branch. Switch to another branch first.',
+      type: 'error'
+    });
+    activeMenu.value = null;
+    return;
+  }
+  
+  branchToDelete.value = branch;
+  showDeleteBranchModal.value = true;
+  activeMenu.value = null; // Close the menu
+};
+
+// Handle branch deletion
+const handleDeleteBranch = async () => {
+  if (!branchToDelete.value || isDeletingBranch.value) {
+    return;
+  }
+  
+  isDeletingBranch.value = true;
+  
+  try {
+    const result = await deleteBranch(branchToDelete.value);
+    if (result) {
+      // Remove redundant success toast - API already shows a success message
+      
+      // Refresh the branches list
+      await fetchBranches();
+    }
+  } catch (error) {
+    console.error('Error deleting branch:', error);
+    showToast({
+      title: 'Error',
+      message: `Failed to delete branch: ${error.message || 'Unknown error'}`,
+      type: 'error'
+    });
+  } finally {
+    isDeletingBranch.value = false;
+    showDeleteBranchModal.value = false;
+    branchToDelete.value = '';
+  }
+};
+
+// Show duplicate confirmation modal
+const showDuplicateConfirmation = (branch) => {
+  branchToDuplicate.value = branch;
+  duplicateBranchName.value = `${branch}-copy`;
+  showDuplicateBranchModal.value = true;
+  activeMenu.value = null; // Close the menu
+};
+
+// Handle branch duplication
+const handleDuplicateBranch = async () => {
+  if (!branchToDuplicate.value || !duplicateBranchName.value || duplicateBranchNameError.value || isDuplicatingBranch.value) {
+    return;
+  }
+  
+  isDuplicatingBranch.value = true;
+  
+  try {
+    const result = await duplicateBranch(branchToDuplicate.value, duplicateBranchName.value);
+    if (result) {
+      // Remove redundant success toast - API already shows a success message
+      
+      // Refresh the branches list
+      await fetchBranches();
+      
+      // Store the duplicated branch name and show the switch confirmation modal
+      duplicatedBranchName.value = duplicateBranchName.value;
+      showSwitchToDuplicatedBranchModal.value = true;
+    }
+  } catch (error) {
+    console.error('Error duplicating branch:', error);
+    showToast({
+      title: 'Error',
+      message: `Failed to duplicate branch: ${error.message || 'Unknown error'}`,
+      type: 'error'
+    });
+  } finally {
+    isDuplicatingBranch.value = false;
+    showDuplicateBranchModal.value = false;
+    branchToDuplicate.value = '';
+    duplicateBranchName.value = '';
+  }
+};
+
+// Handle switching to the duplicated branch
+const handleSwitchToDuplicatedBranch = async () => {
+  const branchToSwitchTo = duplicatedBranchName.value;
+  
+  // Close the modal before starting the switch process
+  showSwitchToDuplicatedBranchModal.value = false;
+  duplicatedBranchName.value = '';
+  
+  // Ensure we're in a switching state to prevent multiple clicks
+  isSwitchingBranch.value = true;
+  
+  try {
+    // Explicitly set the current branch and ensure it's updated
+    await switchBranch(branchToSwitchTo);
+    console.log(`Explicitly switched to duplicated branch: ${branchToSwitchTo}`);
+    
+    // Update navigation to reflect new branch content
+    await refreshNavigation();
+    
+    // Add a small delay to ensure UI is updated before navigation
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Keep single toast for branch switching feedback
+    showToast({
+      title: 'Branch Switched',
+      message: `Successfully switched to branch "${branchToSwitchTo}"`,
+      type: 'success'
+    });
+    
+    // Navigate back to the previous page instead of home
+    router.back();
+  } catch (error) {
+    console.error('Error switching to duplicated branch:', error);
+    showToast({
+      title: 'Error',
+      message: `Failed to switch to branch "${branchToSwitchTo}"`,
+      type: 'error'
+    });
+  } finally {
+    isSwitchingBranch.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -549,6 +810,7 @@ onUnmounted(() => {
   border: 1px solid #D1D5DB;
   border-radius: 6px;
   background-color: #F9FAFB;
+  color: #111827;
 }
 
 .branch-form input:focus {
@@ -608,6 +870,28 @@ onUnmounted(() => {
 }
 
 .create-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.delete-button {
+  padding: 10px 16px;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #FFFFFF;
+  background-color: #EF4444;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.delete-button:hover:not(:disabled) {
+  background-color: #DC2626;
+}
+
+.delete-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
