@@ -160,6 +160,7 @@ watch(newBranchName, (value) => {
 });
 
 // Watch for branch changes to update the UI
+
 watch(currentBranch, (newBranch, oldBranch) => {
   if (newBranch !== oldBranch) {
     console.log(`Branch changed from ${oldBranch} to ${newBranch}`);
@@ -169,6 +170,8 @@ watch(currentBranch, (newBranch, oldBranch) => {
       forceUpdate();
     });
   }
+
+
 });
 
 // Run on component mount
@@ -255,10 +258,13 @@ const handlePRCreated = (newPR) => {
 // Force style update
 const forceUpdate = async () => {
   await nextTick();
+
   
   // Log the current branch to help with debugging
   console.log('Force updating UI with branch:', currentBranch.value);
   
+
+
   const bar = document.querySelector('.action-bar');
   if (bar) {
     if (isMainBranch.value) {
@@ -266,12 +272,15 @@ const forceUpdate = async () => {
     } else {
       bar.classList.remove('main-branch');
     }
+
     
     // Force a re-render of the branch name section
     const branchNameElement = document.querySelector('.branch-name');
     if (branchNameElement) {
       branchNameElement.textContent = currentBranch.value;
     }
+
+
   }
 };
 
@@ -283,10 +292,13 @@ const handleExitBranch = async () => {
     // Then navigate to branches page
     navigateTo('/branches');
     
+
     // Keep single toast for branch switching feedback
     showToast({
       title: 'Branch Switched',
       message: 'Successfully switched to main branch',
+
+ 
       type: 'success'
     });
   } catch (error) {
