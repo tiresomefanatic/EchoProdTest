@@ -599,7 +599,7 @@ export const useGithub = () => {
 
         // Update toast with attempt count
         updateToast(toastId, {
-          message: `Branch created, waiting for GitHub to process... (Attempt ${attempts}/6)`,
+          message: ` Waiting for GitHub to process... (Attempt ${attempts}/6)`,
         });
       }
 
@@ -651,7 +651,7 @@ export const useGithub = () => {
       });
 
       updateToast(toastId, {
-        message: "Branch deleted, waiting for GitHub to process...",
+        message: " Waiting for GitHub to process...",
       });
 
       // Verify branch is removed with longer timeout and less frequent polling
@@ -682,7 +682,7 @@ export const useGithub = () => {
 
         // Update toast with attempt count
         updateToast(toastId, {
-          message: `Branch deleted, waiting for GitHub to process... (Attempt ${attempts}/6)`,
+          message: ` Waiting for GitHub to process... (Attempt ${attempts}/6)`,
         });
       }
 
@@ -742,7 +742,7 @@ export const useGithub = () => {
       });
 
       updateToast(toastId, {
-        message: "Branch duplicated, waiting for GitHub to process...",
+        message: " Waiting for GitHub to process...",
       });
 
       // Verify branch exists with longer timeout and less frequent polling
@@ -772,7 +772,7 @@ export const useGithub = () => {
 
         // Update toast with attempt count
         updateToast(toastId, {
-          message: `Branch duplicated, waiting for GitHub to process... (Attempt ${attempts}/6)`,
+          message: `Waiting for GitHub to process... (Attempt ${attempts}/6)`,
         });
       }
 
