@@ -153,13 +153,20 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Extract text content and files
+    // Extract text content, files, and conversation history
     let textContent = '';
+    let conversationHistory = [];
     const imageDataList = [];
 
     for (const part of formData) {
       if (part.name === 'content') {
         textContent = part.data.toString();
+      } else if (part.name === 'conversation') {
+        try {
+          conversationHistory = JSON.parse(part.data.toString());
+        } catch (e) {
+          console.error('Error parsing conversation history:', e);
+        }
       } else if (part.name === 'files' && part.filename) {
         // Convert the Buffer to base64 string correctly
         const base64Image = Buffer.from(part.data).toString('base64');
@@ -172,14 +179,15 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    if (imageDataList.length === 0 && !textContent) {
+    if (imageDataList.length === 0 && !textContent && conversationHistory.length === 0) {
       throw createError({
         statusCode: 400,
-        message: 'No content or images to analyze',
+        message: 'No content, images, or conversation history to analyze',
       });
     }
 
-    console.log(imageDataList);
+    console.log('Images:', imageDataList.length);
+    console.log('Conversation history length:', conversationHistory.length);
 
     // Prepare the messages for OpenAI
     const messages = [
@@ -193,7 +201,22 @@ export default defineEventHandler(async (event) => {
       }
     ];
     
-    // Create the user message content
+    // Include conversation history (excluding the current request)
+    if (conversationHistory && conversationHistory.length > 0) {
+      // Add previous conversation messages, but skip including file data to avoid token limits
+      conversationHistory.forEach((msg: any) => {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          messages.push({
+            role: msg.role,
+            content: msg.content || ''
+          });
+        }
+      });
+    }
+
+    console.log('Messages:', messages);
+    
+    // Create the user message content for the current request
     let userMessageContent: any = [];
     
     // Always add text content first if available
@@ -225,13 +248,13 @@ export default defineEventHandler(async (event) => {
       }
     }
     
-    // Add the user message to the messages array
+    // Add the current user message to the messages array
     messages.push({
       role: 'user',
       content: userMessageContent
     });
 
-    console.log(messages);
+    console.log('Total messages being sent to OpenAI:', messages.length);
 
     // Call OpenAI API 
     const completion = await openai.chat.completions.create({
@@ -239,13 +262,11 @@ export default defineEventHandler(async (event) => {
       messages,
       max_tokens: 10000,
     });
-
+    
     // Process the response
-    console.log(completion);
     const llmResponse = completion.choices[0]?.message?.content || 'No analysis could be generated.';
     
     // Parse the response into structure
-    // For simplicity, we'll return a single category with the full response
     const feedbackCategories = [
       {
         category: "Design Analysis",
