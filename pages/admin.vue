@@ -1,0 +1,138 @@
+<template>
+  <div class="admin-container">
+    <AdminNavbar />
+    <div class="admin-content">
+      <div class="admin-header">
+        <h1 class="admin-title">Admin Dashboard</h1>
+        <p class="admin-description">
+          Manage the AI assistant, view chat logs, and configure system settings. This dashboard provides
+          administrative controls for the Echo AI system.
+        </p>
+      </div>
+
+      <div class="tabs-container">
+        <!-- Custom Tabs Navigation -->
+        <div class="tabs-list">
+          <button 
+            v-for="tab in tabs" 
+            :key="tab.value" 
+            class="tab-button" 
+            :class="{ active: activeTab === tab.value }"
+            @click="activeTab = tab.value"
+            :aria-selected="activeTab === tab.value"
+            role="tab"
+            tabindex="0"
+            @keydown.space.prevent="activeTab = tab.value"
+            @keydown.enter.prevent="activeTab = tab.value"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <AdminChatLogs v-if="activeTab === 'chat-logs'" />
+          <AdminFileUpload v-if="activeTab === 'context-files'" />
+          <AdminControls v-if="activeTab === 'bot-controls'" />
+        </div>
+      </div>
+    </div>
+    <FloatingWidget />
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import AdminNavbar from '~/components/AdminNavbar.vue';
+import AdminChatLogs from '~/components/AdminChatLogs.vue';
+import AdminFileUpload from '~/components/AdminFileUpload.vue';
+import AdminControls from '~/components/AdminControls.vue';
+import FloatingWidget from '~/components/FloatingWidget.vue';
+
+const tabs = [
+  { label: 'Chat Logs', value: 'chat-logs' },
+  { label: 'Context Files', value: 'context-files' },
+  { label: 'Bot Controls', value: 'bot-controls' },
+];
+
+const activeTab = ref('chat-logs');
+</script>
+
+<style scoped>
+.admin-container {
+  position: relative;
+  min-height: 100vh;
+}
+
+.admin-content {
+  padding-top: 8rem; /* 32px */
+  padding-left: 2rem; /* 8px */
+  padding-right: 2rem; /* 8px */
+}
+
+.admin-header {
+  max-width: 64rem; /* 5xl equivalent */
+  margin-bottom: 2rem;
+}
+
+.admin-title {
+  font-size: 2.25rem; /* 4xl equivalent */
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.admin-description {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #4b5563;
+  max-width: 48rem; /* 3xl equivalent */
+}
+
+.tabs-container {
+  max-width: 64rem; /* 5xl equivalent */
+  width: 100%;
+}
+
+.tabs-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  padding: 0.25rem;
+  background-color: #f9fafb;
+  margin-bottom: 1.5rem;
+}
+
+.tab-button {
+  padding: 0.75rem 0;
+  background: none;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-button:hover:not(.active) {
+  color: #111827;
+}
+
+.tab-button.active {
+  background-color: white;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content {
+  margin-top: 1.5rem;
+}
+</style>

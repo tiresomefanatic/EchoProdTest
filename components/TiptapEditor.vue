@@ -28,6 +28,7 @@ import TextStyle from "@tiptap/extension-text-style";
 import Link from "@tiptap/extension-link";
 
 import ImageUploader from "~/components/ImageUploader.vue";
+import FloatingWidget from './FloatingWidget.vue';
 
 interface Props {
   content?: string;
@@ -1325,6 +1326,9 @@ const handleExit = () => {
         </div>
       </div>
     </div>
+
+    <!-- Add the FloatingWidget component -->
+    <FloatingWidget v-if="editor"/>
   </div>
 </template>
 
@@ -1403,7 +1407,6 @@ const handleExit = () => {
   padding: 0.5rem 1rem;
   background: white;
   flex-shrink: 0;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .tiptap-toolbar {
@@ -1420,6 +1423,7 @@ const handleExit = () => {
   width: 100%;
   min-height: 48px;
   flex-shrink: 0;
+  overflow-x: auto;
 }
 
 .tiptap-toolbar button,
