@@ -1,16 +1,27 @@
 import { defineEventHandler, readMultipartFormData, createError } from 'h3';
-import OpenAI from 'openai';
+import { ChatOpenAI } from '@langchain/openai';
+import { 
+  HumanMessage, 
+  SystemMessage,
+  AIMessage,
+  BaseMessage
+} from '@langchain/core/messages';
+import { 
+  BufferWindowMemory, 
+  ChatMessageHistory 
+} from 'langchain/memory';
+import { StringOutputParser } from '@langchain/core/output_parsers';
+import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { RunnableSequence } from '@langchain/core/runnables';
 
 // For production, you should use environment variables
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openaiApiKey = process.env.OPENAI_API_KEY;
 
 // Hero Vida design principles prompt
 const designPrinciples = `
-# Hero Echo Design System Guide
+# Hero Vida Design System Guide
 
-This guide outlines criteria for evaluating new designs to ensure compliance with Hero Echo's brand identity (no hex codes for now).
+This guide outlines criteria for evaluating new designs to ensure compliance with Hero Vida's brand identity (no hex codes for now).
 
 ## 1. Logo Compliance
 
@@ -131,13 +142,15 @@ Evaluate if the design maintains overall consistency in visual appearance, messa
 **Note**: Each example should be accompanied by a brief explanation clarifying why it is compliant or non-compliant based on the criteria above.
 
 Use this comprehensive design guide as a checklist when evaluating new designs to ensure they strictly adhere to Hero Echo's design system standards.
-
 `;
+
+// Maximum number of messages to keep in conversation history
+const MAX_CONVERSATION_MESSAGES = 8;
 
 export default defineEventHandler(async (event) => {
   try {
     // Validate OpenAI API Key
-    if (!openai.apiKey) {
+    if (!openaiApiKey) {
       throw createError({
         statusCode: 500,
         message: 'OpenAI API key not configured',
@@ -155,7 +168,7 @@ export default defineEventHandler(async (event) => {
 
     // Extract text content, files, and conversation history
     let textContent = '';
-    let conversationHistory = [];
+    let conversationHistory: any[] = [];
     const imageDataList = [];
 
     for (const part of formData) {
@@ -189,91 +202,151 @@ export default defineEventHandler(async (event) => {
     console.log('Images:', imageDataList.length);
     console.log('Conversation history length:', conversationHistory.length);
 
-    // Prepare the messages for OpenAI
-    const messages = [
-      {
-        role: 'system',
-        content: `You are a design expert who evaluates visual designs against Hero Vida's design principles. 
-                 ${designPrinciples}
-                 
-                 Format your response in easily digestible bullet points. Be specific about what works well and what could be improved.
-                 For each point, indicate if it's a success, warning, or issue.`
+    // Initialize the LangChain chat model
+    const model = new ChatOpenAI({
+      openAIApiKey: openaiApiKey,
+      modelName: "gpt-4o-mini",
+      maxTokens: 10000,
+    });
+
+    // Create the system prompt
+    const systemPrompt = new SystemMessage(`You are a design expert who evaluates visual designs against Hero Vida's design principles and answers general design questions by using the design principles as a checklist. 
+${designPrinciples}
+
+When analyzing designs:
+- Use proper markdown formatting in your responses
+- For each design element you analyze, use this structure:
+  - **Element**: [Name of element being analyzed]
+  - **Finding**: [Your evaluation]
+  - **Recommendation**: [Your suggestion if applicable]
+- Use headings (## and ###) to organize sections
+- Use bullet points and numbered lists to organize related points
+- Use **bold** for emphasis on important findings
+
+For general questions that are not design analysis requests:
+- Respond normally in conversational format using proper markdown
+- Use headings, lists, and emphasis where appropriate
+- Draw upon the design principles when relevant`);
+
+    // Build the chat message history from previous conversation
+    const pastMessages: BaseMessage[] = [];
+
+    // Limit conversation history to MAX_CONVERSATION_MESSAGES
+    // Take only the most recent messages if we exceed the max
+    const limitedConversationHistory = conversationHistory.slice(
+      Math.max(0, conversationHistory.length - MAX_CONVERSATION_MESSAGES)
+    );
+
+    // Convert history to LangChain message format
+    for (const msg of limitedConversationHistory) {
+      if (msg.role === 'user') {
+        pastMessages.push(new HumanMessage(msg.content || ''));
+      } else if (msg.role === 'assistant') {
+        pastMessages.push(new AIMessage(msg.content || ''));
       }
-    ];
-    
-    // Include conversation history (excluding the current request)
-    if (conversationHistory && conversationHistory.length > 0) {
-      // Add previous conversation messages, but skip including file data to avoid token limits
-      conversationHistory.forEach((msg: any) => {
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          messages.push({
-            role: msg.role,
-            content: msg.content || ''
-          });
-        }
-      });
     }
 
-    console.log('Messages:', messages);
+    // Create a message history instance
+    const messageHistory = new ChatMessageHistory(pastMessages);
     
-    // Create the user message content for the current request
-    let userMessageContent: any = [];
+    // Set up a buffer window memory with our max limit
+    const memory = new BufferWindowMemory({
+      chatHistory: messageHistory,
+      k: MAX_CONVERSATION_MESSAGES,
+      returnMessages: true,
+      memoryKey: "chat_history",
+    });
+
+    console.log('memory', memory);
+
+    // Prepare current user message content
+    let userMessageContent = '';
+    const imageUrlParts: string[] = [];
     
-    // Always add text content first if available
+    // Add text content if available
     if (textContent) {
-      userMessageContent.push({ 
-        type: "text", 
-        text: textContent 
-      });
+      userMessageContent = textContent;
     } else if (imageDataList.length > 0) {
-      // If no text but images exist, add default text
-      userMessageContent.push({ 
-        type: "text", 
-        text: "Please analyze the following design against Hero Vida's design principles." 
-      });
+      userMessageContent = "Please analyze the following design against Hero Vida's design principles.";
     } else {
-      // Fallback for conversation continuation
       userMessageContent = "Please analyze this design based on our previous conversation.";
     }
-    
-    // Add all images if they exist
+
+    // Add images as inline markdown if they exist
     if (imageDataList.length > 0) {
+      // For each image, create a data URL and add it to the content
       for (const imageData of imageDataList) {
-        userMessageContent.push({
-          type: "image_url",
-          image_url: {
-            url: `data:${imageData.mimeType};base64,${imageData.base64Image}`
-          }
-        });
+        const imageUrl = `data:${imageData.mimeType};base64,${imageData.base64Image}`;
+        imageUrlParts.push(imageUrl);
       }
     }
-    
-    // Add the current user message to the messages array
-    messages.push({
-      role: 'user',
-      content: userMessageContent
-    });
 
-    console.log('Total messages being sent to OpenAI:', messages.length);
+    // Create the current human message - we need to handle both text and images
+    const currentHumanMessage = imageUrlParts.length > 0 
+      ? new HumanMessage({
+          content: [
+            { type: "text", text: userMessageContent },
+            ...imageUrlParts.map(url => ({
+              type: "image_url",
+              image_url: { url }
+            }))
+          ]
+        })
+      : new HumanMessage(userMessageContent);
 
-    // Call OpenAI API 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages,
-      max_tokens: 10000,
-    });
+    // Get the chat history
+    const chatHistory = await memory.loadMemoryVariables({});
     
-    // Process the response
-    const llmResponse = completion.choices[0]?.message?.content || 'No analysis could be generated.';
-    
-    // Parse the response into structure
-    const feedbackCategories = [
-      {
-        category: "Design Analysis",
-        icon: "eye",
-        items: parseResponseIntoItems(llmResponse)
-      }
+    // Create a template for the current chat
+    const chatPrompt = ChatPromptTemplate.fromMessages([
+      ["system", systemPrompt.content],
+      ...chatHistory.chat_history,
+      ["human", userMessageContent]
+    ]);
+
+    // Create an LLM chain
+    const chain = RunnableSequence.from([
+      chatPrompt,
+      model,
+      new StringOutputParser()
+    ]);
+
+    // Instead of using the chain directly, we'll use the model with messages
+    // to properly handle the image content
+    const messages = [
+      systemPrompt,
+      ...chatHistory.chat_history,
+      currentHumanMessage
     ];
+
+    console.log('messages', messages);
+
+    // Execute the model with our messages
+    const response = await model.invoke(messages);
+    const llmResponse = response.content as string;
+
+    // Save the new messages to memory for next time
+    await memory.saveContext(
+      { input: userMessageContent },
+      { output: llmResponse }
+    );
+
+    // Parse the response based on request type
+    const feedbackCategories = detectIfDesignAnalysisQuery(userMessageContent, imageDataList)
+      ? [
+          {
+            category: "Design Analysis",
+            icon: "eye",
+            items: parseResponseIntoItems(llmResponse)
+          }
+        ]
+      : [
+          {
+            category: "Response",
+            icon: "message-circle",
+            items: [{ type: 'text', message: llmResponse }]
+          }
+        ];
 
     return {
       feedback: feedbackCategories
@@ -298,12 +371,42 @@ export default defineEventHandler(async (event) => {
   }
 });
 
+// Helper function to detect if the query is for design analysis
+function detectIfDesignAnalysisQuery(text: string, images: any[]): boolean {
+  // Consider it a design analysis if there are images attached
+  if (images && images.length > 0) return true;
+  
+  // Check text content for design analysis keywords
+  const designAnalysisKeywords = [
+    'analyze', 'analysis', 'design', 'evaluate', 'assessment',
+    'review', 'compliance', 'principles', 'critique', 'feedback'
+  ];
+  
+  const textLower = text.toLowerCase();
+  return designAnalysisKeywords.some(keyword => textLower.includes(keyword)) ||
+    textLower.includes('how does this look') ||
+    textLower.includes('what do you think');
+}
+
 // Helper function to parse LLM response into structured items
 function parseResponseIntoItems(text: string) {
   // Split by lines
   const lines = text.split('\n').filter(line => line.trim());
   
-  // Process each line into a feedback item
+  // Check if the text follows our expected format with elements, findings, etc.
+  const hasStructuredFormat = text.includes('**Element**:') || 
+                             text.includes('**Finding**:') ||
+                             text.includes('## ');
+  
+  // If it's already in a structured markdown format, return it as a single item
+  if (hasStructuredFormat) {
+    return [{
+      type: 'markdown',
+      message: text
+    }];
+  }
+  
+  // For non-structured responses, process each line into a feedback item
   return lines.map(line => {
     // Remove bullet points, dashes, etc.
     let cleanedLine = line.replace(/^[\s•\-\*]+/, '').trim();
@@ -311,11 +414,11 @@ function parseResponseIntoItems(text: string) {
     // Try to determine type based on keywords
     let type = 'default';
     
-    if (/✓|success|good|excellent|well done|works well/i.test(cleanedLine)) {
+    if (/✓|success|good|excellent|well done|works well|compliant|correct/i.test(cleanedLine)) {
       type = 'success';
-    } else if (/⚠|warning|consider|could|might|suggest/i.test(cleanedLine)) {
+    } else if (/⚠|warning|consider|could|might|suggest|improve/i.test(cleanedLine)) {
       type = 'warning';
-    } else if (/✗|error|issue|problem|fail|incorrect|wrong/i.test(cleanedLine)) {
+    } else if (/✗|error|issue|problem|fail|incorrect|wrong|non-compliant/i.test(cleanedLine)) {
       type = 'error';
     }
     
