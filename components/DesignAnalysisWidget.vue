@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, defineProps, computed } from 'vue';
+import { marked } from 'marked';
 
 const props = defineProps({
   onClose: Function,
@@ -18,6 +19,16 @@ const error = ref('');
 const conversation = ref([]);
 const userInput = ref('');
 const isExpanded = ref(false);
+
+const renderMarkdown = (text) => {
+  if (!text) return '';
+  try {
+    return marked(text);
+  } catch (err) {
+    console.error('Error rendering markdown:', err);
+    return text;
+  }
+};
 
 const toggleExpand = () => {
   isExpanded.value = !isExpanded.value;
@@ -122,19 +133,19 @@ const analyzeDesign = async () => {
   }
 }
 
-// Helper function to extract text from feedback for conversation history
 const extractFeedbackAsText = (feedbackCategories) => {
+  if (feedbackCategories.length === 1 && feedbackCategories[0].category === "Response") {
+    return feedbackCategories[0].items[0].message;
+  }
+  
   let textContent = '';
   
   feedbackCategories.forEach(category => {
-    textContent += `${category.category}:\n`;
+    textContent += `## ${category.category}\n\n`;
     
     if (category.items && category.items.length) {
       category.items.forEach(item => {
-        const prefix = item.type === 'success' ? '✓ ' : 
-                      item.type === 'warning' ? '⚠ ' :
-                      item.type === 'error' ? '✗ ' : 'ℹ ';
-        textContent += `${prefix}${item.message}\n`;
+        textContent += `${item.message}\n\n`;
       });
     }
     
@@ -145,20 +156,15 @@ const extractFeedbackAsText = (feedbackCategories) => {
 }
 
 const processLLMFeedback = (llmFeedback) => {
-  // This processes the raw LLM response into the expected format
-  // We're expecting categories with items
-  
-  if (typeof llmFeedback === 'string') {
-    // If it's just a string, create a simple feedback structure
+  if (!llmFeedback || typeof llmFeedback === 'string') {
     return [{
-      category: "Design Analysis",
-      icon: "eye",
-      items: [{ type: "default", message: llmFeedback }]
+      category: "Response",
+      icon: "message-circle",
+      items: [{ type: "text", message: llmFeedback || '' }]
     }];
   }
   
-  // If it's already structured, return it
-  return llmFeedback.categories || llmFeedback;
+  return llmFeedback;
 }
 
 const handleFileUpload = (event) => {
@@ -574,23 +580,25 @@ const handleAdditionalFileUpload = (event) => {
               <!-- Error message -->
               <div v-if="message.isError" class="assistant-error">{{ message.content }}</div>
               
-              <!-- Feedback results -->
-              <div v-else-if="message.feedback" class="feedback-results">
-                <div v-for="category in message.feedback" :key="category.category" class="feedback-category">
-                  <h3 class="category-title" v-html="getIconForCategory(category.icon) + ' ' + category.category"></h3>
-                  <ul class="feedback-list">
-                    <li v-for="(item, itemIndex) in category.items" :key="itemIndex" 
-                        :class="`feedback-item ${
-                          item.type === 'success' ? 'success' : 
-                          item.type === 'warning' ? 'warning' : 
-                          item.type === 'error' ? 'error' : 'default'
-                        }`">
-                      <span class="feedback-icon">
-                        {{ item.type === 'success' ? '✓' : item.type === 'warning' ? '⚠' : item.type === 'error' ? '✗' : 'ℹ' }}
-                      </span>
-                      <span class="feedback-message">{{ item.message }}</span>
-                    </li>
-                  </ul>
+              <!-- Regular response -->
+              <div v-else-if="message.feedback && message.feedback[0].category === 'Response'" 
+                   class="markdown-content"
+                   v-html="renderMarkdown(message.feedback[0].items[0].message)"></div>
+              
+              <!-- Design Analysis results -->
+              <div v-else-if="message.feedback" class="design-analysis-results">
+                <div v-for="category in message.feedback" :key="category.category" class="analysis-category">
+                  <div class="category-header">
+                    <div class="category-icon" v-html="getIconForCategory(category.icon)"></div>
+                    <h3 class="category-title">{{ category.category }}</h3>
+                  </div>
+                  
+                  <div class="analysis-content">
+                    <div v-for="(item, itemIndex) in category.items" :key="itemIndex" 
+                        class="analysis-item">
+                      <div class="analysis-item-content" v-html="renderMarkdown(item.message)"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -969,6 +977,7 @@ const handleAdditionalFileUpload = (event) => {
   font-weight: 600;
   font-size: 1.125rem;
   margin-bottom: 1rem;
+  color: #1f2937;
 }
 
 .form-group {
@@ -1313,6 +1322,175 @@ const handleAdditionalFileUpload = (event) => {
 /* Uploaded files styles - ensure they're cleared after sending */
 .uploaded-files-preview:empty {
   display: none;
+}
+
+.markdown-content {
+  line-height: 1.5;
+  color: #1f2937;
+}
+
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3) {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.markdown-content :deep(h1) {
+  font-size: 1.25rem;
+}
+
+.markdown-content :deep(h2) {
+  font-size: 1.15rem;
+}
+
+.markdown-content :deep(h3) {
+  font-size: 1rem;
+}
+
+.markdown-content :deep(p) {
+  margin-bottom: 1rem;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.markdown-content :deep(li) {
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content :deep(code) {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.875em;
+}
+
+.markdown-content :deep(pre) {
+  background-color: #f3f4f6;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.markdown-content :deep(a) {
+  color: #FF5310;
+  text-decoration: underline;
+}
+
+.markdown-content :deep(blockquote) {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+}
+
+.markdown-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+}
+
+/* Design Analysis Styles */
+.design-analysis-results {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.analysis-category {
+  background-color: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.analysis-category:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.category-header {
+  background-color: #f9fafb;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.category-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  background-color: rgba(255, 83, 16, 0.1);
+  color: #FF5310;
+  border-radius: 0.375rem;
+}
+
+.category-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1f2937;
+  margin: 0;
+}
+
+.analysis-content {
+  padding: 0.75rem;
+}
+
+.analysis-item {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background-color: #fafafa;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+}
+
+.analysis-item:last-child {
+  margin-bottom: 0;
+}
+
+.analysis-item:hover {
+  background-color: #f3f4f6;
+}
+
+.analysis-item-content {
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.analysis-item-content :deep(p) {
+  margin: 0.5rem 0;
+}
+
+.analysis-item-content :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.analysis-item-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.analysis-item-content :deep(ul),
+.analysis-item-content :deep(ol) {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.analysis-item-content :deep(li) {
+  margin-bottom: 0.25rem;
 }
 </style>
 
