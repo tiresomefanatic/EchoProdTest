@@ -165,6 +165,8 @@
       @close="handleCloseCommitModal"
       @commit="handleCommit"
     />
+
+    <FloatingWidget />
   </div>
 </template>
 
@@ -192,6 +194,7 @@ import { useStore } from "~/store";
 import Footer from "~/components/Footer.vue";
 import { useEventBus } from '@vueuse/core';
 import CommitModal from "~/components/CommitModal.vue";
+import FloatingWidget from "~/components/FloatingWidget.vue";
 
 // Initialize GitHub functionality and services
 const {
