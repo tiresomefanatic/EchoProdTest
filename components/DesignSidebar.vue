@@ -754,7 +754,6 @@ const handleDeleteItem = (itemPath: string) => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  background-color: #f5f5f5;
   border-radius: 12px;
 }
 
