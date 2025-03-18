@@ -31,6 +31,13 @@
               "locked": true
             },
             {
+              "title": "Logo",
+              "path": "/design/foundation/Logo",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            },
+            {
               "title": "Illustration",
               "path": "/design/foundation/illustration",
               "type": "file",
@@ -81,8 +88,8 @@
               "locked": false
             },
             {
-              "title": "Creative Spectrum",
-              "path": "/design/product/creative-spectrum",
+              "title": "Case Studies",
+              "path": "/design/product/case-studies",
               "type": "file",
               "locked": false
             }
