@@ -13,11 +13,9 @@
         <Header />
         
         <!--sidebar and overlay -->
-        <div class="mobile-overlay" :class="{ 'is-visible': isSidebarOpen }" @click="closeSidebar"></div>
-        <DesignSidebar 
-          class="sidebar" 
-          :class="{ 'is-mobile-open': isSidebarOpen }" 
-          @close="closeSidebar" 
+        <div class="mobile-overlay"></div>
+        <DesignSidebar
+          class="sidebar"
         />
         
         <div class="landing-content-area">
