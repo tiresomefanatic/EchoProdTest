@@ -4,6 +4,9 @@
 <span style="font-size: 12px">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.</span>
 </p>
 <p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1741694884318-o4oeuyzs6v.png" alt="uploads/1741694884318-o4oeuyzs6v.png">
+</p>
+<p style="text-align: left">
 <span style="font-size: 12px">hello</span>
 <img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1742328623150-f0c19c91-1742328622856-3yhgqqvxqku.png" alt="Screenshot_2025-03-11_at_5.18.03_PM.png">
 </p>
