@@ -5,6 +5,7 @@
 </p>
 <p style="text-align: left">
 <span style="font-size: 12px">hello</span>
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1742328623150-f0c19c91-1742328622856-3yhgqqvxqku.png" alt="Screenshot_2025-03-11_at_5.18.03_PM.png">
 </p>
 <p style="text-align: left">
 <img src="/images/echo-dna.png" alt="Echo DNA">
