@@ -28,10 +28,13 @@ import TextStyle from "@tiptap/extension-text-style";
 import Link from "@tiptap/extension-link";
 
 import ImageUploader from "~/components/ImageUploader.vue";
+import FloatingWidget from './FloatingWidget.vue';
 
 interface Props {
   content?: string;
-  filePath: string;
+  filePath?: string;
+  externalRawMode?: boolean;
+  externalPreviewMode?: boolean;
 }
 
 const handleInsertComponent = (componentId: string) => {
@@ -104,16 +107,17 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   "update:content": [content: string];
-  save: [content: string];
   error: [error: Error];
+  exit: [];
+  save: [];
 }>();
 
 // State management
 const localContent = ref(props.content || "");
 const originalContent = ref("");
 const isSaving = ref(false);
-const previewMode = ref(false);
-const rawMode = ref(false);
+const previewMode = ref(props.externalPreviewMode || false);
+const rawMode = ref(props.externalRawMode || false);
 const editor = ref<Editor | null>(null);
 const editorInitialized = ref(false);
 const previewContent = ref("");
@@ -289,15 +293,15 @@ const editorOptions = {
   theme: "vs",
   language: "html",
   fontSize: 13,
-  lineNumbers: "on",
+  lineNumbers: "on" as const,
   renderWhitespace: "selection",
   minimap: {
     enabled: true,
     scale: 1,
-    showSlider: "mouseover",
+    showSlider: "mouseover" as "mouseover" | "always",
   },
   scrollBeyondLastLine: false,
-  wordWrap: "on",
+  wordWrap: "on" as "on" | "off" | "wordWrapColumn" | "bounded",
   lineHeight: 20,
   padding: { top: 16, bottom: 16 },
   folding: true,
@@ -316,8 +320,8 @@ const editorOptions = {
   tabSize: 2,
   automaticLayout: true,
   scrollbar: {
-    vertical: "visible",
-    horizontal: "visible",
+    vertical: "visible" as const,
+    horizontal: "visible" as const,
     useShadows: false,
     verticalHasArrows: false,
     horizontalHasArrows: false,
@@ -338,9 +342,22 @@ const editorOptions = {
   },
 };
 
+// Watch for external mode changes via props
+watch(() => props.externalRawMode, (newValue) => {
+  if (newValue !== undefined) {
+    rawMode.value = newValue;
+  }
+});
+
+watch(() => props.externalPreviewMode, (newValue) => {
+  if (newValue !== undefined) {
+    previewMode.value = newValue;
+  }
+});
+
 // Computed properties
 const showCommitButton = computed(() => {
-  return props.filePath && currentBranch.value;
+  return props.filePath && isLoggedIn.value;
 });
 
 const hasChanges = computed(() => {
@@ -349,6 +366,12 @@ const hasChanges = computed(() => {
   return gitContent
     ? localContent.value !== gitContent.content
     : localContent.value !== "";
+});
+
+const contentSource = computed(() => {
+  if (!props.filePath) return 'New File';
+  if (editorStore.hasDraft(props.filePath)) return 'Draft';
+  return 'Committed';
 });
 
 const sanitizedPreviewContent = computed(() => {
@@ -364,31 +387,18 @@ const handleSave = () => {
   console.log("Editor saving content - Length:", formattedContent.length);
   console.log("Preview:", formattedContent.substring(0, 100) + "...");
 
-  // Save formatted content to Pinia store
-  editorStore.saveContent(props.filePath, formattedContent);
+  // Save formatted content as draft
+  editorStore.saveDraft(props.filePath, formattedContent);
 
   // Update store's raw text
   store.updateRawText(formattedContent);
 
-  // Also save current content to localStorage for recovery
-  localStorage.setItem("rawText", JSON.stringify(formattedContent));
-
   showToast({
-    title: "Changes Saved",
-    message: "Successfully saved changes",
+    title: "Draft Saved",
+    message: "Changes saved as draft",
     type: "success",
   });
 };
-
-// const saveToLocal = () => {
-//   if (!hasChanges.value || isSaving.value) return;
-//   editorStore.saveContent(props.filePath, localContent.value);
-//   showToast({
-//     title: "Success",
-//     message: "Content saved locally",
-//     type: "success",
-//   });
-// };
 
 const handleCommit = async () => {
   if (!props.filePath || !commitMessage.value.trim()) return;
@@ -404,8 +414,9 @@ const handleCommit = async () => {
       currentBranch.value
     );
 
-    // Update git content in store
+    // Update git content in store and clear draft
     editorStore.updateContent(props.filePath, localContent.value);
+    editorStore.clearDraft(props.filePath);
 
     showToast({
       title: "Success",
@@ -448,17 +459,32 @@ const handleLoadSave = async (content: string) => {
   }
 
   try {
-    editorStore.updateContent(props.filePath || "", content);
+    // Update content and save as draft
+    editorStore.saveDraft(props.filePath || "", content);
     if (editor.value) {
+      // Store current selection if editor is focused
+      const wasEditorFocused = editor.value.isFocused;
+      let savedSelection = null;
+      if (wasEditorFocused) {
+        savedSelection = editor.value.state.selection;
+      }
+      
+      // Update editor content
       editor.value.commands.setContent(content);
+      
+      // Restore selection and focus if editor was focused
+      if (wasEditorFocused && savedSelection) {
+        editor.value.commands.focus();
+        editor.value.chain().setTextSelection(savedSelection.from).run();
+      }
     }
     localContent.value = content;
 
     await nextTick();
 
     showToast({
-      title: "Save Loaded",
-      message: "Successfully loaded saved version",
+      title: "Draft Loaded",
+      message: "Successfully loaded draft version",
       type: "success",
     });
   } catch (error) {
@@ -558,19 +584,73 @@ const handleRawContentChange = (value: string) => {
   emit("update:content", formattedContent);
 };
 
-// Watch for content changes
+// Modify the watch for rawText to be more aggressive in updating
 watch(
   () => rawText.value,
-  (newContent) => {
-    if (newContent && editor.value && newContent !== localContent.value) {
-      console.log("rawText changed, updating localContent:", newContent.length);
+  (newContent, oldContent) => {
+    if (newContent && editor.value) {
+      // Don't update if content is the same or if the editor has focus
+      // This prevents the cursor from jumping when typing
+      if (editor.value.isFocused && newContent === formatHTML(editor.value.getHTML())) {
+        return;
+      }
+      
+      console.log("rawText changed, updating editor content:", newContent.length);
       const formattedContent = formatHTML(newContent);
-      editor.value.commands.setContent(formattedContent);
+      
+      // Store current selection if editor is focused
+      const wasEditorFocused = editor.value.isFocused;
+      let savedSelection = null;
+      if (wasEditorFocused) {
+        savedSelection = editor.value.state.selection;
+      }
+      
+      // Force editor update with selection preservation
+      editor.value.commands.setContent(formattedContent, false);
+      
+      // Restore selection if editor was focused
+      if (wasEditorFocused && savedSelection) {
+        editor.value.commands.focus();
+        editor.value.chain().setTextSelection(savedSelection.from).run();
+      }
+      
+      // Update local content reference
       localContent.value = formattedContent;
+      
+      // Also update preview if active
+      if (previewMode.value) {
+        previewContent.value = formattedContent;
+      }
+    }
+  },
+  { immediate: true } // Add immediate option to ensure initial content is set
+);
+
+// Add a watch for branch changes to trigger content reload
+watch(
+  () => currentBranch.value,
+  async (newBranch) => {
+    if (newBranch && props.filePath) {
+      try {
+        const { content, sha } = await getFileContent(
+          "tiresomefanatic",
+          "EchoProdTest",
+          props.filePath,
+          newBranch
+        );
+        
+        if (content) {
+          const formattedContent = formatHTML(content);
+          store.updateRawText(formattedContent);
+        }
+      } catch (error) {
+        console.error("Error loading content for branch:", error);
+      }
     }
   }
 );
 
+// Watch for content changes
 watch(
   () => editorStore.getCurrentGitContent(props.filePath || "")?.content,
   (newContent) => {
@@ -611,7 +691,7 @@ watchEffect(() => {
 
 // Initialize
 onMounted(async () => {
-  editorStore.loadSaves();
+  editorStore.initializeStore();
 
   if (isLoggedIn.value) {
     await fetchBranches();
@@ -803,46 +883,16 @@ onMounted(async () => {
       //   return false;
       // },
     },
-    // onUpdate: ({ editor: ed }) => {
-    //   const { selection } = ed.state;
-    //   const { $from } = selection;
-    //   const parent = $from.parent;
-
-    //   if (
-    //     parent.type.name === "styledDiv" &&
-    //     parent.attrs.style?.includes("display: flex")
-    //   ) {
-    //     const currentNode = $from.node();
-    //     const parentPos = $from.before($from.depth);
-
-    //     let targetPos = parentPos;
-    //     let targetDepth = $from.depth;
-
-    //     while (targetDepth > 1) {
-    //       const node = $from.node(targetDepth);
-    //       if (node.attrs.style?.includes("display: flex")) {
-    //         targetPos = $from.before(targetDepth);
-    //         break;
-    //       }
-    //       targetDepth--;
-    //     }
-
-    //     const content = formatHTML(ed.getHTML());
-    //     localContent.value = content;
-    //     previewContent.value = content;
-    //     emit("update:content", content);
-    //   } else {
-    //     const content = formatHTML(ed.getHTML());
-    //     localContent.value = content;
-    //     previewContent.value = content;
-    //     emit("update:content", content);
-    //   }
-    // },
     onUpdate: ({ editor: ed }) => {
       const content = formatHTML(ed.getHTML());
-      localContent.value = content;
-      previewContent.value = content;
-      emit("update:content", content);
+      
+      // Only emit update if content actually changed
+      // This prevents unnecessary update cycles that can affect cursor position
+      if (content !== localContent.value) {
+        localContent.value = content;
+        previewContent.value = content;
+        emit("update:content", content);
+      }
     },
     parseOptions: {
       preserveWhitespace: "full",
@@ -866,15 +916,56 @@ onMounted(async () => {
 });
 
 onMounted(() => {
-  const editorContent = document.querySelector(".editor-content");
-  if (editorContent) {
-    editorContent.addEventListener("scroll", () => {
-      editorContent.setAttribute(
-        "data-scroll-top",
-        editorContent.scrollTop.toString()
-      );
-    });
+  // Get the scroll container
+  const scrollContainer = document.querySelector(".editor-scroll-container");
+  
+  if (scrollContainer) {
+    // Create a single wheel event handler that will be used for all wheel events
+    const handleWheel = (e: WheelEvent) => {
+      // Skip handling if the editor is not visible or in a modal
+      if (!(scrollContainer as HTMLElement).offsetParent) return;
+      
+      // Don't handle wheel events inside modals or in the collaboration sidebar
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('.modal-overlay') || 
+        target.closest('.commit-dialog') ||
+        target.closest('div[class*="collaboration"]')
+      ) {
+        return;
+      }
+      
+      // Adjust scroll speed based on deltaMode
+      let scrollAmount = e.deltaY;
+      
+      // If the deltaMode is line (1) or page (2), adjust the scroll amount
+      if (e.deltaMode === 1) {
+        // Line mode - multiply by 20 for line height
+        scrollAmount *= 20;
+      } else if (e.deltaMode === 2) {
+        // Page mode - multiply by the height of the container
+        scrollAmount *= (scrollContainer as HTMLElement).clientHeight;
+      }
+      
+      // Apply a scaling factor for smoother scrolling
+      scrollAmount *= 0.5;
+      
+      // Directly scroll the container by the calculated amount
+      (scrollContainer as HTMLElement).scrollTop += scrollAmount;
+      
+      // Prevent the default scroll behavior to avoid double scrolling
+      e.preventDefault();
+    };
+    
+    // Add the wheel event listener to the document to capture all wheel events
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    
+    // Store the handler for cleanup
+    (window as any)._editorWheelHandler = handleWheel;
   }
+  
+  // Prevent body scrolling when editor is mounted
+  document.body.style.overflow = 'hidden';
 });
 
 // Cleanup
@@ -885,11 +976,22 @@ onBeforeUnmount(() => {
   if (monacoEditor.value) {
     monacoEditor.value.dispose();
   }
-  const editorContent = document.querySelector(".editor-content");
-  if (editorContent) {
-    editorContent.removeEventListener("scroll", () => {});
+  
+  // Remove the document-level wheel event listener
+  const handleWheel = (window as any)._editorWheelHandler;
+  if (handleWheel) {
+    document.removeEventListener('wheel', handleWheel);
+    delete (window as any)._editorWheelHandler;
   }
+  
+  // Restore body scrolling when editor is unmounted
+  document.body.style.overflow = '';
 });
+
+// Update the handleExit method
+const handleExit = () => {
+  emit('exit');
+};
 </script>
 
 <template>
@@ -898,10 +1000,10 @@ onBeforeUnmount(() => {
       <div class="editor-main">
         <div class="editor-toolbar">
           <div class="toolbar-left">
-            <span class="file-path">{{ props.filePath }}</span>
+            <!-- Removed filepath and content source indicators -->
           </div>
 
-          <div class="toolbar-right">
+          <div class="toolbar-right" style="display: none;">
             <!-- Editor View -->
             <template v-if="!previewMode && !rawMode">
               <button class="toolbar-button" @click="rawMode = true">
@@ -934,6 +1036,12 @@ onBeforeUnmount(() => {
               >
                 Save
               </button>
+              <button
+                class="toolbar-button"
+                @click="handleExit"
+              >
+                Exit
+              </button>
             </template>
 
             <!-- Raw View -->
@@ -958,6 +1066,12 @@ onBeforeUnmount(() => {
               >
                 Save
               </button>
+              <button
+                class="toolbar-button"
+                @click="handleExit"
+              >
+                Exit
+              </button>
             </template>
 
             <!-- Preview View -->
@@ -979,159 +1093,180 @@ onBeforeUnmount(() => {
               >
                 Save
               </button>
+              <button
+                class="toolbar-button"
+                @click="handleExit"
+              >
+                Exit
+              </button>
             </template>
           </div>
         </div>
 
-        <div class="editor-content">
-          <!-- Editor View -->
-          <template v-if="!previewMode && !rawMode">
-            <div class="tiptap-toolbar" v-if="editor">
-              <button
-                @click="editor.chain().focus().toggleBold().run()"
-                :class="{ 'is-active': editor.isActive('bold') }"
-              >
-                Bold
-              </button>
-              <button
-                @click="editor.chain().focus().toggleItalic().run()"
-                :class="{ 'is-active': editor.isActive('italic') }"
-              >
-                Italic
-              </button>
-              <button
-                @click="
-                  editor.chain().focus().toggleHeading({ level: 1 }).run()
-                "
-                :class="{
-                  'is-active': editor.isActive('heading', { level: 1 }),
-                }"
-              >
-                H1
-              </button>
-              <button
-                @click="
-                  editor.chain().focus().toggleHeading({ level: 2 }).run()
-                "
-                :class="{
-                  'is-active': editor.isActive('heading', { level: 2 }),
-                }"
-              >
-                H2
-              </button>
-              <button
-                @click="editor.chain().focus().toggleBulletList().run()"
-                :class="{ 'is-active': editor.isActive('bulletList') }"
-              >
-                List
-              </button>
-              <select
-                class="font-size-select"
-                @change="
-                  (e) =>
-                    editor.chain().focus().setFontSize(e.target.value).run()
-                "
-              >
-                <option value="">Font Size</option>
-                <option
-                  v-for="option in fontSizeOptions"
-                  :key="option.value"
-                  :value="option.value"
-                  :selected="
-                    editor.isActive('textStyle', { fontSize: option.value })
-                  "
-                >
-                  {{ option.label }}
-                </option>
-              </select>
-              <div class="alignment-buttons">
-                <button
-                  @click="editor.chain().focus().setTextAlign('left').run()"
-                  :class="{
-                    'is-active': editor.isActive({ textAlign: 'left' }),
-                  }"
-                  title="Align left"
-                >
-                  <span class="align-icon">⟵</span>
-                </button>
-                <button
-                  @click="editor.chain().focus().setTextAlign('center').run()"
-                  :class="{
-                    'is-active': editor.isActive({ textAlign: 'center' }),
-                  }"
-                  title="Align center"
-                >
-                  <span class="align-icon">↔</span>
-                </button>
-                <button
-                  @click="editor.chain().focus().setTextAlign('right').run()"
-                  :class="{
-                    'is-active': editor.isActive({ textAlign: 'right' }),
-                  }"
-                  title="Align right"
-                >
-                  <span class="align-icon">⟶</span>
-                </button>
-                <button
-                  @click="editor.chain().focus().setTextAlign('justify').run()"
-                  :class="{
-                    'is-active': editor.isActive({ textAlign: 'justify' }),
-                  }"
-                  title="Justify"
-                >
-                  <span class="align-icon">☰</span>
-                </button>
-              </div>
-              <div class="divider"></div>
-              <button
-                @click="setLink"
-                :class="{ 'is-active': editor.isActive('link') }"
-                title="Add/edit link"
-              >
-                🔗
-              </button>
-              <button
-                v-if="editor.isActive('link')"
-                @click="removeLink"
-                title="Remove link"
-              >
-                ✖️
-              </button>
-              <div class="divider"></div>
-              <button
-                @click="showImageDialog = true"
-                class="toolbar-button"
-                title="Insert image"
-              >
-                <span class="button-icon">🖼️</span>
-              </button>
-              <AddContentDialog
-                :onInsertComponent="handleInsertComponent"
-                :onInsertSection="handleInsertSection"
+        <!-- Editor View Toolbar - Fixed at top -->
+        <div class="tiptap-toolbar" v-if="editor && !previewMode && !rawMode">
+          <button
+            class="menubar-button"
+            @click="editor.chain().focus().toggleBold().run()"
+            :class="{ 'is-active': editor.isActive('bold') }"
+          >
+            Bold
+          </button>
+          <button
+            class="menubar-button"
+            @click="editor.chain().focus().toggleItalic().run()"
+            :class="{ 'is-active': editor.isActive('italic') }"
+          >
+            Italic
+          </button>
+          <button
+            class="menubar-button"
+            @click="
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+            "
+            :class="{
+              'is-active': editor.isActive('heading', { level: 1 }),
+            }"
+          >
+            H1
+          </button>
+          <button
+            class="menubar-button"
+            @click="
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            "
+            :class="{
+              'is-active': editor.isActive('heading', { level: 2 }),
+            }"
+          >
+            H2
+          </button>
+          <button
+            class="menubar-button"
+            @click="editor.chain().focus().toggleBulletList().run()"
+            :class="{ 'is-active': editor.isActive('bulletList') }"
+          >
+            List
+          </button>
+          <select
+            class="font-size-select"
+            @change="
+              (e) =>
+                editor.chain().focus().setFontSize(e.target.value).run()
+            "
+          >
+            <option value="">Font Size</option>
+            <option
+              v-for="option in fontSizeOptions"
+              :key="option.value"
+              :value="option.value"
+              :selected="
+                editor.isActive('textStyle', { fontSize: option.value })
+              "
+            >
+              {{ option.label }}
+            </option>
+          </select>
+          <div class="alignment-buttons">
+            <button
+              class="menubar-button"
+              @click="editor.chain().focus().setTextAlign('left').run()"
+              :class="{
+                'is-active': editor.isActive({ textAlign: 'left' }),
+              }"
+              title="Align left"
+            >
+              <span class="align-icon">⟵</span>
+            </button>
+            <button
+              class="menubar-button"
+              @click="editor.chain().focus().setTextAlign('center').run()"
+              :class="{
+                'is-active': editor.isActive({ textAlign: 'center' }),
+              }"
+              title="Align center"
+            >
+              <span class="align-icon">↔</span>
+            </button>
+            <button
+              class="menubar-button"
+              @click="editor.chain().focus().setTextAlign('right').run()"
+              :class="{
+                'is-active': editor.isActive({ textAlign: 'right' }),
+              }"
+              title="Align right"
+            >
+              <span class="align-icon">⟶</span>
+            </button>
+            <button
+              class="menubar-button"
+              @click="editor.chain().focus().setTextAlign('justify').run()"
+              :class="{
+                'is-active': editor.isActive({ textAlign: 'justify' }),
+              }"
+              title="Justify"
+            >
+              <span class="align-icon">☰</span>
+            </button>
+          </div>
+          <div class="divider"></div>
+          <button
+            class="menubar-button"
+            @click="setLink"
+            :class="{ 'is-active': editor.isActive('link') }"
+            title="Add/edit link"
+          >
+            🔗
+          </button>
+          <button
+            class="menubar-button"
+            v-if="editor.isActive('link')"
+            @click="removeLink"
+            title="Remove link"
+          >
+            ✖️
+          </button>
+          <div class="divider"></div>
+          <button
+            class="menubar-button"
+            @click="showImageDialog = true"
+            title="Insert image"
+          >
+            <span class="button-icon">🖼️</span>
+          </button>
+          <AddContentDialog
+            :onInsertComponent="handleInsertComponent"
+            :onInsertSection="handleInsertSection"
+          />
+        </div>
+
+        <div class="editor-scroll-container">
+          <div class="editor-content">
+            <!-- Editor View -->
+            <template v-if="!previewMode && !rawMode">
+              <editor-content
+                v-if="editorInitialized"
+                :editor="editor"
+                class="content-wrapper"
+                :class="{ 'has-changes': hasChanges }"
+              />
+            </template>
+
+            <!-- Raw View -->
+            <div v-else-if="rawMode" class="raw-content-wrapper">
+              <MonacoEditor
+                v-model="localContent"
+                class="monaco-editor"
+                :options="editorOptions"
+                @change="handleRawContentChange"
+                @mount="(editor) => (monacoEditor = editor)"
               />
             </div>
-            <editor-content
-              v-if="editorInitialized"
-              :editor="editor"
-              class="content-wrapper"
-              :class="{ 'has-changes': hasChanges }"
-            />
-          </template>
 
-          <!-- Raw View -->
-          <div v-else-if="rawMode" class="raw-content-wrapper">
-            <MonacoEditor
-              v-model="localContent"
-              class="monaco-editor"
-              :options="editorOptions"
-              @change="handleRawContentChange"
-              @mount="(editor) => (monacoEditor = editor)"
-            />
-          </div>
-
-          <!-- Preview View -->
-          <div v-else class="preview-wrapper">
-            <div class="content-wrapper" v-html="previewContent"></div>
+            <!-- Preview View -->
+            <div v-else class="preview-wrapper">
+              <div class="content-wrapper" v-html="previewContent"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1191,6 +1326,9 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
+
+    <!-- Add the FloatingWidget component -->
+    <FloatingWidget v-if="editor"/>
   </div>
 </template>
 
@@ -1217,10 +1355,11 @@ onBeforeUnmount(() => {
 }
 
 .editor-wrapper {
-  height: calc(100vh - 64px);
+  height: 100vh;
   display: flex;
   flex-direction: row;
   background: white;
+  overflow: hidden;
 }
 
 .editor-layout {
@@ -1228,6 +1367,7 @@ onBeforeUnmount(() => {
   display: flex;
   overflow: hidden;
   width: 100%;
+  background: white;
 }
 
 .editor-main {
@@ -1236,6 +1376,16 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-width: 0;
   background: white;
+  overflow: hidden;
+}
+
+.editor-scroll-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: 100%;
+  min-height: 0;
 }
 
 .editor-content {
@@ -1244,7 +1394,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   background: white;
-  overflow: auto;
+  overflow: visible;
+  min-height: 0;
 }
 
 /* Editor toolbar styles */
@@ -1255,36 +1406,43 @@ onBeforeUnmount(() => {
   align-items: center;
   padding: 0.5rem 1rem;
   background: white;
-  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .tiptap-toolbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 10;
-  padding: 0.5rem;
+  padding: 0.5rem 1rem;
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 4px;
   flex-wrap: wrap;
   background: white;
   border-bottom: 1px solid #e5e7eb;
+  overflow-x: auto;
+  width: 100%;
+  min-height: 48px;
+  flex-shrink: 0;
+  overflow-x: auto;
 }
 
 .tiptap-toolbar button,
 .toolbar-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  padding: 0 0.75rem;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border-radius: 4px;
   background: white;
   color: #374151;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  font-size: 14px;
+  margin: 0 1px;
 }
 
 .toolbar-right {
@@ -1331,14 +1489,16 @@ onBeforeUnmount(() => {
 }
 
 .font-size-select {
-  padding: 0.5rem;
+  padding: 4px 6px;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border-radius: 4px;
   background: white;
   color: #374151;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 14px;
   transition: all 0.2s;
+  height: 32px;
+  min-width: 100px;
 }
 
 .font-size-select:hover {
@@ -1354,26 +1514,28 @@ onBeforeUnmount(() => {
 
 /* Make sure dropdown aligns with other toolbar items */
 .tiptap-toolbar select {
-  height: 36px; /* Match button height */
-  margin: 0;
+  height: 32px; /* Match button height */
+  margin: 0 1px;
+  padding: 0 6px;
 }
 
 .alignment-buttons {
   display: flex;
-  gap: 0.5rem;
-  padding: 0 0.5rem;
+  gap: 4px;
+  padding: 0 4px;
   border-left: 1px solid #e5e7eb;
   border-right: 1px solid #e5e7eb;
-  margin: 0 0.5rem;
+  margin: 0 4px;
 }
 
 .alignment-buttons button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
+  margin: 0;
 }
 
 .align-icon {
@@ -1466,25 +1628,49 @@ onBeforeUnmount(() => {
   font-size: 0.875rem;
 }
 
+.content-source {
+  margin-left: 1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.content-source.draft {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.content-source.committed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.content-source.new {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
 .raw-content-wrapper {
   flex: 1;
   display: flex;
   background: #1e1e1e;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .monaco-editor {
   width: 100%;
   height: 100%;
-  min-height: calc(100vh - 120px); /* Ensure editor has enough height */
+  min-height: 100%;
 }
 
 .preview-wrapper {
   flex: 1;
-  overflow: auto;
+  overflow: visible;
   background: white;
+  width: 100%;
 }
 
 .preview-content {
@@ -1519,6 +1705,9 @@ onBeforeUnmount(() => {
   -webkit-font-variant-ligatures: none;
   font-variant-ligatures: none;
   padding: 1rem;
+  /* Allow content to expand but not force container to expand */
+  min-height: auto;
+  flex: 1;
 }
 
 .ProseMirror img {
@@ -1554,18 +1743,16 @@ onBeforeUnmount(() => {
     rgba(0, 0, 0, 0) 100%
   );
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.editor-content:not([data-scroll-top="0"]) .tiptap-toolbar::after {
   opacity: 1;
+  transition: opacity 0.2s;
 }
 
 .content-wrapper {
   padding: 1rem;
-  min-height: 100%;
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  min-height: 200px;
 }
 
 /* Commit Dialog Styles */
@@ -1649,6 +1836,67 @@ onBeforeUnmount(() => {
   .toolbar-button {
     font-size: 0.75rem;
     padding: 0.375rem 0.75rem;
+  }
+
+  .commit-dialog-content {
+    width: 95%;
+    padding: 1rem;
+  }
+}
+
+/* Add menubar-button styling for button consistency */
+.menubar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-size: 14px;
+  margin: 0 1px;
+}
+
+.menubar-button:hover {
+  background: #f9fafb;
+}
+
+.menubar-button.is-active {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .tiptap-toolbar {
+    padding: 4px 8px;
+    overflow-x: auto;
+  }
+
+  .menubar-button,
+  .tiptap-toolbar button,
+  .toolbar-button {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 4px;
+    font-size: 12px;
+  }
+  
+  .font-size-select {
+    height: 28px;
+    min-width: 80px;
+    font-size: 12px;
+  }
+  
+  .toolbar-button {
+    font-size: 12px;
+    padding: 4px 8px;
   }
 
   .commit-dialog-content {

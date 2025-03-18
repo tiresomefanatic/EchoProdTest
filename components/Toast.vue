@@ -14,6 +14,7 @@
           </div>
           <div class="toast-message">
             {{ toast.message }}
+            <div v-if="toast.type === 'loading'" class="loading-spinner"></div>
           </div>
           <button
             class="toast-close"
@@ -111,6 +112,28 @@ const { toasts, removeToast } = useToast();
 .toast.info {
   background: #3b82f6;
   color: white;
+}
+
+.toast.loading {
+  background: #6B7280;
+  color: white;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid white;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin-left: 10px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Animations */

@@ -1,136 +1,179 @@
-# [...slug].vue
 <template>
-  <div class="page-wrapper">
+  <div class="page-wrapper" :class="{ 'editor-mode': isEditing }">
     <ClientOnly>
-      <div>
-        <Header />
-        <div class="content-area" :class="{ 'editing-mode': isEditing }">
-          <!-- Mobile menu wrapper -->
-          <div class="mobile-menu-wrapper md:hidden">
-            <DesignSidebar />
-          </div>
+      <!-- Show ActionBar only for logged in users with branch info -->
+      <ActionBar 
+        v-if="isLoggedIn" 
+        :contentPath="contentPath"
+        :isEditing="isEditing"
+      />
 
-          <!-- Desktop sidebar shown only in non-editing mode -->
-          <aside
-            v-if="!isEditing && showSidebar"
-            class="sidebar hidden md:block fixed left-0 bottom-0 w-64"
+      <Header v-if="!isEditing" class="menu-bar" />
+      
+      <!-- Exit button when editing - shown in different position -->
+      <div v-if="isLoggedIn && isEditing" class="branch-header">
+        <!-- Branch info removed from here -->
+        
+        <!-- New editor mode controls -->
+        <div class="editor-mode-controls">
+          <button 
+            class="mode-button" 
+            :class="{ 'active': isRawMode }"
+            @click="handleEditorModeChange(isRawMode ? 'normal' : 'raw')"
           >
-            <DesignSidebar />
-          </aside>
-
-          <div class="main-content flex-1">
-            <!-- Content header with edit controls - only show when logged in -->
-            <div
-              v-if="isLoggedIn"
-              class="content-header fixed top-[76px] right-6 z-10 flex items-center gap-3"
+            Raw
+          </button>
+          <!-- <button 
+            class="mode-button" 
+            :class="{ 'active': isPreviewMode }"
+            @click="handleEditorModeChange(isPreviewMode ? 'normal' : 'preview')"
+          >
+            <span class="eye-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
+              </svg>
+            </span>
+          </button> -->
+          <!-- Content status indicator moved here -->
+          <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
+            {{ getContentSource }}
+          </span>
+          
+          <!-- Device preview buttons -->
+          <div class="device-preview-controls">
+            <button 
+              class="device-button" 
+              :class="{ active: previewDevice === 'desktop' }"
+              @click="setPreviewDevice('desktop')"
+              title="Desktop view"
             >
-              <ClientOnly>
-                <div v-if="branches.length > 0" class="branch-select-wrapper">
-                  <select
-                    v-model="currentBranch"
-                    @change="handleBranchChange"
-                    class="branch-select px-3 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option
-                      v-for="branch in branches"
-                      :key="branch"
-                      :value="branch"
-                    >
-                      {{ branch }}
-                    </option>
-                  </select>
-                </div>
-                <button
-                  v-if="!isEditing"
-                  @click="handleEditClick"
-                  class="edit-button px-4 py-2 bg-[#0969DA] text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Edit
-                </button>
-                <button
-                  v-else
-                  @click="exitEditor"
-                  class="edit-button px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                >
-                  Exit
-                </button>
-                <ContentCreator
-                  v-if="isLoggedIn"
-                  @content-created="handleContentCreated"
-                />
-              </ClientOnly>
-            </div>
-
-            <!-- Main content area -->
-            <ClientOnly>
-              <div v-if="isEditing" class="editor-container mt-4">
-                <TiptapEditor
-                  :content="editorContent"
-                  :filePath="contentPath"
-                  @update:content="handleContentChange"
-                  @save="handleSave"
-                  @error="handleEditorError"
-                />
-                <CollaborationSidebar
-                  v-if="isLoggedIn"
-                  :filePath="contentPath"
-                  class="collaboration-sidebar"
-                  @load-save="handleLoadSave"
-                />
-              </div>
-              <div v-else class="prose-content max-w-[960px] mx-auto px-6 py-8">
-                <div :key="githubContent">
-                  <template v-if="!isLoggedIn">
-                    <ContentDoc :path="path" :head="false">
-                      <template #empty>
-                        <p>No content found.</p>
-                      </template>
-                      <template #not-found>
-                        <p>Content not found. Path: {{ path }}</p>
-                      </template>
-                    </ContentDoc>
-                  </template>
-                  <template v-else>
-                    <div v-html="githubContent" class="markdown-content"></div>
-                  </template>
-                </div>
-              </div>
-            </ClientOnly>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </button>
+            <button 
+              class="device-button" 
+              :class="{ active: previewDevice === 'tablet' }"
+              @click="setPreviewDevice('tablet')"
+              title="Tablet view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12" y2="18.01"></line>
+              </svg>
+            </button>
+            <button 
+              class="device-button" 
+              :class="{ active: previewDevice === 'mobile' }"
+              @click="setPreviewDevice('mobile')"
+              title="Mobile view"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="7" y="4" width="10" height="16" rx="1" ry="1"></rect>
+                <line x1="12" y1="17" x2="12" y2="17.01"></line>
+              </svg>
+            </button>
           </div>
         </div>
+        
+        <div class="header-actions">
+          <button @click="exitEditor" class="exit-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 14H12.6667C13.0203 14 13.3594 13.8595 13.6095 13.6095C13.8595 13.3594 14 13.0203 14 12.6667V3.33333C14 2.97971 13.8595 2.64057 13.6095 2.39052C13.3594 2.14048 13.0203 2 12.6667 2H10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5.33203 11.3334L1.9987 8.00008L5.33203 4.66675" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 8H10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Exit
+          </button>
+          <button @click="handleShowCommitModal" class="save-button">
+            Save changes
+          </button>
+        </div>
+      </div>
+      
+      <div class="main-container">
+        <div class="content">
+          <DesignSidebar v-if="!isEditing" class="sidebar" />
+          <div class="text-container">
+            <div class="body-container">
+              <ClientOnly>
+                <!-- Move contribution banner here -->
+                <div v-if="isLoggedIn && !isEditing && currentBranch !== 'main'" class="contribution-banner">
+                  <div class="banner-content">
+                    <p class="banner-text">Would you like to contribute to this document?</p>
+                    <button @click="handleEditClick" class="banner-button">
+                      Edit this document
+                    </button>
+                  </div>
+                </div>
+                
+                <div v-if="isEditing" class="editor-container">
+                  <div class="editor-content-wrapper" :style="editorContentStyle">
+                    <TiptapEditor
+                      :content="editorContent"
+                      :filePath="contentPath"
+                      :externalRawMode="isRawMode"
+                      :externalPreviewMode="isPreviewMode"
+                      @update:content="handleContentChange"
+                      @save="handleShowCommitModal"
+                      @error="handleEditorError"
+                      @exit="exitEditor"
+                      ref="tiptapEditorRef"
+                    />
+                  </div>
+                  <CollaborationSidebar
+                    v-if="isLoggedIn"
+                    :filePath="contentPath"
+                    @load-save="handleLoadSave"
+                  />
+                </div>
+                <div v-else class="prose-content">
+                  <div :key="githubContent">
+                    <template v-if="!isLoggedIn">
+                      <ContentDoc :path="path" :head="false">
+                        <template #empty>
+                          <p>No content found.</p>
+                        </template>
+                        <template #not-found>
+                          <p>Content not found. Path: {{ path }}</p>
+                        </template>
+                      </ContentDoc>
+                    </template>
+                    <template v-else>
+                      <div v-html="githubContent" class="markdown-content"></div>
+                    </template>
+                  </div>
+                </div>
+              </ClientOnly>
+            </div>
+          </div>
+          <TableOfContents v-if="!isEditing" class="table-of-contents" />
+        </div>
+        <!-- Only render Footer when NOT in editing mode -->
+        <Footer v-if="!isEditing" class="full-width-footer" />
       </div>
     </ClientOnly>
 
-    <!-- Footer section -->
-    <div
-      class="page-footer"
-      style="
-        background: #1d1b1b;
-        padding: 32px;
-        max-height: 80px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      "
-    >
-      <h1
-        style="
-          color: white;
-          font-size: 14px;
-          font-style: normal;
-          font-weight: 400;
-          line-height: 142%;
-        "
-      >
-        ©2024 ECHO
-      </h1>
-    </div>
+    <!-- Add the CommitModal component -->
+    <CommitModal 
+      :is-open="isCommitModalOpen" 
+      :file-path="contentPath"
+      :content="editorContent"
+      @close="handleCloseCommitModal"
+      @commit="handleCommit"
+    />
+
+    <FloatingWidget />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRoute } from "vue-router";
+import { navigateTo } from "#app";
 import { queryContent } from "#imports";
 import { useGithub } from "~/composables/useGithub";
 import { useToast } from "~/composables/useToast";
@@ -141,8 +184,17 @@ import CollaborationSidebar from "~/components/CollaborationSidebar.vue";
 import ContentCreator from "~/components/ContentCreator.vue";
 import DesignSidebar from "~/components/DesignSidebar.vue";
 import Header from "~/components/Header.vue";
+import ActionBar from "~/components/ActionBar.vue";
 import { useRuntimeConfig, useNuxtApp } from "#app";
 import { marked } from "marked";
+import TableOfContents from "~/components/TableOfContents.vue";
+import { useNavigationStore } from "~/store/navigation";
+import { useEditorStore } from "~/store/editor";
+import { useStore } from "~/store";
+import Footer from "~/components/Footer.vue";
+import { useEventBus } from '@vueuse/core';
+import CommitModal from "~/components/CommitModal.vue";
+import FloatingWidget from "~/components/FloatingWidget.vue";
 
 // Initialize GitHub functionality and services
 const {
@@ -152,6 +204,8 @@ const {
   currentBranch,
   fetchBranches,
   branches,
+  switchBranch,
+  clearContentPolling,
 } = useGithub();
 
 const { refreshNavigation } = useNavigation();
@@ -160,18 +214,75 @@ const { showToast } = useToast();
 // State management
 const loading = ref(false);
 const isEditing = ref(false);
+const isRawMode = ref(false);
+const isPreviewMode = ref(false);
 const githubContent = ref("");
 const editorContent = ref("");
 const contentKey = ref(0);
 const contentLastModified = ref<string | null>(null);
+const isCommitModalOpen = ref(false);
+const previewDevice = ref('desktop');
+
+// Computed properties for content source indicator
+const getContentSource = computed(() => {
+  if (!contentPath.value) return 'New File';
+  if (editorStore.hasDraft(contentPath.value)) return 'You are now viewing a draft from local save';
+  return 'You are now viewing content from GitHub';
+});
+
+const getContentSourceClass = computed(() => {
+  return getContentSource.value.toLowerCase();
+});
 
 // Route handling setup
 const route = useRoute();
 const slug = route.params.slug || [];
 const path = Array.isArray(slug) ? slug.join("/") : slug;
 
+// Add editor store import and initialization
+const editorStore = useEditorStore();
+
+// Add store initialization
+const store = useStore();
+
+// Initialize sidebar state
+const isSidebarOpen = ref(false);
+
+// Listen for sidebar toggle events
+const sidebarBus = useEventBus('sidebar-toggle');
+sidebarBus.on((value) => {
+  console.log('Received sidebar toggle in page:', value);
+  if (typeof value === 'boolean') {
+    isSidebarOpen.value = value;
+  } else {
+    isSidebarOpen.value = !isSidebarOpen.value;
+  }
+});
+
+// Add function to close sidebar
+const closeSidebar = () => {
+  isSidebarOpen.value = false;
+  sidebarBus.emit(false);
+};
+
+// Redirect to index page if we're at the root
+onMounted(() => {
+  if (!path) {
+    navigateTo("/");
+  }
+  console.log('isEditing value:', isEditing.value);
+});
+
 // Compute whether to show sidebar based on path
-const showSidebar = computed(() => path !== "");
+const showSidebar = computed(() => true);
+
+// Add hasChanges computed property
+const hasChanges = computed(() => {
+  if (!contentPath.value) return false;
+  const currentContent = editorContent.value;
+  const originalContent = githubContent.value;
+  return currentContent !== originalContent;
+});
 
 // Compute the content file path
 const contentPath = computed(() => {
@@ -186,6 +297,93 @@ const contentPath = computed(() => {
   return `content/${path}.md`;
 });
 
+// Add content cache interface
+interface ContentCache {
+  content: string;
+  timestamp: number;
+  branch: string;
+}
+
+// Add content cache management
+const getContentFromCache = (path: string, branch: string): ContentCache | null => {
+  try {
+    const cached = localStorage.getItem(`content-cache-${branch}-${path}`);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {
+    console.warn('Failed to read from content cache:', e);
+  }
+  return null;
+};
+
+const setContentToCache = (path: string, branch: string, content: string) => {
+  try {
+    const cacheData: ContentCache = {
+      content,
+      timestamp: Date.now(),
+      branch
+    };
+    localStorage.setItem(`content-cache-${branch}-${path}`, JSON.stringify(cacheData));
+  } catch (e) {
+    console.warn('Failed to write to content cache:', e);
+  }
+};
+
+const clearContentCache = (path: string, branch: string) => {
+  try {
+    localStorage.removeItem(`content-cache-${branch}-${path}`);
+  } catch (e) {
+    console.warn('Failed to clear content cache:', e);
+  }
+};
+
+// Add draft cache interface
+interface DraftCache {
+  content: string;
+  timestamp: number;
+  branch: string;
+  isDraft: boolean;
+}
+
+// Update cache management for drafts
+const getDraftFromCache = (path: string, branch: string): DraftCache | null => {
+  try {
+    const cached = localStorage.getItem(`draft-cache-${branch}-${path}`);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {
+    console.warn('Failed to read from draft cache:', e);
+  }
+  return null;
+};
+
+const setDraftToCache = (path: string, branch: string, content: string) => {
+  try {
+    const cacheData: DraftCache = {
+      content,
+      timestamp: Date.now(),
+      branch,
+      isDraft: true
+    };
+    localStorage.setItem(`draft-cache-${branch}-${path}`, JSON.stringify(cacheData));
+  } catch (e) {
+    console.warn('Failed to write to draft cache:', e);
+  }
+};
+
+const clearDraftCache = (path: string, branch: string) => {
+  try {
+    localStorage.removeItem(`draft-cache-${branch}-${path}`);
+  } catch (e) {
+    console.warn('Failed to clear draft cache:', e);
+  }
+};
+
+// Reference to the TiptapEditor component
+const tiptapEditorRef = ref(null);
+
 /**
  * Load GitHub content
  */
@@ -194,38 +392,63 @@ const loadGithubContent = async () => {
 
   try {
     let contentPathToLoad = contentPath.value;
-
-    // First, try to load the content as a folder (with index.md)
-    try {
-      const folderContent = await getRawContent(
-        "tiresomefanatic",
-        "EchoProdTest",
-        contentPathToLoad,
-        currentBranch.value
-      );
-      githubContent.value = marked(folderContent);
-      editorContent.value = folderContent;
-      contentKey.value++; // Force re-render
-      return;
-    } catch (folderError) {
-      console.log(
-        "No index.md found in folder, treating as a file:",
-        folderError
-      );
+    
+    // Check for cached git content first (regardless of edit mode)
+    // This ensures we always show the latest committed content
+    const cachedGitContent = editorStore.getGitContent(contentPathToLoad, currentBranch.value);
+    
+    if (isEditing.value) {
+      // In editing mode, prioritize drafts over committed content
+      const draftContent = editorStore.getDraft(contentPathToLoad);
+      if (draftContent) {
+        console.log("Using draft content");
+        editorContent.value = draftContent.content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(draftContent.content);
+        store.updateRawText(draftContent.content);
+        contentKey.value++;
+        return;
+      }
+      
+      // No draft found, check for cached git content to bypass GitHub CDN cache
+      if (cachedGitContent) {
+        console.log("Using cached git content from local store (edit mode)");
+        editorContent.value = cachedGitContent.content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(cachedGitContent.content);
+        store.updateRawText(cachedGitContent.content);
+        contentKey.value++;
+        return;
+      }
+    } else {
+      // In view mode, check for cached git content to bypass GitHub CDN cache
+      if (cachedGitContent) {
+        console.log("Using cached git content from local store (view mode)");
+        editorContent.value = cachedGitContent.content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(cachedGitContent.content);
+        store.updateRawText(cachedGitContent.content);
+        contentKey.value++;
+        return;
+      }
     }
-
-    // If the folder approach fails, treat it as a file
-    const fileContent = await getRawContent(
+    
+    // If no draft or cached git content, load from GitHub
+    console.log("Fetching content from GitHub API");
+    const content = await getRawContent(
       "tiresomefanatic",
       "EchoProdTest",
       contentPathToLoad,
       currentBranch.value
     );
-
-    // Convert markdown to HTML
-    githubContent.value = marked(fileContent);
-    editorContent.value = fileContent;
-    contentKey.value++; // Force re-render
+    
+    // Update content
+    editorContent.value = content;
+    // @ts-ignore - Ignoring type error from marked function
+    githubContent.value = marked(content);
+    store.updateRawText(content);
+    contentKey.value++;
+    
   } catch (error) {
     console.error("Error loading GitHub content:", error);
     showToast({
@@ -269,14 +492,39 @@ const handleEditClick = async () => {
   await loadGithubContent();
 };
 
+// Make the TiptapEditor component aware of the editor mode controls
 const handleContentChange = (newContent: string) => {
   editorContent.value = newContent;
+  store.updateRawText(newContent);
 };
 
 /**
- * Handles saving content to GitHub.
+ * Shows the commit modal
  */
-const handleSave = async (content: string) => {
+const handleShowCommitModal = () => {
+  if (!editorContent.value || !isLoggedIn.value) {
+    showToast({
+      title: "Error",
+      message: "Please sign in to save changes",
+      type: "error",
+    });
+    return;
+  }
+  
+  isCommitModalOpen.value = true;
+};
+
+/**
+ * Closes the commit modal
+ */
+const handleCloseCommitModal = () => {
+  isCommitModalOpen.value = false;
+};
+
+/**
+ * Handles saving content locally as a draft.
+ */
+const handleSave = (content: string) => {
   if (!content || !isLoggedIn.value) {
     showToast({
       title: "Error",
@@ -287,40 +535,26 @@ const handleSave = async (content: string) => {
   }
 
   try {
-    const result = await saveFileContent(
-      "tiresomefanatic",
-      "EchoProdTest",
-      contentPath.value,
-      content,
-      `Update ${contentPath.value}`,
-      currentBranch.value
-    );
+    // Save as draft
+    editorStore.saveDraft(contentPath.value, content);
+    
+    // Update local content and store
+    editorContent.value = content;
+    store.updateRawText(content);
+    // @ts-ignore - Ignoring type error from marked function
+    githubContent.value = marked(content);
+    
+    showToast({
+      title: "Success",
+      message: "Content saved as draft",
+      type: "success",
+    });
 
-    if (result) {
-      // Update local content immediately
-      githubContent.value = marked(content);
-      editorContent.value = content;
-      contentKey.value++; // Force re-render
-
-      // Refresh navigation to reflect changes
-      await refreshNavigation();
-
-      showToast({
-        title: "Success",
-        message: `Content saved successfully to branch: ${currentBranch.value}`,
-        type: "success",
-      });
-
-      isEditing.value = false;
-      await loadGithubContent(); // Refresh content from GitHub
-    } else {
-      throw new Error(`Failed to save to branch: ${currentBranch.value}`);
-    }
   } catch (error) {
-    console.error(`Error saving content:`, error);
+    console.error("Error saving content:", error);
     showToast({
       title: "Error",
-      message: `Failed to save to branch: ${currentBranch.value}`,
+      message: "Failed to save content",
       type: "error",
     });
   }
@@ -335,24 +569,123 @@ const handleEditorError = (error: Error) => {
 };
 
 const exitEditor = async () => {
-  await loadGithubContent();
-  isEditing.value = false;
+  if (isEditing.value) {
+    if (editorContent.value !== githubContent.value) {
+      const confirmExit = confirm('You have unsaved changes, save to drafts and you can access them later.\n\nYes - Save to drafts and exit\nNo - Exit without saving');
+      if (confirmExit) {
+        // Save to drafts before exiting
+        if (contentPath.value) {
+          editorStore.saveDraft(contentPath.value, editorContent.value);
+        }
+      } else {
+        // Clear draft if user chooses not to save
+        if (contentPath.value) {
+          editorStore.clearDraft(contentPath.value);
+          await loadGithubContent(); // Load the committed content
+        }
+      }
+    }
+    isEditing.value = false;
+  }
 };
 
-const handleLoadSave = (content: string) => {
-  editorContent.value = content;
-  githubContent.value = marked(content);
-  contentKey.value++; // Force re-render
-  isEditing.value = true; // Switch to edit mode to show the loaded content
+// Add watch for draft changes
+watch(
+  () => editorStore.getDraft(contentPath.value),
+  async (newDraft) => {
+    if (!newDraft && isEditing.value) {
+      // If draft was cleared and we're in editing mode, load the committed content
+      try {
+        const content = await getRawContent(
+          "tiresomefanatic",
+          "EchoProdTest",
+          contentPath.value,
+          currentBranch.value
+        );
+        editorContent.value = content;
+        // @ts-ignore - Ignoring type error from marked function
+        githubContent.value = marked(content);
+        store.updateRawText(content);
+        contentKey.value++;
+      } catch (error) {
+        console.error("Error loading committed content:", error);
+        showToast({
+          title: "Error",
+          message: "Failed to load committed content",
+          type: "error",
+        });
+      }
+    }
+  }
+);
+
+const handleLoadSave = async (content: string) => {
+  if (!content) {
+    showToast({
+      title: "Error",
+      message: "No content to load",
+      type: "error",
+    });
+    return;
+  }
+
+  try {
+    // Update editor content
+    editorContent.value = content;
+    // @ts-ignore - Ignoring type error from marked function
+    githubContent.value = marked(content);
+    
+    // Update store's raw text to ensure TiptapEditor gets the content
+    store.updateRawText(content);
+    
+    // Save as draft
+    editorStore.saveDraft(contentPath.value, content);
+    
+    // Force re-render
+    contentKey.value++;
+    
+    // Ensure we're in editing mode
+    isEditing.value = true;
+
+    showToast({
+      title: "Success",
+      message: "Successfully loaded draft content",
+      type: "success",
+    });
+  } catch (error) {
+    console.error("Error loading content:", error);
+    showToast({
+      title: "Error",
+      message: "Failed to load content",
+      type: "error",
+    });
+  }
 };
 
-const handleBranchChange = async () => {
-  await loadGithubContent();
-  await refreshNavigation(); // Refresh navigation when branch changes
+const handleBranchChange = async (event: Event) => {
+  const select = event.target as HTMLSelectElement;
+  const newBranch = select.value;
+
+  if (newBranch !== currentBranch.value) {
+    // Clear draft when switching branches
+    editorStore.clearDraft(contentPath.value);
+    await switchBranch(newBranch);
+    await loadGithubContent();
+    await refreshNavigation();
+  }
 };
+
+// Add a watch for currentBranch to handle initial load
+watch(currentBranch, async (newBranch) => {
+  if (isLoggedIn.value && !isEditing.value) {
+    await loadGithubContent();
+    await refreshNavigation();
+  }
+}, { immediate: true });
 
 // Handle new content creation
 const handleContentCreated = async () => {
+  clearContentCache(contentPath.value, currentBranch.value);
   await refreshNavigation();
   showToast({
     title: "Success",
@@ -360,13 +693,6 @@ const handleContentCreated = async () => {
     type: "success",
   });
 };
-
-// Watch for editing mode changes
-watch(isEditing, async (newValue, oldValue) => {
-  if (newValue && !oldValue) {
-    await loadGithubContent();
-  }
-});
 
 // Watch for route changes
 watch(
@@ -391,11 +717,22 @@ watch(isLoggedIn, async (newValue) => {
   }
 });
 
+// Add watch for branches
+watch(branches, async (newBranches) => {
+  if (newBranches.length > 0) {
+    // Force re-render of branch selector
+    contentKey.value++;
+  }
+}, { deep: true });
+
 // Setup content refresh and event handlers
 onMounted(async () => {
-  if (isLoggedIn.value && !isEditing.value) {
-    await loadGithubContent();
-    await refreshNavigation(); // Initial navigation load
+  if (isLoggedIn.value) {
+    await fetchBranches();
+    if (!isEditing.value) {
+      await loadGithubContent();
+      await refreshNavigation();
+    }
   }
 
   if (process.client) {
@@ -406,35 +743,181 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (process.client) {
     document.removeEventListener("visibilitychange", handleVisibilityChange);
+    clearContentPolling(); // Clean up content polling
+  }
+});
+
+// Handle editor mode changes
+const handleEditorModeChange = (mode: 'normal' | 'raw' | 'preview') => {
+  if (mode === 'normal') {
+    isRawMode.value = false;
+    isPreviewMode.value = false;
+    // The TiptapEditor component will react to these properties internally
+  } else if (mode === 'raw') {
+    isRawMode.value = true;
+    isPreviewMode.value = false;
+  } else if (mode === 'preview') {
+    isRawMode.value = false;
+    isPreviewMode.value = true;
+  }
+};
+
+/**
+ * Handles committing changes to GitHub with a message
+ */
+const handleCommit = async (commitMessage: string) => {
+  if (!commitMessage || !isLoggedIn.value) {
+    showToast({
+      title: "Error",
+      message: "Please provide a commit message",
+      type: "error",
+    });
+    return;
+  }
+
+  try {
+    const contentToCommit = editorContent.value;
+    
+    // Commit to GitHub
+    const response = await saveFileContent(
+      "tiresomefanatic",
+      "EchoProdTest",
+      contentPath.value,
+      contentToCommit,
+      commitMessage,
+      currentBranch.value
+    );
+    
+    // Save to editor store's gitContent to bypass GitHub CDN cache
+    if (response && response.content) {
+      const fileSha = response.content.sha || '';
+      
+      editorStore.saveGitContent(
+        contentPath.value,
+        contentToCommit,
+        currentBranch.value,
+        fileSha
+      );
+      
+      // Update the display content
+      editorContent.value = contentToCommit;
+      // @ts-ignore - Ignoring type error from marked function
+      githubContent.value = marked(contentToCommit);
+      store.updateRawText(contentToCommit);
+    }
+    
+    // Clear draft after successful commit
+    editorStore.clearDraft(contentPath.value);
+    
+    showToast({
+      title: "Success",
+      message: "Changes committed successfully",
+      type: "success",
+    });
+    
+    // Exit editor mode
+    isEditing.value = false;
+    
+    // Refresh navigation
+    await refreshNavigation();
+    
+  } catch (error) {
+    console.error("Error committing content:", error);
+    showToast({
+      title: "Error",
+      message: "Failed to commit changes",
+      type: "error",
+    });
+    
+    // Save as draft if commit fails
+    editorStore.saveDraft(contentPath.value, editorContent.value);
+  }
+};
+
+// Update the editorContentStyle computed property to handle null previewDevice
+const editorContentStyle = computed(() => {
+  if (!isEditing.value) {
+    return { minWidth: '100%' };
+  }
+  
+  switch (previewDevice.value) {
+    case 'desktop':
+      return { 
+        minWidth: '804px', //base + 64 (16x4) to account for padding
+        maxWidth: '804px', //base + 64 (16x4) to account for padding
+        width: '804px',
+        border: 'none',
+        margin: '0',
+      };
+    case 'tablet':
+      return { 
+        minWidth: 'auto', 
+        maxWidth: '555px',
+        width: '100%',
+        margin: '0 auto',
+      };
+    case 'mobile':
+      return { 
+        minWidth: 'auto', 
+        maxWidth: '375px',
+        width: '100%',
+        margin: '0 auto',
+      };
+    default: // No device selected - default state
+      return { 
+        minWidth: 'auto',
+        maxWidth: '100%',
+        width: '100%',
+        border: 'none',
+        margin: '0 auto',
+      };
+  }
+});
+
+// Set the active preview device
+const setPreviewDevice = (device) => {
+  // Only allow changing device preview in edit mode
+  if (!isEditing.value) return;
+  
+  // Always set to the selected device, regardless of current state
+  previewDevice.value = device;
+};
+
+// Add a watcher to reset the preview when exiting edit mode
+watch(isEditing, (newValue) => {
+  if (!newValue) {
+    previewDevice.value = 'desktop'; // Reset to desktop instead of null
   }
 });
 </script>
 
+
 <style>
 /* Global prose styles - these are essential */
 .prose-content {
-  max-width: 100%;
-  width: 100%;
+  max-width: 100%; /* From Figma measurement */
   margin: 0;
+  padding: 0;
   color: #000000;
   font-size: 16px;
   line-height: 1.6;
 }
 
 .prose-content h1 {
-  font-size: 2em;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120%;
+  letter-spacing: -0.96px;
   margin: 1.2em 0 0.6em;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #000000;
 }
 
 .prose-content h2 {
-  font-size: 1.5em;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 530;
+  line-height: 120%;
   margin: 1em 0 0.5em;
-  font-weight: 600;
-  line-height: 1.3;
-  color: #000000;
 }
 
 .prose-content h3 {
@@ -446,8 +929,11 @@ onBeforeUnmount(() => {
 }
 
 .prose-content p {
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 140%;
   margin: 1em 0;
-  color: #000000;
 }
 
 .prose-content ul,
@@ -511,67 +997,431 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .page-wrapper {
-  min-height: 100vh;
-  position: relative;
+  display: flex;
   width: 100%;
-  overflow-x: hidden;
+  padding-bottom: 80px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-container {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  padding: 40px 0 60px; /* 40px spacing from header to content */
+  flex-direction: column;
+  align-items: center;
+  gap: 64px;
+}
+
+.editor-mode .main-container {
+  padding-top: 16px; /* Reduced top padding when in edit mode */
+}
+
+.content {
+  display: flex;
+  width: 100%;
+  padding: 0 266px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.sidebar {
+  flex-shrink: 0;
+  width: 195px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.text-container {
+  display: flex;
+  width: 740px;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: flex-start;
+  margin-left: 40px;
+}
+
+.body-container {
+  width: 100%;
+  max-width: 740px;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.table-of-contents {
+  flex-shrink: 0;
+  position: sticky;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  height: fit-content;
+  width: 160px;
+}
+
+/* Main styles - 1380px and above */
+@media screen and (min-width: 1380px) {
+  .content {
+    padding: 0 266px;
+  }
+}
+
+/* 1025px - 1379px */
+@media screen and (min-width: 1025px) and (max-width: 1379px) {
+  .content {
+    padding: 0 calc(100px + (199.5 - 100) * ((100vw - 1025px) / (1379 - 1025)));
+  }
+  
+  .text-container {
+    flex:0;
+    min-width:539px
+  }
+  
+  .sidebar {
+    width: 195px;
+  }
+}
+
+/* 768px - 1024px */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  .content {
+    padding: 0 calc(50px + (165.5 - 50) * ((100vw - 768px) / (1024 - 768)));
+    justify-content: space-between;
+  }
+  
+  .text-container {
+    max-width: 585px;
+    min-width: 491px;
+    margin-left: 0;
+    flex:0;
+  }
+  
+  /* Apply the same mobile sidebar styling as for smaller screens */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.is-mobile-open {
+    transform: translateX(0);
+  }
+  
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  
+  .mobile-overlay.is-visible {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .table-of-contents {
+    display: block;
+    margin-left: 24.5px;
+  }
+}
+
+/* Mobile - below 768px */
+@media screen and (max-width: 767px) {
+  .page-wrapper {
+    padding-bottom: 40px;
+    overflow-x: hidden; /* Hide horizontal overflow */
+  }
+
+  .main-container {
+    padding: 20px 0;
+    max-width: 100%;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+  }
+
+  .content {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 0 16px;
+    width: 100%;
+    justify-content: center;
+    overflow-x: hidden; /* Ensure no horizontal scroll */
+  }
+
+  .text-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin-left: 0;
+  }
+
+  .body-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+  }
+
+  .prose-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    overflow-wrap: break-word; /* Ensure long words don't overflow */
+    word-wrap: break-word;
+  }
+
+  /* Style for the sidebar in mobile view */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.is-mobile-open {
+    transform: translateX(0);
+  }
+  
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  
+  .mobile-overlay.is-visible {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .table-of-contents {
+    display: none;
+    margin-left: 0;
+  }
+  
+  /* Ensure images and pre blocks don't cause overflow */
+  .prose-content img,
+  .prose-content pre {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Typography styles */
+.prose-content {
+  font-family: "PP Neue Montreal", sans-serif;
+}
+
+/* to be updated as per system */
+
+.prose-content h1 {
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120%;
+  letter-spacing: -0.96px;
+  margin: 1.2em 0 0.6em;
+}
+
+.prose-content h2 {
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 530;
+  line-height: 120%;
+  margin: 1em 0 0.5em;
+}
+
+.prose-content h3 {
+  font-size: 36px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 32px 0 16px;
+}
+
+.prose-content p {
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 140%;
+  margin: 1em 0;
+}
+
+/* Editor styles */
+.editor-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: white;
+  min-height: calc(100vh - 64px);
+  padding: 0;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+/* Style the editor content wrapper to match text-container width exactly */
+.editor-content-wrapper {
+  width:100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  transition: all 0.3s ease !important;
+  max-width: 740px; /* Default max width */
+  box-sizing: border-box;
+}
+
+/* Create a completely separate styling section for editor view */
+.page-wrapper.editor-mode {
+  padding-bottom: 0;
+}
+
+.page-wrapper.editor-mode .content {
+  padding: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.page-wrapper.editor-mode .text-container {
+  width: 100%;
+  margin-left: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.page-wrapper.editor-mode .body-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Create specific overrides for the TiptapEditor component */
+:deep(.tiptap-editor) {
+  width: 100%;
+  max-width: 100%; /* Use 100% of parent container */
+  margin: 0 auto;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+:deep(.tiptap-editor .ProseMirror) {
+  padding: 20px 16px;
+  min-height: 300px;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1F2937;
+}
+
+/* Style the document status container separately */
+.document-status {
+  width: 740px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background-color: white;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+/* Specific styling for editor-mode to ensure CollaborationSidebar is positioned correctly */
+.page-wrapper.editor-mode .editor-container {
+  display: flex;
+  width: 100%;
+}
+
+/* Ensure the collaboration sidebar is properly positioned */
+.page-wrapper.editor-mode .editor-container .collaboration-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  height: calc(100vh - 64px);
+  border-left: 1px solid #E5E7EB;
+  overflow-y: auto;
+}
+
+/* Additional responsive styles for editor mode */
+@media screen and (max-width: 767px) {
+  .editor-content-wrapper {
+    width: 100%;
+    padding: 0 16px;
+  }
+  
+  :deep(.tiptap-editor) {
+    width: 100%;
+  }
 }
 
 .content-area {
   display: flex;
-  background: white;
-  min-height: calc(100vh - 64px);
-  position: relative;
   width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 40px;
+  flex: 1;
 }
 
 .content-area.editing-mode {
   padding: 0;
 }
 
-.sidebar {
-  width: 280px;
-  flex-shrink: 0;
-  background: white;
-  position: sticky;
-  top: 60px;
-  height: 100vh;
-  margin-left: 20px;
-}
-
-.main-content {
-  flex: 1;
-  min-width: 0; /* Prevent flex item from overflowing */
-  padding: 32px;
-  position: relative;
-}
-
-.main-content.with-sidebar {
-  width: calc(100% - 280px);
-}
-
 .content-header {
-  margin: 20px 26px;
-  padding: 4px 8px;
+  position: fixed;
+  top: 76px;
+  left: calc(266px + 195px); /* Left margin + sidebar width */
+  right: 266px;
+  z-index: 10;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
   background: white;
-  border-bottom: 1px solid #e5e7eb;
-  align-items: start;
+  padding: 16px 0;
 }
 
 .markdown-content {
   @apply prose prose-sm md:prose-base lg:prose-lg max-w-none;
-}
-
-.editor-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-height: calc(100vh - 200px);
-  margin: 0;
-  padding: 20px;
-  width: 100%;
 }
 
 .branch-select-wrapper {
@@ -634,27 +1484,477 @@ onBeforeUnmount(() => {
   @apply ml-0;
 }
 
-/* Mobile styles */
-@media (max-width: 768px) {
-  .main-content {
-    margin-left: 0;
-  }
-
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
-  }
-
-  .sidebar.active {
-    transform: translateX(0);
-  }
+.edit-document-button {
+  background-color: #4361EE;
+  color: white;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.page-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.edit-document-button:hover {
+  background-color: #3651d4;
+}
+
+.exit-button {
+  padding: 8px 12px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  background: #000 !important;
+  color: #FFF !important;
+  font-family: "PP Neue Montreal";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 700 !important;
+  line-height: 24px !important;
+  letter-spacing: var(--Title-Medium-Tracking, 0.15px) !important;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exit-button:hover {
+  background-color: #333;
+}
+
+.exit-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.exit-button svg path {
+  stroke: white;
+}
+
+.content-header {
+  background-color: white;
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Contribution banner styles */
+.contribution-banner {
   width: 100%;
+  background-color: #5377D4;
+  border-radius: 8px;
+  margin: 0 0 24px 0;
+  z-index: 10;
+  position: relative;
 }
+
+.banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+}
+
+.banner-text {
+  color: white;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.banner-button {
+  background-color: transparent;
+  color: white;
+  border: 1px solid white;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.banner-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.exit-button-container {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 32px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .banner-content {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+}
+
+/* Remove these styles as they're being replaced */
+.content-header, 
+.edit-document-button {
+  display: none;
+}
+
+/* New styles for Figma design */
+.branch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 56px;
+  padding: 0 32px;
+  background-color: transparent;
+  color: white;
+}
+
+.branch-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.branch-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.exit-button {
+  background-color: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.exit-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.save-button {
+  padding: 8px 12px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  background: #000;
+  color: #FFF;
+  font-family: "PP Neue Montreal";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: var(--Title-Medium-Tracking, 0.15px);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-button:hover {
+  background-color: #333;
+}
+
+.review-button {
+  background-color: white;
+  color: #4361EE;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.review-button:hover {
+  background-color: #f3f4f6;
+}
+
+.lock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-text {
+  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+/* Responsive styles for branch header */
+@media (max-width: 768px) {
+  .branch-header {
+    flex-direction: row;
+    padding: 16px;
+    height: auto;
+    gap: 16px;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Remove or update the old exit button container */
+.exit-button-container {
+  display: none;
+}
+
+/* Style the TiptapEditor toolbar buttons to fit in a single row */
+:deep(.tiptap-editor .editor-menubar) {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #E5E7EB;
+  overflow-x: auto;
+}
+
+:deep(.tiptap-editor .menubar-button) {
+  background: transparent;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  color: #4B5563;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  min-width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+:deep(.tiptap-editor .menubar-button:hover) {
+  background-color: #F3F4F6;
+}
+
+:deep(.tiptap-editor .menubar-button.is-active) {
+  background-color: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+/* Style the font size dropdown to be compact */
+:deep(.tiptap-editor .font-size-dropdown) {
+  height: 30px;
+  min-width: 110px;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+/* Specific toolbar styling to match Figma design */
+.page-wrapper.editor-mode .editor-toolbar {
+  display: flex;
+  align-items: center;
+  width: 740px;
+  margin: 0 auto;
+  padding: 8px 0;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.page-wrapper.editor-mode .toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Adjust the TiptapEditor content area to have more padding between toolbar and content */
+:deep(.tiptap-editor .ProseMirror) {
+  padding: 20px 16px;
+  min-height: 300px;
+  font-family: 'PP Neue Montreal', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1F2937;
+}
+
+/* Override any default button padding/margin that might be causing wrapping */
+:deep(.editor-menubar button),
+:deep(.editor-menubar select) {
+  margin: 0 2px;
+}
+
+/* Path display styling to match Figma */
+.file-path {
+  font-size: 14px;
+  color: #6B7280;
+  margin-right: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 16px;
+}
+
+/* Make buttons more compact */
+:deep(.tiptap-editor .menubar-button) {
+  padding: 4px 6px;
+  margin: 0 1px;
+}
+
+@media screen and (max-width: 767px) {
+  .page-wrapper.editor-mode .editor-toolbar {
+    width: 100%;
+    padding: 8px 16px;
+    overflow-x: auto;
+  }
+}
+
+/* Style for the editor mode controls */
+.editor-mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  flex-wrap: nowrap;
+}
+
+.mode-button {
+  padding: 8px 12px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid #BABABA;
+  background: transparent;
+  color: #000;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  max-height: 40px;
+}
+
+.mode-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-button.active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.eye-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+/* New styles for the right-aligned actions */
+.right-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Hide the original toolbar buttons in TiptapEditor */
+:deep(.editor-toolbar .toolbar-right) {
+  display: none !important;
+}
+
+/* Content status indicator styles */
+.content-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #1D1B1B;
+  font-family: "PP Neue Montreal", sans-serif;
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.content-status.draft {
+  background-color: #FBBF24;
+  color: #78350F;
+}
+
+.content-status.committed {
+  background-color: #10B981;
+  color: white;
+}
+
+.content-status.new {
+  background-color: #60A5FA;
+  color: white;
+}
+
+/* Device preview controls */
+.device-preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.device-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: 6px;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.device-button:hover {
+  background: #fff;
+  color: #000;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.device-button.active {
+  background: #fff;
+  color: #000;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Device preview width classes */
+
 </style>

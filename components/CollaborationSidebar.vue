@@ -66,25 +66,7 @@
 
         <!-- Pull Requests Tab -->
         <div v-if="activeTab === 'prs'">
-          <div class="pr-actions-header">
-            <button
-              class="create-pr-button"
-              @click="showCreatePR = true"
-              v-if="!showCreatePR"
-            >
-              Create Pull Request
-            </button>
-          </div>
-
-          <CreatePullRequest
-            v-if="showCreatePR"
-            :branches="branches"
-            :currentBranch="currentBranch"
-            @created="handlePRCreated"
-            @cancel="showCreatePR = false"
-          />
-
-          <div v-else-if="loading" class="loading-state">
+          <div v-if="loading" class="loading-state">
             Loading pull requests...
           </div>
           <div v-else-if="pullRequests.length === 0" class="empty-state">
@@ -186,36 +168,23 @@
           </div>
         </div>
 
-        <!-- Saves Tab -->
-        <div v-if="activeTab === 'saves'">
-          <div v-if="localSaves.length === 0" class="empty-state">
-            No saved changes available
+        <!-- Drafts Tab -->
+        <div v-if="activeTab === 'drafts'">
+          <div v-if="!hasDraft" class="empty-state">
+            No drafts available
           </div>
-          <div v-else class="saves-list">
-            <div
-              v-for="save in localSaves"
-              :key="save.timestamp"
-              class="save-item"
-            >
-              <div class="save-info">
-                <span class="save-timestamp">{{
-                  formatDate(save.timestamp)
-                }}</span>
-                <span class="save-branch">on branch {{ save.branch }}</span>
-              </div>
-              <div class="save-actions">
-                <button @click="handleLoadSave(save)" class="action-button">
-                  Load
-                </button>
-                <button
-                  @click="
-                    editorStore.deleteSave(props.filePath, save.timestamp)
-                  "
-                  class="action-button delete"
-                >
-                  Delete
-                </button>
-              </div>
+          <div v-else class="draft-content">
+            <div class="draft-info">
+              <span class="draft-timestamp">Last modified: {{ formatDate(currentDraft.timestamp) }}</span>
+              <span class="draft-branch">on branch {{ currentDraft.branch }}</span>
+            </div>
+            <div class="draft-actions">
+              <button @click="handleLoadDraft" class="action-button">
+                Load Draft
+              </button>
+              <button @click="handleClearDraft" class="action-button delete">
+                Clear Draft
+              </button>
             </div>
           </div>
         </div>
@@ -229,7 +198,6 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useGithub } from "~/composables/useGithub";
 import { useToast } from "~/composables/useToast";
 import { useEditorStore } from "~/store/editor";
-import CreatePullRequest from "./CreatePullRequest.vue";
 import { useStore } from "~/store";
 
 // Type definitions
@@ -277,7 +245,6 @@ const commits = ref([]);
 const pullRequests = ref<PullRequest[]>([]);
 const showNewBranchInput = ref(false);
 const newBranchName = ref("");
-const showCreatePR = ref(false);
 const showCommitDialog = ref(false);
 const commitMessage = ref("");
 
@@ -302,15 +269,19 @@ const store = useStore();
 const editorStore = useEditorStore();
 
 // Computed
-const localSaves = computed(() => {
-  return editorStore.getSavedContents(props.filePath);
+const hasDraft = computed(() => {
+  return editorStore.hasDraft(props.filePath);
+});
+
+const currentDraft = computed(() => {
+  return editorStore.getDraft(props.filePath);
 });
 
 const availableTabs = computed(() => [
   { id: "history", label: "History", count: commits.value.length },
   { id: "branches", label: "Branches", count: branches.value?.length || 0 },
   { id: "prs", label: "Pull Requests", count: pullRequests.value?.length || 0 },
-  { id: "saves", label: "Saves", count: localSaves.value?.length || 0 },
+  { id: "drafts", label: "Drafts", count: hasDraft.value ? 1 : 0 },
 ]);
 
 const hasChanges = computed(() => false);
@@ -419,29 +390,29 @@ const handleBranchChange = async (event: Event) => {
   const newBranch = select.value;
 
   if (newBranch !== currentBranch.value) {
-    const editorStore = useEditorStore();
-
-    // Save current content before switching
-    if (props.filePath) {
-      const currentContent = store.rawText;
-      editorStore.saveContent(props.filePath, currentContent);
-    }
-
-    // Switch branch
-    await switchBranch(newBranch);
-
-    // Load content for new branch
+    loading.value = true;
     try {
+      // Save current content as draft before switching
+      if (props.filePath) {
+        const currentContent = store.rawText;
+        editorStore.saveDraft(props.filePath, currentContent);
+      }
+
+      // Switch branch
+      await switchBranch(newBranch);
+
+      // Load content for new branch
       const { content, sha } = await getFileContent(
         "tiresomefanatic",
         "EchoProdTest",
         props.filePath,
         newBranch
       );
+
       if (content) {
+        // Update store and editor content
         editorStore.saveGitContent(props.filePath, content, newBranch, sha);
-        // Update the editor content
-        store.rawText = content;
+        store.updateRawText(content);
 
         showToast({
           title: "Branch Switched",
@@ -456,6 +427,8 @@ const handleBranchChange = async (event: Event) => {
         message: `Failed to load content for branch "${newBranch}"`,
         type: "error",
       });
+    } finally {
+      loading.value = false;
     }
   }
 };
@@ -463,18 +436,15 @@ const handleBranchChange = async (event: Event) => {
 const createNewBranch = async () => {
   if (!newBranchName.value) return;
 
-  loading.value = true;
   try {
     const result = await createBranch(newBranchName.value);
     if (result) {
-      showToast({
-        title: "Success",
-        message: `Created branch: ${newBranchName.value}`,
-        type: "success",
-      });
+      // Branch creation successful
       newBranchName.value = "";
       showNewBranchInput.value = false;
-      await loadCommits();
+      
+      // Force re-render of selector
+      selectorKey.value++;
     }
   } catch (error) {
     console.error("Error creating branch:", error);
@@ -483,8 +453,6 @@ const createNewBranch = async () => {
       message: "Failed to create branch",
       type: "error",
     });
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -498,69 +466,13 @@ const openPR = (url: string) => {
   window.open(url, "_blank");
 };
 
-const handlePRCreated = async (newPR) => {
-  showCreatePR.value = false;
-
-  // Optimistically add the new PR to the store
-  editorStore.addPullRequest(newPR);
-
-  // Update UI immediately using store data
-  pullRequests.value = editorStore.getPullRequests();
-
-  showToast({
-    title: "Success",
-    message: "Pull request created successfully",
-    type: "success",
-  });
-
-  // Trigger background refresh after a delay
-  setTimeout(async () => {
-    try {
-      const updatedPRs = await getPullRequests();
-      if (updatedPRs && Array.isArray(updatedPRs)) {
-        editorStore.updatePullRequests(updatedPRs);
-        pullRequests.value = updatedPRs;
-      }
-    } catch (error) {
-      console.error("Error refreshing PR list:", error);
-    }
-  }, 5000); // Try to refresh after 5 seconds
+const handleLoadDraft = () => {
+  if (!currentDraft.value) return;
+  emit("load-save", currentDraft.value.content);
 };
 
-const handleResolveConflicts = async (pr: PullRequest) => {
-  loading.value = true;
-  try {
-    await resolveConflict(pr.number);
-    await loadPullRequests();
-    showToast({
-      title: "Success",
-      message: "Conflicts resolved successfully",
-      type: "success",
-    });
-  } catch (error) {
-    console.error("Error resolving conflicts:", error);
-    showToast({
-      title: "Error",
-      message: "Failed to resolve conflicts",
-      type: "error",
-    });
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleLoadSave = (save) => {
-  console.log("Loading save:", save);
-  if (!save || !save.content) {
-    console.error("Invalid save:", save);
-    showToast({
-      title: "Error",
-      message: "Invalid save content",
-      type: "error",
-    });
-    return;
-  }
-  emit("load-save", save.content);
+const handleClearDraft = () => {
+  editorStore.clearDraft(props.filePath);
 };
 
 const formatDate = (dateString: string) => {
@@ -612,6 +524,15 @@ watch([activeTab, isLoggedIn], () => {
     // Cleanup interval when tab changes or component unmounts
     return () => clearInterval(interval);
   }
+});
+
+// Add reactive reference for forcing re-renders
+const selectorKey = ref(0);
+
+// Watch for branch changes
+watch(currentBranch, () => {
+  // Force re-render of selector
+  selectorKey.value++;
 });
 
 // Initialize
@@ -995,43 +916,33 @@ onMounted(async () => {
   background: #f9fafb;
 }
 
-/* Saves styles */
-.saves-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.save-item {
+/* Draft styles */
+.draft-content {
   padding: 1rem;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   background: #ffffff;
 }
 
-.save-item:hover {
-  background: #f9fafb;
-}
-
-.save-info {
+.draft-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   margin-bottom: 0.75rem;
 }
 
-.save-timestamp {
+.draft-timestamp {
   color: #111827;
   font-weight: 500;
   font-size: 0.875rem;
 }
 
-.save-branch {
+.draft-branch {
   color: #6b7280;
   font-size: 0.75rem;
 }
 
-.save-actions {
+.draft-actions {
   display: flex;
   gap: 0.5rem;
 }
@@ -1059,16 +970,6 @@ onMounted(async () => {
 
 .action-button.delete:hover {
   background: #fee2e2;
-}
-
-.action-button.resolve {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
-  color: #374151;
-}
-
-.action-button.resolve:hover {
-  background: #e5e7eb;
 }
 
 /* Login prompt */

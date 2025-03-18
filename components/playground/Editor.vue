@@ -214,8 +214,8 @@ const handleSave = () => {
   console.log("Editor saving content - Length:", localContent.value.length);
   console.log("Preview:", localContent.value.substring(0, 100) + "...");
 
-  // Save to Pinia store first
-  editorStore.saveContent(props.filePath, localContent.value);
+  // Save to Pinia store as draft
+  editorStore.saveDraft(props.filePath, localContent.value);
 
   // Update store's raw text
   store.updateRawText(localContent.value);

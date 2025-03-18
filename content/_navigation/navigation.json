@@ -25,12 +25,6 @@
               "locked": true
             },
             {
-              "title": "Color",
-              "path": "/design/foundation/color",
-              "type": "file",
-              "locked": false
-            },
-            {
               "title": "Icons",
               "path": "/design/foundation/icons",
               "type": "file",
@@ -48,6 +42,12 @@
               "path": "/design/foundation/illustration",
               "type": "file",
               "locked": true
+            },
+            {
+              "title": "Color",
+              "path": "/design/foundation/color",
+              "type": "file",
+              "locked": false
             },
             {
               "title": "Imagery",
@@ -82,15 +82,8 @@
           "locked": false,
           "children": [
             {
-              "title": "Folder test",
-              "path": "/design/product/Folder test",
-              "type": "directory",
-              "locked": false,
-              "children": []
-            },
-            {
-              "title": "Creative Spectrum",
-              "path": "/design/product/creative-spectrum",
+              "title": "Case Studies",
+              "path": "/design/product/case-studies",
               "type": "file",
               "locked": false
             },

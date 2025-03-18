@@ -1,17 +1,21 @@
-<h1 style="text-align: left"><strong>Introduction.</strong>
-</h1>
-<p style="text-align: left">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.
+<h2 style="text-align: left"><strong>Introduction.testnow</strong>
+</h2>
+<p style="text-align: left">
+<span style="font-size: 12px">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.</span>
+</p>
+<p style="text-align: left">
+<span style="font-size: 12px">hello</span>
 </p>
 <p style="text-align: left">
 <img src="/images/echo-dna.png" alt="Echo DNA">
 </p>
 <h2 style="text-align: left"><strong>Our Vision</strong>
 </h2>
-<p style="text-align: left">Using the power of our scale, we want to <span>democratise electric mobility</span> for the planet.
+<p style="text-align: left">Using the power of our scale, we want to democratise electric mobility for the planet.
 </p>
 <h2 style="text-align: left"><strong>Our Mission</strong>
 </h2>
-<p style="text-align: left">Equipping the world with the best in riding tech and <span>empowering people</span> to <span>make moves that matter</span>, today.
+<p style="text-align: left">Equipping the world with the best in riding tech and empowering people to make moves that matter, today.
 </p>
 <h2 style="text-align: left"><strong>Our Values</strong>
 </h2>
