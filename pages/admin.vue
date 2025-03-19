@@ -65,18 +65,19 @@ const activeTab = ref('chat-logs');
 }
 
 .admin-content {
-  padding-top: 8rem; /* 32px */
-  padding-left: 2rem; /* 8px */
-  padding-right: 2rem; /* 8px */
+  padding-top: 8rem; 
+  padding-left: 2rem; 
+  padding-right: 2rem; 
+  padding-bottom: 2rem;
 }
 
 .admin-header {
-  max-width: 64rem; /* 5xl equivalent */
+  max-width: 64rem; 
   margin-bottom: 2rem;
 }
 
 .admin-title {
-  font-size: 2.25rem; /* 4xl equivalent */
+  font-size: 2.25rem;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.025em;
@@ -88,11 +89,11 @@ const activeTab = ref('chat-logs');
   font-size: 1rem;
   line-height: 1.75;
   color: #4b5563;
-  max-width: 48rem; /* 3xl equivalent */
+  max-width: 48rem;
 }
 
 .tabs-container {
-  max-width: 64rem; /* 5xl equivalent */
+  max-width: 64rem;
   width: 100%;
 }
 
