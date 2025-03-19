@@ -12,6 +12,12 @@
         <ActionBar v-if="isLoggedIn" />
         <Header />
         
+        <!--sidebar and overlay -->
+        <div class="mobile-overlay"></div>
+        <DesignSidebar
+          class="sidebar"
+        />
+        
         <div class="landing-content-area">
           <div class="main-content">
             <ClientOnly>
@@ -56,11 +62,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useGithub } from "~/composables/useGithub";
 import { useToast } from "~/composables/useToast";
 import { marked } from "marked";
 import ActionBar from '~/components/ActionBar.vue';
+import { useEventBus } from '@vueuse/core';
+import DesignSidebar from '~/components/DesignSidebar.vue';
 
 const {
   getRawContent,
@@ -79,6 +87,48 @@ const contentKey = ref(0);
 
 // Content path for the landing page
 const contentPath = computed(() => "content/index.md");
+
+// Add sidebar state management
+const isSidebarOpen = ref(false);
+const sidebarBus = useEventBus('sidebar-toggle');
+
+// Function to close sidebar
+const closeSidebar = () => {
+  console.log('Closing sidebar from landing page');
+  isSidebarOpen.value = false;
+  sidebarBus.emit(false);
+  
+  // Remove overflow hidden from body
+  if (process.client) {
+    document.body.style.overflow = '';
+  }
+};
+
+// Listen for sidebar toggle events
+onMounted(() => {
+  // Subscribe to sidebar toggle events and ensure proper cleanup
+  const unsubscribe = sidebarBus.on((value) => {
+    console.log('Sidebar event received on index page:', value);
+    
+    // If the incoming value is a boolean, use it directly
+    if (typeof value === 'boolean') {
+      isSidebarOpen.value = value;
+    } else {
+      // Otherwise toggle the current state
+      isSidebarOpen.value = !isSidebarOpen.value;
+    }
+    
+    // Apply overflow hidden to body when sidebar is open
+    if (process.client) {
+      document.body.style.overflow = isSidebarOpen.value ? 'hidden' : '';
+    }
+  });
+  
+  // Clean up the event listener
+  onUnmounted(() => {
+    unsubscribe();
+  });
+});
 
 /**
  * Load GitHub content
@@ -107,16 +157,17 @@ const loadGithubContent = async () => {
       type: "error",
     });
   } finally {
-    // Set loading to false after content is loaded or if there's an error
-    setTimeout(() => {
-      isLoading.value = false;
-    }, 300);
+    isLoading.value = false;
   }
 };
 
-// Call loadGithubContent when component is mounted
-onMounted(() => {
-  loadGithubContent();
+// Load content when component is mounted
+onMounted(async () => {
+  if (isLoggedIn.value) {
+    await loadGithubContent();
+  } else {
+    isLoading.value = false;
+  }
 });
 
 // Event handlers
@@ -165,6 +216,65 @@ const handleEditorError = (error: Error) => {
   min-height: 100vh;
   background: white;
   width: 100%;
+  position: relative;
+}
+
+/* Style for the sidebar in mobile view */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: white;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.sidebar.is-mobile-open {
+  transform: translateX(0);
+}
+
+.mobile-overlay {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mobile-overlay.is-visible {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Adjusted styling for medium screens (768px-1024px) */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.is-mobile-open {
+    transform: translateX(0);
+  }
 }
 
 .landing-content-area {
@@ -186,7 +296,6 @@ const handleEditorError = (error: Error) => {
 }
 
 /* Landing Page Specific Markdown Styling */
-
 .content-footer {
   width: 100%;
   margin: 0 !important;
