@@ -1,6 +1,6 @@
 <template>
   <div class="admin-container">
-    <AdminNavbar />
+    <AdminNavbar v-model="activeTab" @update:activeTab="activeTab = $event" />
     <div class="admin-content">
       <div class="admin-header">
         <h1 class="admin-title">Admin Dashboard</h1>
@@ -11,24 +11,6 @@
       </div>
 
       <div class="tabs-container">
-        <!-- Custom Tabs Navigation -->
-        <div class="tabs-list">
-          <button 
-            v-for="tab in tabs" 
-            :key="tab.value" 
-            class="tab-button" 
-            :class="{ active: activeTab === tab.value }"
-            @click="activeTab = tab.value"
-            :aria-selected="activeTab === tab.value"
-            role="tab"
-            tabindex="0"
-            @keydown.space.prevent="activeTab = tab.value"
-            @keydown.enter.prevent="activeTab = tab.value"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-        
         <!-- Tab Content -->
         <div class="tab-content">
           <AdminChatLogs v-if="activeTab === 'chat-logs'" />
@@ -42,18 +24,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import AdminNavbar from '~/components/AdminNavbar.vue';
 import AdminChatLogs from '~/components/AdminChatLogs.vue';
 import AdminFileUpload from '~/components/AdminFileUpload.vue';
 import AdminControls from '~/components/AdminControls.vue';
 import FloatingWidget from '~/components/FloatingWidget.vue';
-
-const tabs = [
-  { label: 'Chat Logs', value: 'chat-logs' },
-  { label: 'Context Files', value: 'context-files' },
-  { label: 'Bot Controls', value: 'bot-controls' },
-];
 
 const activeTab = ref('chat-logs');
 </script>
