@@ -1,4 +1,3 @@
-<!-- components/AdminFileUpload.vue -->
 <template>
   <div class="file-upload-container">
     <div class="header-container">
@@ -557,6 +556,7 @@ onMounted(() => {
   width: 100%;
   padding: 0.5rem 0.75rem 0.5rem 2.25rem;
   border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   color: #111827;
