@@ -1,4 +1,3 @@
-<!-- components/AdminNavbar.vue -->
 <template>
     <div class="fixed top-6 left-8 right-8 z-50">
       <header class="rounded-2xl bg-white shadow-lg">
