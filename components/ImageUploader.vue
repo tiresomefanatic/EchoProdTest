@@ -91,7 +91,6 @@ import { useMinIO } from "~/composables/useMinIO";
 interface ImageDetails {
   url: string;
   alt: string;
-  alignment: "left" | "center" | "right";
 }
 
 const emit = defineEmits<{
@@ -115,7 +114,6 @@ const resetState = () => {
   error.value = "";
   preview.value = "";
   altText.value = "";
-  alignment.value = "center";
 };
 
 const validateFile = (file: File): boolean => {
@@ -172,7 +170,6 @@ const confirmUpload = async () => {
     emit("uploaded", {
       url: imageUrl,
       alt: altText.value || file.name,
-      alignment: "center",
     });
 
     // Reset the component
@@ -196,7 +193,6 @@ const selectStoredImage = (image: any) => {
   emit("uploaded", {
     url: image.url,
     alt: image.name,
-    alignment: "center",
   });
 };
 </script>
