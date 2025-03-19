@@ -7,35 +7,41 @@
     <h2 style="color: #000; font-size: 32px; font-style: normal; font-weight: 530; line-height: 120%; letter-spacing: -0.64px; margin: 0; text-align: start; padding: 42.5px 0px 32px;">Get started</h2>
 
    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin: 0;">
-      <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0;">
-        <div style="background: #000; height: clamp(100px, 40vw, 150px); display: flex; align-items: center; position: relative;">
-          <img src="/images/intro-design.png" alt="Design concept" style="width: 100%; height: auto; object-fit:cover;" />
+      <a href="/design" style="text-decoration: none; color: inherit;">
+        <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; transform: translateY(0); box-shadow: none;" class="card-hover">
+          <div style="background: #000; height: clamp(100px, 40vw, 150px); display: flex; align-items: center; position: relative;">
+            <img src="/images/intro-design.png" alt="Design concept" style="width: 100%; height: auto; object-fit:cover;" />
+          </div>
+          <div style="padding: clamp(12px, 3vw, 20px); position: relative; background: white;">
+            <h3 style="color: #1E1E1E; font-size: 24px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0 0 6px;">Design</h3>
+            <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
+          </div>
         </div>
-        <div style="padding: clamp(12px, 3vw, 20px); position: relative; background: white;">
-          <h3 style="color: #1E1E1E; font-size: 24px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0 0 6px;">Design</h3>
-          <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
-        </div>
-      </div>
+      </a>
 
-  <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0;">
-        <div style="background: #000; height: clamp(100px, 40vw, 150px); display: flex; align-items: center; position: relative;">
-          <img src="/images/intro-develop.png" alt="Develop concept" style="width: 100%; height: auto; object-fit: cover;" />
+      <a href="/develop" style="text-decoration: none; color: inherit;">
+        <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; transform: translateY(0); box-shadow: none;" class="card-hover">
+          <div style="background: #000; height: clamp(100px, 40vw, 150px); display: flex; align-items: center; position: relative;">
+            <img src="/images/intro-develop.png" alt="Develop concept" style="width: 100%; height: auto; object-fit: cover;" />
+          </div>
+          <div style="padding: clamp(12px, 3vw, 20px); position: relative; background: white;">
+            <h3 style="color: #1E1E1E; font-size: 24px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0 0 6px;">Develop</h3>
+            <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
+          </div>
         </div>
-        <div style="padding: clamp(12px, 3vw, 20px); position: relative; background: white;">
-          <h3 style="color: #1E1E1E; font-size: 24px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0 0 6px;">Develop</h3>
-          <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
-        </div>
-      </div>
+      </a>
 
-  <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0;">
-        <div style="background: #000; height: clamp(100px, 40vw, 150px); display: flex; align-items: center; position: relative;">
-          <img src="/images/intro-contribute.png" alt="Contribute concept" style="width: 100%; height: auto; object-fit: cover;" />
+      <a href="/contribute" style="text-decoration: none; color: inherit;">
+        <div style="background: white; border-radius: 16px; border: 1px solid #D4D4D4; overflow: hidden; width: 100%; max-width: clamp(200px, 85vw, 280px); margin: 0; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; transform: translateY(0); box-shadow: none;" class="card-hover">
+          <div style="background: #000; height: clamp(100px, 40vw, 150px); display: flex; align-items: center; position: relative;">
+            <img src="/images/intro-contribute.png" alt="Contribute concept" style="width: 100%; height: auto; object-fit: cover;" />
+          </div>
+          <div style="padding: clamp(12px, 3vw, 20px); position: relative; background: white;">
+            <h3 style="color: #1E1E1E; font-size: 24px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0 0 6px;">Contribute</h3>
+            <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
+          </div>
         </div>
-        <div style="padding: clamp(12px, 3vw, 20px); position: relative; background: white;">
-          <h3 style="color: #1E1E1E; font-size: 24px; font-style: normal; font-weight: 530; line-height: 140%; margin: 0 0 6px;">Contribute</h3>
-          <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur, ut aliquet sit amet consectetur Lorem ipsum.</p>
-        </div>
-      </div>
+      </a>
     </div>
 
 <div style="margin: 64px 0 0; display: flex; flex-direction: column; gap: clamp(16px, 5vw, 16px);">
@@ -112,5 +118,3 @@
         <p style="color: #1E1E1E; font-family: 'PP Neue Montreal'; font-size: 16px; font-style: normal; font-weight: 400; line-height: 140%; margin: 0;">Lorem ipsum dolor sit amet consectetur. Et et ultrices dolor ut. Vitae pharetra nullam dolor vestibulum pharetra et. Pretium consequat venenatis augue quam nibh laoreet.</p>
    </div>
  </div>
-
-

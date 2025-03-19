@@ -1,89 +1,92 @@
-<!-- components/ImageUploader.vue -->
 <template>
   <div class="image-uploader">
     <!-- File Input -->
     <input
-      type="file"
       ref="fileInput"
+      type="file"
       accept="image/*"
+      class="hidden"
       @change="handleFileSelect"
-      style="display: none"
-      multiple
     />
 
-    <!-- Drop Zone -->
-    <div
-      class="drop-zone"
-      @dragover.prevent="isDragging = true"
-      @dragleave.prevent="isDragging = false"
-      @drop.prevent="handleDrop"
-      :class="{ 'is-dragging': isDragging }"
-    >
+    <div class="flex flex-col gap-4">
       <!-- Upload Button -->
       <button
+        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         @click="triggerFileInput"
-        class="upload-button"
         :disabled="uploading"
-        :class="{ 'opacity-50 cursor-not-allowed': uploading }"
       >
-        <span v-if="!uploading" class="flex items-center">
-          <span class="text-xl mr-2">📁</span>
-          Choose Image
-        </span>
-        <span v-else class="flex items-center">
-          <span class="loading-spinner mr-2"></span>
-          Uploading...
-        </span>
+        {{ uploading ? "Uploading..." : "Choose Image" }}
       </button>
 
-      <p class="text-sm text-gray-500 mt-2">or drag and drop image here</p>
+      <!-- Preview -->
+      <div v-if="preview" class="mt-4">
+        <img :src="preview" alt="Preview" class="max-w-xs rounded-lg shadow-md" />
 
-      <!-- File Requirements -->
-      <div class="text-xs text-gray-400 mt-2">
-        Supported formats: JPG, PNG, GIF, WebP (max 5MB)
-      </div>
-    </div>
+        <!-- Image Details Form -->
+        <div class="mt-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Alt Text</label>
+            <input
+              v-model="altText"
+              type="text"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="Describe the image"
+            />
+          </div>
 
-    <!-- Preview Section -->
-    <div v-if="preview" class="preview-section">
-      <img :src="preview" alt="Upload preview" class="preview-image" />
-      <div class="preview-options">
-        <input
-          v-model="altText"
-          placeholder="Add alt text"
-          class="alt-text-input"
-        />
-        <div class="image-options">
           <button
-            v-for="align in ['left', 'center', 'right']"
-            :key="align"
-            @click="alignment = align"
-            :class="['align-button', { active: alignment === align }]"
-            :title="'Align ' + align"
+            @click="confirmUpload"
+            class="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            :disabled="uploading"
           >
-            {{ alignmentIcons[align] }}
+            {{ uploading ? "Uploading..." : "Upload Image" }}
           </button>
         </div>
-        <button
-          @click="confirmUpload"
-          class="confirm-button"
-          :disabled="uploading"
-        >
-          Insert Image
-        </button>
       </div>
-    </div>
 
-    <!-- Error Display -->
-    <div v-if="error" class="error-message">
-      {{ error }}
+      <!-- Previously Uploaded Images -->
+      <div v-if="storedImages.length > 0" class="mt-8">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Previously Uploaded Images</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div 
+            v-for="image in storedImages" 
+            :key="image.url" 
+            class="relative group cursor-pointer"
+            @click="selectStoredImage(image)"
+          >
+            <img 
+              :src="image.url" 
+              :alt="image.name"
+              class="w-full h-32 object-cover rounded-lg shadow-sm transition-transform hover:scale-105"
+            />
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity rounded-lg flex items-center justify-center">
+              <span class="text-white opacity-0 group-hover:opacity-100">Select</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="isLoading" class="flex justify-center">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+
+      <!-- Error Message -->
+      <div
+        v-if="error"
+        class="p-4 text-sm text-red-700 bg-red-100 rounded-md"
+        role="alert"
+      >
+        {{ error }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { useGithub } from "~/composables/useGithub";
+import { useMinIO } from "~/composables/useMinIO";
 
 interface ImageDetails {
   url: string;
@@ -97,21 +100,12 @@ const emit = defineEmits<{
 }>();
 
 // State
-const { uploadImage } = useGithub();
+const { uploadImage, storedImages, isLoading, listStoredImages } = useMinIO();
 const fileInput = ref<HTMLInputElement | null>(null);
 const uploading = ref(false);
 const error = ref("");
 const preview = ref("");
-const isDragging = ref(false);
 const altText = ref("");
-const alignment = ref<"left" | "center" | "right">("center");
-
-// Constants
-const alignmentIcons = {
-  left: "⟵",
-  center: "↔",
-  right: "⟶",
-};
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -164,22 +158,6 @@ const handleFileSelect = async (event: Event) => {
   }
 };
 
-const handleDrop = async (event: DragEvent) => {
-  isDragging.value = false;
-  const file = event.dataTransfer?.files[0];
-
-  if (!file) return;
-
-  try {
-    resetState();
-    validateFile(file);
-    createPreview(file);
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : "Failed to process image";
-    emit("error", error.value);
-  }
-};
-
 const confirmUpload = async () => {
   if (!fileInput.value?.files?.length) return;
 
@@ -189,10 +167,12 @@ const confirmUpload = async () => {
 
   try {
     const imageUrl = await uploadImage(file);
+    console.log('MinIO upload successful:', imageUrl);
+
     emit("uploaded", {
       url: imageUrl,
-      alt: altText.value,
-      alignment: alignment.value,
+      alt: altText.value || file.name,
+      alignment: "center",
     });
 
     // Reset the component
@@ -200,12 +180,24 @@ const confirmUpload = async () => {
     if (fileInput.value) {
       fileInput.value.value = "";
     }
+
+    // Refresh the list of stored images
+    await listStoredImages();
   } catch (e) {
-    error.value = e instanceof Error ? e.message : "Failed to upload image";
+    console.error('MinIO upload error:', e);
+    error.value = e instanceof Error ? e.message : "Failed to upload image to MinIO";
     emit("error", error.value);
   } finally {
     uploading.value = false;
   }
+};
+
+const selectStoredImage = (image: any) => {
+  emit("uploaded", {
+    url: image.url,
+    alt: image.name,
+    alignment: "center",
+  });
 };
 </script>
 
