@@ -100,6 +100,14 @@ export default defineNuxtConfig({
       diffEditor: "MonacoDiffEditor",
     },
   },
+  
+  // Configure Nitro server
+  nitro: {
+    externals: {
+      // Include minio in the server bundle
+      inline: ['minio']
+    },
+  },
 
   // Development server configuration
   devServer: {

@@ -39,6 +39,7 @@
             {{ isCommitting ? "Committing..." : "Commit Changes" }}
           </button>
           <button
+            v-if="currentBranch !== 'main'"
             class="edit-toggle-btn"
             @click="handleToggleEditMode"
             :class="{ 'active': isEditMode }"

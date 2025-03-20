@@ -500,7 +500,6 @@ const handleLoadSave = async (content: string) => {
 const handleImageUploaded = (details: {
   url: string;
   alt: string;
-  alignment: string;
 }) => {
   if (!editor.value) return;
 
@@ -513,7 +512,7 @@ const handleImageUploaded = (details: {
     })
     .run();
 
-  // Set alignment
+  // Set default center alignment
   const imageNode = editor.value.view.state.selection.$anchor.nodeAfter;
   if (imageNode) {
     editor.value
@@ -522,11 +521,7 @@ const handleImageUploaded = (details: {
       .setNodeAttribute(
         imageNode.type,
         "style",
-        `display: block; margin: 0 ${
-          details.alignment === "center" ? "auto" : "0"
-        }; float: ${
-          details.alignment === "center" ? "none" : details.alignment
-        }`
+        "display: block; margin: 0 auto; float: none"
       )
       .run();
   }
