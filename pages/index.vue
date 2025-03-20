@@ -224,7 +224,7 @@
                       </p>
                     </div>
                     <LandingFooter />
-                  </template>
+                  </div>
                 </div>
               </div>
             </ClientOnly>
