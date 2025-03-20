@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, defineProps } from 'vue';
+import { ref, onMounted, defineProps, computed } from 'vue';
 
 const props = defineProps({
   onClose: Function,
@@ -176,10 +176,20 @@ What specific task would you like help with today?`,
     isLoading.value = false;
   }, 1000);
 };
+
+const isMobile = computed(() => {
+  if (typeof window !== 'undefined') {
+    return window.innerWidth < 768;
+  }
+  return false;
+});
 </script>
 
 <template>
-  <div class="fixed bottom-4 right-4 w-[380px] h-[540px] z-50 flex flex-col bg-[#FAFAFA99] backdrop-blur-[27px] rounded-md border">
+  <div 
+    class="ai-writing-assistant" 
+    :class="{ 'mobile': isMobile }"
+  >
     <div class="flex items-center justify-between border-b p-3">
       <div class="flex items-center gap-2">
         <!-- Bot icon -->
@@ -211,7 +221,7 @@ What specific task would you like help with today?`,
           height="24"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="currentColor"
+          stroke="black"
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -340,3 +350,45 @@ What specific task would you like help with today?`,
     </div>
   </div>
 </template>
+
+<style scoped>
+.ai-writing-assistant {
+  position: fixed;
+  bottom: 4rem;
+  right: 1rem;
+  width: 380px;
+  height: 540px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background-color: #FAFAFA99;
+  backdrop-filter: blur(27px);
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* mobile styles */
+.ai-writing-assistant.mobile {
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 85vh;
+  border-radius: 12px 12px 0 0;
+  border-bottom: none;
+}
+
+@media (max-width: 767px) {
+  .ai-writing-assistant {
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 85vh;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+  }
+}
+
+/* Rest of the existing CSS */
+/* ... */
+</style>

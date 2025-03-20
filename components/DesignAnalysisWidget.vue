@@ -20,6 +20,13 @@ const conversation = ref([]);
 const userInput = ref('');
 const isExpanded = ref(false);
 
+const isMobile = computed(() => {
+  if (typeof window !== 'undefined') {
+    return window.innerWidth < 768;
+  }
+  return false;
+});
+
 const renderMarkdown = (text) => {
   if (!text) return '';
   try {
@@ -34,7 +41,22 @@ const toggleExpand = () => {
   isExpanded.value = !isExpanded.value;
 };
 
+// Responsive widget styling
 const widgetStyle = computed(() => {
+  // For mobile devices
+  if (isMobile.value) {
+    return {
+      width: '100%',
+      height: '100%',
+      maxHeight: '85vh',
+      bottom: '0',
+      right: '0',
+      borderRadius: '12px 12px 0 0',
+      position: 'fixed'
+    };
+  }
+  
+  // For larger screens
   return isExpanded.value 
     ? { width: '620px', height: '680px' } 
     : { width: '380px', height: '540px' };
@@ -356,7 +378,9 @@ const handleAdditionalFileUpload = (event) => {
         <span class="title-text">Design Analysis</span>
       </div>
       <div class="header-actions">
+        <!-- Show expand button only on non-mobile devices -->
         <button 
+          v-if="!isMobile"
           class="expand-button" 
           @click="toggleExpand"
           aria-label="Expand or collapse widget"
@@ -682,21 +706,69 @@ const handleAdditionalFileUpload = (event) => {
 </template>
 
 <style scoped>
+/* Base styles */
 .design-analysis-widget {
   position: fixed;
-  bottom: 1rem;
+  bottom: 4rem;
   right: 1rem;
-  width: 380px;
-  height: 540px;
-  z-index: 50;
+  background-color: #FAFAFA;
+  backdrop-filter: blur(27px);
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  background-color: rgba(250, 250, 250, 0.99);
-  backdrop-filter: blur(27px);
-  border-radius: 0.375rem;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  z-index: 50;
   transition: width 0.3s ease, height 0.3s ease;
+}
+
+/* Add responsive styles */
+@media (max-width: 767px) {
+  .design-analysis-widget {
+    bottom: 0;
+    right: 0;
+    width: 100% !important;
+    height: 75vh !important;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+  }
+  
+  .widget-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .content-textarea {
+    min-height: 60px;
+  }
+  
+  .upload-dropzone {
+    padding: 1.5rem 1rem;
+  }
+  
+  .file-name {
+    max-width: 160px;
+  }
+  
+  .analyze-button {
+    padding: 0.75rem 1rem;
+    margin-top: 0.5rem;
+  }
+  
+  /* Adjust conversation container for better space usage */
+  .conversation-container {
+    height: calc(100% - 60px);
+  }
+  
+  .conversation-messages {
+    max-height: calc(100% - 70px);
+  }
+  
+  /* Handle image previews better on small screens */
+  .message-file-image {
+    max-height: 120px;
+    width: auto;
+  }
 }
 
 .widget-header {

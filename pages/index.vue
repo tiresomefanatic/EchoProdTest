@@ -223,9 +223,8 @@
                         available in the spaces that we work in.
                       </p>
                     </div>
-                  </div>
-
-                  <Footer />
+                    <LandingFooter />
+                  </template>
                 </div>
               </div>
             </ClientOnly>

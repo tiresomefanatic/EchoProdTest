@@ -1,4 +1,3 @@
-<!-- components/AdminChatLogs.vue -->
 <template>
   <div class="admin-card">
     <div class="card-header">
@@ -113,16 +112,24 @@
           <p class="dialog-description">
             Chat ID: {{ selectedChat?.id }} | Date: {{ selectedChat?.date }} | Status: {{ selectedChat?.status }}
           </p>
+          <button class="dialog-close-button" @click="isDialogOpen = false" aria-label="Close">
+            <XIcon class="close-icon" />
+          </button>
         </div>
         <div class="conversation-container">
           <div class="messages-container">
             <div
               v-for="(message, index) in selectedChat?.messages"
               :key="index"
-              :class="['message', message.role === 'assistant' ? 'assistant-message' : 'user-message']"
+              :class="[
+                'message', 
+                message.role === 'assistant' ? 'assistant-message' : 'user-message'
+              ]"
             >
-              <BotIcon v-if="message.role === 'assistant'" class="message-icon" />
-              <UserIcon v-if="message.role === 'user'" class="message-icon" />
+              <div class="message-avatar">
+                <BotIcon v-if="message.role === 'assistant'" class="message-icon" />
+                <UserIcon v-if="message.role === 'user'" class="message-icon" />
+              </div>
               <div class="message-content">
                 <div class="message-timestamp">{{ message.timestamp }}</div>
                 <div class="message-text">{{ message.content }}</div>
@@ -145,10 +152,11 @@ import {
   Filter as FilterIcon, 
   Eye as EyeIcon, 
   Trash2 as Trash2Icon, 
-  Download as DownloadIcon 
+  Download as DownloadIcon,
+  X as XIcon
 } from 'lucide-vue-next';
 
-// Mock data - updated to match React version's more detailed data
+// Mock data 
 const mockChatLogs = [
   {
     id: "chat-001",
@@ -334,6 +342,8 @@ onMounted(() => {
   width: 100%;
   border-radius: 0.375rem;
   border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  color: #111827;
   font-size: 0.875rem;
 }
 
@@ -357,9 +367,11 @@ onMounted(() => {
 
 .filter-select {
   width: 180px;
-  padding: 0.5rem 0.75rem;
+  padding: 9.5px 0.75rem;
   border-radius: 0.375rem;
   border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  color: #111827;
   font-size: 0.875rem;
 }
 
@@ -544,6 +556,10 @@ onMounted(() => {
 .dialog-header {
   padding: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .dialog-title {
@@ -562,7 +578,6 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
-  background-color: #f9fafb;
 }
 
 .messages-container {
@@ -580,10 +595,12 @@ onMounted(() => {
 
 .assistant-message {
   background-color: #f5f5f5;
+  color: #000000;
+
 }
 
 .user-message {
-  background-color: rgba(255, 83, 16, 0.1);
+  background-color: rgba(255, 83, 16, 0.4);
   margin-left: auto;
   max-width: 80%;
 }
@@ -608,6 +625,29 @@ onMounted(() => {
 
 .message-text {
   white-space: pre-wrap;
+}
+
+.dialog-close-button {
+  background: none;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+
+.dialog-close-button:hover {
+  background-color: #f3f4f6;
+}
+
+.close-icon {
+  width: 18px;
+  height: 18px;
 }
 
 @keyframes spin {

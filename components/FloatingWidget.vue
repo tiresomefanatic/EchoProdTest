@@ -1,17 +1,41 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const isWritingAssistantOpen = ref(false);
 const isDesignAnalysisOpen = ref(false);
+
+// to check if any widget is open
+const isAnyWidgetOpen = computed(() => 
+  isWritingAssistantOpen.value || isDesignAnalysisOpen.value
+);
+
+// Close all widgets
+const closeAllWidgets = () => {
+  isWritingAssistantOpen.value = false;
+  isDesignAnalysisOpen.value = false;
+};
+
+// Open design analysis and ensure other widget is closed
+const openDesignAnalysis = () => {
+  isWritingAssistantOpen.value = false;
+  isDesignAnalysisOpen.value = true;
+};
+
+// Open writing assistant and ensure other widget is closed
+const openWritingAssistant = () => {
+  isDesignAnalysisOpen.value = false;
+  isWritingAssistantOpen.value = true;
+};
 </script>
 
 <template>
   <div>
-    <div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+    <!-- Only show floating buttons when no widget is open -->
+    <div v-if="!isAnyWidgetOpen" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
       <div class="hover-shadow-lg transition-shadow bg-[#FAFAFA99] backdrop-blur-[27px] rounded-md border">
         <button
           class="w-full h-12 flex items-center gap-2 px-4 text-[#1D1B1B] hover:text-[#FF5310]"
-          @click="isDesignAnalysisOpen = true"
+          @click="openDesignAnalysis"
         >
           <!-- Sparkles icon -->
           <svg
@@ -38,7 +62,7 @@ const isDesignAnalysisOpen = ref(false);
       <div class="hover-shadow-lg transition-shadow bg-[#FAFAFA99] backdrop-blur-[27px] rounded-md border">
         <button
           class="w-full h-12 flex items-center gap-2 px-4 text-[#1D1B1B] hover:text-[#FF5310]"
-          @click="isWritingAssistantOpen = true"
+          @click="openWritingAssistant"
         >
           <!-- Bot icon -->
           <svg
@@ -65,8 +89,15 @@ const isDesignAnalysisOpen = ref(false);
       </div>
     </div>
 
-    <DesignAnalysisWidget v-if="isDesignAnalysisOpen" :onClose="() => isDesignAnalysisOpen = false" />
-    <AIWritingAssistant v-if="isWritingAssistantOpen" :onClose="() => isWritingAssistantOpen = false" />
+    <!-- Widgets with updated close handlers -->
+    <DesignAnalysisWidget 
+      v-if="isDesignAnalysisOpen" 
+      :onClose="closeAllWidgets" 
+    />
+    <AIWritingAssistant 
+      v-if="isWritingAssistantOpen" 
+      :onClose="closeAllWidgets" 
+    />
   </div>
 </template>
 
