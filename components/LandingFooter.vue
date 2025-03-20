@@ -238,13 +238,13 @@
   
   @media screen and (max-width: 767px) {
     .footer-inner {
-      padding: 0 16px;
+      padding: 0 0px;
       width: 100%;
     }
     
     .footer-grid {
-      display: grid;
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 32px;
     }
     
@@ -259,7 +259,7 @@
     }
     
     .footer-grid {
-      display: grid;
+      display: flex;
       grid-template-areas: 
         "feedback feedback"
         "contribution help";
