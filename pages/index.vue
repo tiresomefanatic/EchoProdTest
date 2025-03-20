@@ -45,7 +45,7 @@
                   <template v-else>
                     <div v-html="githubContent" class="markdown-content">
                     </div>
-                    <Footer />
+                    <LandingFooter />
                   </template>
                 </div>
               </div>
