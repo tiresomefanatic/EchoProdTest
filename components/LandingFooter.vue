@@ -3,9 +3,7 @@
       <div class="footer-inner">
         <h2 class="footer-title">Help and support</h2>
         
-        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="2" viewBox="200 0 680 2" fill="none" class="footer-divider">
-          <path d="M0 0.806641H696" stroke="#D9D9D9"/>
-        </svg>
+        <hr class="footer-divider">
     
         <div class="footer-grid">
           <div class="feedback-section">
@@ -54,11 +52,14 @@
             </button>
             <a href="#" class="learn-link">Learn how to contribute</a>
           </div>
-        </div>
-        <h3 class="help-title">Still need help?</h3>
-        <div class="help-links">
-          <a href="#" class="help-link">Provide ECHO feedback</a>
-          <a href="#" class="help-link">Contact support</a>
+    
+          <div class="help-section">
+            <h3 class="help-title">Still need help?</h3>
+            <div class="help-links">
+              <a href="#" class="help-link">Provide ECHO feedback</a>
+              <a href="#" class="help-link">Contact support</a>
+            </div>
+          </div>
         </div>
       </div>
     </footer>
@@ -90,21 +91,22 @@
     font-style: normal;
     font-weight: 400;
     line-height: 120%;
-    margin: 0 0 16px;
   }
   
   .footer-divider {
     margin-bottom: 32px;
     width: 100%;
+    margin-top:8px;
+    color: #D9D9D9;
   }
   
   .footer-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 64px;
+    gap: 32px;
+    grid-template-columns: repeat(3, 1fr);
   }
   
-  .section-title {
+  .section-title, .help-title {
     color: #000;
     font-family: inter;
     font-size: 16px;
@@ -183,16 +185,6 @@
     margin-top: 4px;
   }
   
-  .help-title {
-    color: #000;
-    font-family: inter;
-    font-size: 16px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: 140%;
-    margin: 80px 0 16px;
-  }
-  
   .help-links {
     display: flex;
     flex-direction: column;
@@ -210,27 +202,37 @@
     text-decoration: none;
   }
   
+  .help-section {
+    margin-top: 0;
+  }
+  
   /* Media Queries to match text container's alignment */
   @media screen and (min-width: 1380px) {
     .footer-inner {
-      padding: 0 266px 0 266px; 
       margin: 0 auto;
-      max-width: 1480px;
+      max-width: 960px;
     }
   }
   
   @media screen and (min-width: 1025px) and (max-width: 1379px) {
     .footer-inner {
-      padding: 0 199.5px 0 199.5px; 
+        max-width: 945px;
     }
   }
   
-  @media screen and (min-width: 768px) and (max-width: 1024px) {
+  @media screen and (min-width: 768px) and (max-width: 1068px) {
     .footer-inner {
       width: calc(100% - 44px);
-      max-width: 100%;
+      max-width: 945px;
       margin: 0 auto;
-      padding: 0 22px;
+    }
+    
+    .footer-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .help-section {
+      grid-column: 1 / -1;
     }
   }
   
@@ -241,8 +243,75 @@
     }
     
     .footer-grid {
+      display: grid;
       grid-template-columns: 1fr;
       gap: 32px;
+    }
+    
+    .footer-grid .feedback-section {
+      margin-bottom: 0;
+    }
+    
+    .footer-grid .contribution-section,
+    .footer-grid .help-section {
+      grid-column: unset;
+      margin-top: 32px;
+    }
+    
+    .footer-grid {
+      display: grid;
+      grid-template-areas: 
+        "feedback feedback"
+        "contribution help";
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 24px;
+    }
+    
+    .feedback-section {
+      grid-area: feedback;
+    }
+    
+    .contribution-section {
+      grid-area: contribution;
+    }
+    
+    .help-section {
+      grid-area: help;
+    }
+    
+    .section-text {
+      font-size: 13px;
+    }
+    
+    .contribution-button span,
+    .feedback-button span {
+      font-size: 14px;
+    }
+    
+    .learn-link,
+    .help-link {
+      font-size: 14px;
+    }
+  }
+  
+  @media screen and (min-width: 1069px) {
+    .footer-grid {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .feedback-section {
+      text-align: left;
+    }
+
+    .contribution-section {
+      text-align: left;
+      margin: 0 auto;
+      max-width: 334px;
+    }
+
+    .help-section {
+      text-align: left;
     }
   }
   </style>
