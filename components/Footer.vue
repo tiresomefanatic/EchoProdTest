@@ -3,9 +3,7 @@
       <div class="footer-inner">
         <h2 class="footer-title">Help and support</h2>
         
-        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="2" viewBox="0 0 696 2" fill="none" class="footer-divider">
-          <path d="M0 0.806641H696" stroke="#D9D9D9"/>
-        </svg>
+        <hr class="footer-divider">
     
         <div class="footer-grid">
           <div class="feedback-section">
@@ -54,11 +52,14 @@
             </button>
             <a href="#" class="learn-link">Learn how to contribute</a>
           </div>
-        </div>
-        <h3 class="help-title">Still need help?</h3>
-        <div class="help-links">
-          <a href="#" class="help-link">Provide ECHO feedback</a>
-          <a href="#" class="help-link">Contact support</a>
+          
+          <div class="help-section">
+            <h3 class="section-title">Still need help?</h3>
+            <div class="help-links">
+              <a href="#" class="help-link">Provide ECHO feedback</a>
+              <a href="#" class="help-link">Contact support</a>
+            </div>
+          </div>
         </div>
       </div>
     </footer>
@@ -96,12 +97,14 @@
   .footer-divider {
     margin-bottom: 32px;
     width: 100%;
+    margin-top: 8px;
+    color: #D9D9D9;
   }
   
   .footer-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 64px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
   }
   
   .section-title {
@@ -183,14 +186,8 @@
     margin-top: 4px;
   }
   
-  .help-title {
-    color: #000;
-    font-family: inter;
-    font-size: 16px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: 140%;
-    margin: 80px 0 16px;
+  .help-section {
+    margin-top: 0;
   }
   
   .help-links {
@@ -212,35 +209,57 @@
   
   /* Media Queries to match text container's alignment */
   @media screen and (min-width: 1380px) {
-    .footer-inner {
-      padding: 0 266px 0 calc(195px + 266px); /* Right padding, Left = Sidebar width + content padding */
+    
+
+    .feedback-section {
+      text-align: left;
     }
-  }
-  
-  @media screen and (min-width: 1025px) and (max-width: 1379px) {
-    .footer-inner {
-      padding: 0 199.5px 0 calc(195px + 199.5px); /* Right padding, Left = Sidebar width + content padding */
-    }
-  }
-  
-  @media screen and (min-width: 768px) and (max-width: 1024px) {
-    .footer-inner {
-      width: calc(100% - 44px);
-      max-width: 100%;
+
+    .contribution-section {
+      text-align: left;
       margin: 0 auto;
-      padding: 0 22px;
+      max-width: 334px;
+    }
+
+    .help-section {
+      text-align: left;
+    }
+  }
+
+  @media screen and (min-width: 1025px) and (max-width: 1379px) {
+   
+  }
+  
+  @media screen and (min-width: 768px) and (max-width: 1068px) {
+    .footer-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .help-section {
+      grid-column: 1 / -1;
     }
   }
   
   @media screen and (max-width: 767px) {
     .footer-inner {
-      padding: 0 16px;
+      padding: 0 0px;
       width: 100%;
     }
     
     .footer-grid {
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 32px;
+    }
+    
+    .footer-grid .feedback-section {
+      margin-bottom: 0;
+    }
+    
+    .footer-grid .contribution-section,
+    .footer-grid .help-section {
+      grid-column: unset;
+      margin-top: 32px;
     }
   }
   </style>
