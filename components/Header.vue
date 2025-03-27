@@ -274,7 +274,7 @@ onMounted(() => {
 .header-inner {
   display: flex;
   width: 100%;
-  padding: 0 266px;
+  padding: 0 0px;
   height: 56px;
   justify-content: space-between;
   align-items: center;
@@ -465,6 +465,7 @@ onMounted(() => {
 @media screen and (min-width: 1380px) {
   .header-inner {
     padding: 0 266px;
+    max-width: 1786px;
   }
 }
 
