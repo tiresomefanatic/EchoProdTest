@@ -1024,7 +1024,7 @@ watch(isEditing, (newValue) => {
   width: 100%;
   padding: 0 266px;
   box-sizing: border-box;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: flex-start;
 }
 
