@@ -146,14 +146,15 @@
                       <div v-html="githubContent" class="markdown-content"></div>
                     </template>
                   </div>
+                  
+                  <!-- Move the Footer here to be directly under content -->
+                  <Footer v-if="!isEditing" class="content-aligned-footer" />
                 </div>
               </ClientOnly>
             </div>
           </div>
           <TableOfContents v-if="!isEditing" class="table-of-contents" />
         </div>
-        <!-- Only render Footer when NOT in editing mode -->
-        <Footer v-if="!isEditing" class="full-width-footer" />
       </div>
     </ClientOnly>
 
@@ -1023,7 +1024,7 @@ watch(isEditing, (newValue) => {
   width: 100%;
   padding: 0 266px;
   box-sizing: border-box;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: flex-start;
 }
 
@@ -1957,4 +1958,14 @@ watch(isEditing, (newValue) => {
 
 /* Device preview width classes */
 
+.content-aligned-footer {
+  width: 100%;
+  margin-top: 64px;
+}
+
+/* Make sure the footer doesn't inherit any max-width constraints from parent containers */
+:deep(.content-aligned-footer) {
+  box-sizing: border-box;
+  max-width: none;
+}
 </style>
