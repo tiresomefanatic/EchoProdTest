@@ -464,8 +464,9 @@ onMounted(() => {
 /* Media Queries */
 @media screen and (min-width: 1380px) {
   .header-inner {
-    padding: 0 266px;
-    max-width: 1786px;
+    padding: auto;
+    max-width: 1220px;
+    padding-right: 80px;
   }
 }
 

@@ -78,6 +78,18 @@
     box-sizing: border-box;
     overflow-x: hidden;
   }
+
+  @media screen and (min-width: 1024px) {
+    .footer {
+      margin-left: 40px;
+    }
+  }
+  @media screen and (min-width: 1024px) and (max-width: 1379px) {
+    .footer-inner{
+      max-width: 745px;
+
+    }
+  }
   
   .footer-inner {
     width: 100%;
@@ -96,14 +108,19 @@
   
   .footer-divider {
     margin-bottom: 32px;
-    width: 100%;
     margin-top: 8px;
     color: #D9D9D9;
+  }
+
+  @media screen and (min-width: 1380px) {
+    .footer-inner {
+      max-width: calc(100% - 130px);
+    }
   }
   
   .footer-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, auto);
     gap: 32px;
   }
   
