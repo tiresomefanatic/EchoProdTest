@@ -149,18 +149,6 @@
             </p>
           </div>
           
-          <div class="form-group">
-            <label for="system-prompt" class="form-label">System Prompt</label>
-            <textarea
-              id="system-prompt"
-              class="form-textarea"
-              v-model="systemPrompt"
-              rows="5"
-            ></textarea>
-            <p class="form-help-text">
-              Instructions that define how the AI assistant behaves and responds.
-            </p>
-          </div>
         </div>
         
         <!-- Security & Access Section -->
