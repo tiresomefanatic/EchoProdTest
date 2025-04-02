@@ -122,6 +122,52 @@ export const useNavigationStore = defineStore("navigation", {
   },
 
   actions: {
+    // Toggle lock status of a file or folder
+    toggleLock(itemPath: string) {
+      const sidebarEditorStore = useSidebarEditorStore();
+      
+      // Get current navigation structure (either from draft or current structure)
+      let navigationData;
+      const existingDraft = sidebarEditorStore.getDraftNavigationStructure();
+      
+      if (existingDraft) {
+        navigationData = existingDraft;
+      } else {
+        // Use current structure and create a new object to avoid reference issues
+        navigationData = {
+          navigation: JSON.parse(JSON.stringify(this.getCurrentStructure))
+        };
+      }
+      
+      // Helper function to find and toggle the lock status of an item
+      const toggleItemLock = (items) => {
+        for (const item of items) {
+          if (item.path === itemPath) {
+            // Toggle the lock status
+            item.locked = !item.locked;
+            return true;
+          }
+          if (item.type === "directory" && item.children) {
+            if (toggleItemLock(item.children)) return true;
+          }
+        }
+        return false;
+      };
+      
+      // Toggle the lock status in the navigation structure
+      if (toggleItemLock(navigationData.navigation)) {
+        // Save to draft
+        sidebarEditorStore.saveDraftNavigationStructure(navigationData);
+        
+        // Update the navigation store to use the draft
+        this.applyDraft(navigationData);
+        
+        return true;
+      }
+      
+      return false;
+    },
+    
     applyDraft(draftData: any) {
       if (!draftData) return;
       

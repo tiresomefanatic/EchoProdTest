@@ -99,9 +99,10 @@
                 </div>
 
                 <!-- Edit Mode Controls -->
-                <div v-if="isEditMode && !section.locked" class="item-controls">
-                  <!-- Up/Down arrows for reordering -->
+                <div v-if="isEditMode" class="item-controls">
+                  <!-- Up/Down arrows for reordering (only for unlocked items) -->
                   <button
+                    v-if="!section.locked"
                     class="up-btn"
                     @click.stop="handleMoveItemUp(section.path)"
                     aria-label="Move item up"
@@ -109,14 +110,17 @@
                     ↑
                   </button>
                   <button
+                    v-if="!section.locked"
                     class="down-btn"
                     @click.stop="handleMoveItemDown(section.path)"
                     aria-label="Move item down"
                   >
                     ↓
                   </button>
+                  
 
-                  <!-- Dropdown for directories -->
+
+                  <!-- Dropdown for directories - available for both locked and unlocked items -->
                   <div
                     v-if="section.type === 'directory'"
                     class="dropdown-container"
@@ -195,10 +199,11 @@
 
                         <!-- Edit Mode Controls -->
                         <div
-                          v-if="isEditMode && !item.locked"
+                          v-if="isEditMode"
                           class="item-controls"
                         >
                           <button
+                            v-if="!item.locked"
                             class="up-btn"
                             @click.stop="handleMoveItemUp(item.path)"
                             aria-label="Move item up"
@@ -206,12 +211,15 @@
                             ↑
                           </button>
                           <button
+                            v-if="!item.locked"
                             class="down-btn"
                             @click.stop="handleMoveItemDown(item.path)"
                             aria-label="Move item down"
                           >
                             ↓
                           </button>
+                          
+
                           <div class="dropdown-container">
                             <button
                               class="dropdown-toggle"
@@ -453,10 +461,11 @@
 
                               <!-- Edit Mode Controls for Files -->
                               <div
-                                v-if="isEditMode && !child.locked"
+                                v-if="isEditMode"
                                 class="item-controls"
                               >
                                 <button
+                                  v-if="!child.locked"
                                   class="up-btn"
                                   @click.stop="handleMoveItemUp(child.path)"
                                   aria-label="Move item up"
@@ -464,12 +473,51 @@
                                   ↑
                                 </button>
                                 <button
+                                  v-if="!child.locked"
                                   class="down-btn"
                                   @click.stop="handleMoveItemDown(child.path)"
                                   aria-label="Move item down"
                                 >
                                   ↓
                                 </button>
+                                <!-- Dropdown for files - available for both locked and unlocked items -->
+                                <div class="dropdown-container">
+                                  <button
+                                    class="dropdown-toggle"
+                                    @click.stop="toggleDropdown(child.path, $event)"
+                                    aria-label="Show more options"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      width="24"
+                                      height="24"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                    >
+                                      <path
+                                        d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z"
+                                        stroke="black"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                      />
+                                      <path
+                                        d="M12 6C12.5523 6 13 5.55228 13 5C13 4.44772 12.5523 4 12 4C11.4477 4 11 4.44772 11 5C11 5.55228 11.4477 6 12 6Z"
+                                        stroke="black"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                      />
+                                      <path
+                                        d="M12 20C12.5523 20 13 19.5523 13 19C13 18.4477 12.5523 18 12 18C11.4477 18 11 18.4477 11 19C11 19.5523 11.4477 20 12 20Z"
+                                        stroke="black"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                      />
+                                    </svg>
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </template>
@@ -507,10 +555,11 @@
 
                       <!-- Edit Mode Controls for Files -->
                       <div
-                        v-if="isEditMode && !item.locked"
+                        v-if="isEditMode"
                         class="item-controls"
                       >
                         <button
+                          v-if="!item.locked"
                           class="up-btn"
                           @click.stop="handleMoveItemUp(item.path)"
                           aria-label="Move item up"
@@ -518,12 +567,51 @@
                           ↑
                         </button>
                         <button
+                          v-if="!item.locked"
                           class="down-btn"
                           @click.stop="handleMoveItemDown(item.path)"
                           aria-label="Move item down"
                         >
                           ↓
                         </button>
+                        <!-- Dropdown for files - available for both locked and unlocked items -->
+                        <div class="dropdown-container">
+                          <button
+                            class="dropdown-toggle"
+                            @click.stop="toggleDropdown(item.path, $event)"
+                            aria-label="Show more options"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <path
+                                d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z"
+                                stroke="black"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                              <path
+                                d="M12 6C12.5523 6 13 5.55228 13 5C13 4.44772 12.5523 4 12 4C11.4477 4 11 4.44772 11 5C11 5.55228 11.4477 6 12 6Z"
+                                stroke="black"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                              <path
+                                d="M12 20C12.5523 20 13 19.5523 13 19C13 18.4477 12.5523 18 12 18C11.4477 18 11 18.4477 11 19C11 19.5523 11.4477 20 12 20Z"
+                                stroke="black"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </template>
@@ -597,7 +685,9 @@
         }"
         @click.stop
       >
+        <!-- Add File option - only for directories -->
         <button
+          v-if="isItemDirectory(activeDropdown)"
           class="dropdown-item"
           @click.stop="handleAddNewFile(activeDropdown)"
         >
@@ -624,6 +714,72 @@
             />
           </svg>
           Add File
+        </button>
+        <!-- Add Folder option - only for directories -->
+        <button
+          v-if="isItemDirectory(activeDropdown)"
+          class="dropdown-item"
+          @click.stop="handleAddNewFolder(activeDropdown)"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+          >
+            <path
+              d="M14.6654 12.6667C14.6654 13.0203 14.5249 13.3594 14.2748 13.6095C14.0248 13.8595 13.6857 14 13.332 14H2.66536C2.31174 14 1.97261 13.8595 1.72256 13.6095C1.47251 13.3594 1.33203 13.0203 1.33203 12.6667V3.33333C1.33203 2.97971 1.47251 2.64057 1.72256 2.39052C1.97261 2.14048 2.31174 2 2.66536 2H5.9987L7.33203 4H13.332C13.6857 4 14.0248 4.14048 14.2748 4.39052C14.5249 4.64057 14.6654 4.97971 14.6654 5.33333V12.6667Z"
+              stroke="black"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M8 7.33325V11.3333"
+              stroke="black"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M6 9.33325H10"
+              stroke="black"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Add Folder
+        </button>
+        <!-- Lock/Unlock toggle button - always available for all items -->
+        <button
+          class="dropdown-item"
+          @click.stop="handleToggleLock(activeDropdown)"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+          >
+            <path
+              d="M12.6667 7.33333H3.33333C2.59695 7.33333 2 7.93028 2 8.66666V13.3333C2 14.0697 2.59695 14.6667 3.33333 14.6667H12.6667C13.403 14.6667 14 14.0697 14 13.3333V8.66666C14 7.93028 13.403 7.33333 12.6667 7.33333Z"
+              stroke="black"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M4.66797 7.33333V4.66666C4.66797 3.78261 5.01916 2.93476 5.64428 2.30964C6.2694 1.68452 7.11725 1.33333 8.0013 1.33333C8.88536 1.33333 9.7332 1.68452 10.3583 2.30964C10.9834 2.93476 11.3346 3.78261 11.3346 4.66666V7.33333"
+              stroke="black"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          {{ isItemLocked(activeDropdown) ? 'Unlock' : 'Lock' }}
         </button>
         <button
           class="dropdown-item delete"
@@ -661,10 +817,11 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from "vue";
 import { useRoute } from "vue-router";
+import { useNavigationStore } from "~/store/navigation";
+import { useSidebarEditorStore } from "~/store/sidebarEditor";
+import { useToast, type ToastConfig } from "~/composables/useToast";
 import { useGithub } from "../composables/useGithub";
 import { useEventBus } from "@vueuse/core";
-import { useSidebarEditorStore } from "~/store/sidebarEditor";
-import { useNavigationStore } from "~/store/navigation";
 import { storeToRefs } from "pinia";
 import NewFileModal from "~/components/modals/NewFileModal.vue";
 import NewFolderModal from "~/components/modals/NewFolderModal.vue";
@@ -699,27 +856,22 @@ const navigationStructure = computed(() => {
   const currentPath = route.path;
   console.log("Current path:", currentPath);
   
-  // If we're in edit mode, show all sections
-  if (sidebarEditorStore.isEditMode) {
-    return structure;
-  }
-  
-  // Filter the navigation structure based on the current path
+  // Filter the navigation structure based on the current path, regardless of edit mode
   if (currentPath.includes('/design')) {
     // Find the design folder
     const designFolder = structure.find(section => section.path.includes('/design') && section.type === 'directory');
     // Return only the children of the design folder if it exists
-    return designFolder?.children || [];
+    return designFolder && designFolder.type === 'directory' ? designFolder.children : [];
   } else if (currentPath.includes('/develop')) {
     // Find the develop folder
     const developFolder = structure.find(section => section.path.includes('/develop') && section.type === 'directory');
     // Return only the children of the develop folder if it exists
-    return developFolder?.children || [];
+    return developFolder && developFolder.type === 'directory' ? developFolder.children : [];
   } else if (currentPath.includes('/contribute')) {
     // Find the contribute folder
     const contributeFolder = structure.find(section => section.path.includes('/contribute') && section.type === 'directory');
     // Return only the children of the contribute folder if it exists
-    return contributeFolder?.children || [];
+    return contributeFolder && contributeFolder.type === 'directory' ? contributeFolder.children : [];
   } else {
     // On the home page or other pages, show all sections
     return structure;
@@ -987,6 +1139,72 @@ const handleDeleteItem = (itemPath: string) => {
   activeDropdown.value = null;
 
   console.log("Delete item:", itemPath);
+};
+
+// Helper function to recursively find an item by path
+const findItemByPath = (itemPath: string, items) => {
+  if (!items) return null;
+  
+  for (const item of items) {
+    if (item.path === itemPath) {
+      return item;
+    }
+    if (item.type === 'directory' && item.children) {
+      const found = findItemByPath(itemPath, item.children);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+// Check if an item is locked
+const isItemLocked = (itemPath: string): boolean => {
+  if (!itemPath) return false;
+  
+  // Find the item in the navigation structure
+  const item = findItemByPath(itemPath, navigationStructure.value);
+  return item ? item.locked : false;
+};
+
+// Check if an item is a directory
+const isItemDirectory = (itemPath: string): boolean => {
+  if (!itemPath) return false;
+  
+  // Find the item in the navigation structure
+  const item = findItemByPath(itemPath, navigationStructure.value);
+  return item ? item.type === 'directory' : false;
+};
+
+// Lock/unlock handler
+const handleToggleLock = (itemPath: string) => {
+  const navigationStore = useNavigationStore();
+  const toast = useToast();
+  
+  // Toggle lock status in the navigation structure
+  const success = navigationStore.toggleLock(itemPath);
+  
+  if (success) {
+    // Update hasDraftChanges in sidebarEditorStore
+    const sidebarEditorStore = useSidebarEditorStore();
+    sidebarEditorStore.hasDraftChanges = true;
+    
+    // Close the dropdown menu
+    activeDropdown.value = null;
+    
+    // Show success toast
+    toast.showToast({
+      title: "Success",
+      message: "Lock status updated (draft saved)",
+      type: "success",
+    });
+  } else {
+    // Show error toast
+    toast.showToast({
+      title: "Error",
+      message: "Failed to update lock status",
+      type: "error",
+    });
+  }
 };
 </script>
 
@@ -1315,11 +1533,16 @@ const handleDeleteItem = (itemPath: string) => {
   transform: rotate(90deg);
 }
 
-.nav-item.locked,
-.nav-group-header.locked {
+.nav-item.locked .item-content,
+.nav-group-header.locked .item-content {
   color: #999;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+.nav-item.locked,
+.nav-group-header.locked {
+  color: #999;
 }
 
 /* Mobile styles */
