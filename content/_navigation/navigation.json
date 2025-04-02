@@ -13,6 +13,13 @@
           "locked": false,
           "children": [
             {
+              "title": "NewTest",
+              "path": "/design/foundation/newtest",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            },
+            {
               "title": "Animation",
               "path": "/design/foundation/animation",
               "type": "file",
@@ -23,6 +30,12 @@
               "path": "/design/foundation/applications",
               "type": "file",
               "locked": true
+            },
+            {
+              "title": "Color",
+              "path": "/design/foundation/color",
+              "type": "file",
+              "locked": false
             },
             {
               "title": "Icons",
