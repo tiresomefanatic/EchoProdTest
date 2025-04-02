@@ -28,7 +28,7 @@
               "title": "Icons",
               "path": "/design/foundation/icons",
               "type": "file",
-              "locked": true
+              "locked": false
             },
             {
               "title": "Illustration",
