@@ -102,8 +102,8 @@
               "locked": false,
               "children": [
                 {
-                  "title": "Components",
-                  "path": "/design/digital/components",
+                  "title": "Button",
+                  "path": "/design/digital/buttons",
                   "type": "file",
                   "locked": false
                 }
