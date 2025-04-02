@@ -472,7 +472,10 @@ onMounted(() => {
 
 @media screen and (min-width: 1025px) and (max-width: 1379px) {
   .header-inner {
-    padding: 0 199.5px;
+    max-width: 1020px; /* Set a fixed maximum width */
+    margin: 0 auto; /* Center the header */
+    padding: 0 40px; /* Use smaller consistent padding */
+    width: 100%; /* Ensure it takes full width up to max-width */
   }
 }
 
