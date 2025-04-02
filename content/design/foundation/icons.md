@@ -1,239 +1,41 @@
----
-title: Icons
-description: Echo Design System icons documentation
----
-
-<div class="design-layout">
-<div class="design-content">
-
-# Icons
-
-Lorem ipsum dolor sit amet consectetur. Et ut ultric ut. Vitae pharetra rutrum dolor vestibulum pharetra et. Pretium consecttur venenatis lacus quam dolor lacinia.
-
-<div class="icon-section">
-  <div class="section-heading">
-    <h2>Style and structure</h2>
-  </div>
-  <div class="section-content">
-    <div class="icon-showcase">
-      <img src="/images/vida-logo-structure.svg" alt="VIDA logo structure and style" />
-    </div>
-  </div>
-</div>
-
-<div class="icon-section">
-  <div class="section-heading">
-    <h2>Size</h2>
-  </div>
-  <div class="section-content">
-    <div class="icon-showcase size">
-      <img src="/images/vida-logo-size.svg" alt="VIDA logo size guidelines" />
-    </div>
-  </div>
-</div>
-
-<div class="icon-section">
-  <div class="section-heading">
-    <h2>Spacing</h2>
-  </div>
-  <div class="section-content">
-    <div class="icon-showcase spacing">
-      <div class="spacing-grid">
-        <div class="dark-bg">
-          <img src="/images/vida-logo-dark.svg" alt="VIDA logo on dark background" />
-          <img src="/images/vida-logo-dark-horizontal.svg" alt="VIDA horizontal logo on dark background" />
-        </div>
-        <div class="light-bg">
-          <img src="/images/vida-logo-light.svg" alt="VIDA logo on light background" />
-          <img src="/images/vida-logo-light-horizontal.svg" alt="VIDA horizontal logo on light background" />
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="icon-section">
-  <div class="section-heading">
-    <h2>Usage</h2>
-  </div>
-  <div class="section-content">
-    <div class="usage-grid">
-      <div class="usage-example">
-        <img src="/images/usage-1.svg" alt="Usage example 1" />
-        <span>Fig 1.</span>
-      </div>
-      <div class="usage-example">
-        <img src="/images/usage-2.svg" alt="Usage example 2" />
-        <span>Fig 2.</span>
-      </div>
-      <div class="usage-example">
-        <img src="/images/usage-3.svg" alt="Usage example 3" />
-        <span>Fig 3.</span>
-      </div>
-      <div class="usage-example">
-        <img src="/images/usage-4.svg" alt="Usage example 4" />
-        <span>Fig 4.</span>
-      </div>
-      <div class="usage-example">
-        <img src="/images/usage-5.svg" alt="Usage example 5" />
-        <span>Fig 5.</span>
-      </div>
-      <div class="usage-example">
-        <img src="/images/usage-6.svg" alt="Usage example 6" />
-        <span>Fig 6.</span>
-      </div>
-      <div class="usage-example">
-        <img src="/images/usage-7.svg" alt="Usage example 7" />
-        <span>Fig 7.</span>
-      </div>
-      <div class="usage-example">
-        <img src="/images/usage-8.svg" alt="Usage example 8" />
-        <span>Fig 8.</span>
-      </div>
-    </div>
-    <div class="usage-notes">
-      <p>Fig 1. Do not change the ratio between the VIDA zip and the VIDA wordmark</p>
-      <p>Fig 2. Do not tilt the logo (unless under certain exceptions and circumstances)</p>
-      <p>Fig 3. Do not outline the VIDA Logo</p>
-      <p>Fig 4. Do not use the VIDA Zip as a typographical substitute under any circumstance</p>
-      <p>Fig 5. Do not skew or stretch the VIDA logo in any way or form</p>
-      <p>Fig 6. Do not apply any special effects to the logo (unless under certain exceptions and circumstances)</p>
-      <p>Fig 7. Do not alter the spacing inbetween the VIDA wordmark</p>
-    </div>
-  </div>
-</div>
-
-</div>
-</div>
-
-<style>
-.design-layout {
-  display: flex;
-  gap: 2rem;
-}
-
-.design-sidebar {
-  width: 240px;
-  flex-shrink: 0;
-}
-
-.design-content {
-  flex: 1;
-  max-width: 800px;
-}
-
-.icon-section {
-  display: flex;
-  gap: 2rem;
-  margin: 3rem 0;
-}
-
-.section-heading {
-  flex: 1;
-}
-
-.section-heading h2 {
-  margin: 0;
-}
-
-.section-content {
-  flex: 2;
-}
-
-.icon-showcase {
-  background: #f5f5f5;
-  padding: 2rem;
-  border-radius: 4px;
-}
-
-.icon-showcase img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.spacing-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
-.dark-bg {
-  background: #000;
-  padding: 2rem;
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.light-bg {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 4px;
-  border: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.usage-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.usage-example {
-  background: #f5f5f5;
-  padding: 1rem;
-  border-radius: 4px;
-  text-align: center;
-}
-
-.usage-example img {
-  width: 100%;
-  height: auto;
-  margin-bottom: 0.5rem;
-}
-
-.usage-example span {
-  font-size: 0.9rem;
-  color: #666;
-}
-
-.usage-notes {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.usage-notes p {
-  margin: 0.5rem 0;
-}
-
-@media (max-width: 768px) {
-  .design-layout {
-    flex-direction: column;
-  }
-  
-  .design-sidebar {
-    width: 100%;
-  }
-
-  .icon-section {
-    flex-direction: column;
-  }
-
-  .section-heading {
-    margin-bottom: 1rem;
-  }
-
-  .spacing-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .usage-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-</style>
+<h2 style="text-align: left">Construction
+</h2>
+<p style="text-align: left">In the pursuit of creating truly honest icons, meticulous attention to detail is paramount. Every pixel and line should be thoughtfully considered to ensure accurate representation without misinterpretation. Even if this means rethinking a fundamental convention when required.<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743599301038-be9cf42e-1743599300179-c7badgjrlsg.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Credential=cipRRh8D5NgHPVuaj4zW8kzGQg6EUsES%2F20250402%2Fus-east-1%2Fs3%2Faws4_request&amp;X-Amz-Date=20250402T131010Z&amp;X-Amz-Expires=86400&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Signature=f13e749251f4ad8b36352bab19faf3044e50815d9f0a17d2c06ab8f1ac660f94" alt="uploads/1743599301038-be9cf42e-1743599300179-c7badgjrlsg.png">
+</p>
+<h2 style="text-align: left">Icon library
+</h2>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743599256398-5bd83284-1743599255448-x83dtafrpnl.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Credential=cipRRh8D5NgHPVuaj4zW8kzGQg6EUsES%2F20250402%2Fus-east-1%2Fs3%2Faws4_request&amp;X-Amz-Date=20250402T131123Z&amp;X-Amz-Expires=86400&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Signature=ffe8c0d207bf82c1d09bc4c8987e934404fdf7b45e909003f298b7284d8a8ba0" alt="uploads/1743599256398-5bd83284-1743599255448-x83dtafrpnl.png">Icons should be always bounded by bounding boxes and should be visually centered. There has to be a minimum margin of 10%(on each side or in icons with orientation — atleast one side) of the size of the total icon element. No borders and strokes to the bounding box. All rules of color should apply when using icons as well.
+</p>
+<h2 style="text-align: left">Scale
+</h2>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743599623167-a2af4c9f-1743599622296-yw0sexsdrp.png" alt="Scaling 2.png">
+</p>
+<h2 style="text-align: left">Standard icon size
+</h2>
+<p style="text-align: left">Standard icons are typically designed at a size of 24px x 24px
+</p>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743599748984-c803b517-1743599747962-m3caevwyjrq.png" alt="Icon 1.png">
+</p>
+<h2 style="text-align: left">Usage
+</h2>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743599780594-3e7b7d6a-1743599779644-4d3qxsswaqa.png" alt="image 15.png">
+</p>
+<h2 style="text-align: left">Animation
+</h2>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743599835629-fcbbe3a5-1743599834577-pk8zsrfrvs.gif" alt="Keyfob-Animation-all---For-Deck.gif">Animation enhances the interaction of icons, adding polish and delight to their actions, especially on critical UI elements like keyfob controls. These animations draw attention and infuse important icons with delight.<br>
+<br>For more complex icon animations, it's crucial to adjust their duration appropriately to avoid a rushed feel. To maintain consistency throughout an app, use consistent durations based on the complexity of the icons:<br>- Simple icon animations: 100ms<br>- Average icon animations: 200ms<br>- Complex icon animations: 500ms (as utilized in keyfob interactions)<br>
+<br>These durations ensure that animations are visually appealing while being functionally effective across different interface elements.
+</p>
+<p style="text-align: left">
+</p>
+<h2 style="text-align: left">Animation guideline for action oriented icons
+</h2>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743600047913-7b7b2b34-1743600047278-fic5w3v1l.png" alt="image 19.png">These animation trigger an event by tapping on the icon. There is no change of state for the icon. Given these actions are important, this is a moment where we can create delight for the user. This guideline for structuring the animation is to be used for creating icon animation which trigger functions. <br>
+<br>Since this is an on tap animation, we will be having a background container which appears to indicate this icon is being pressed. The icon animation will vary from icon to icon but we need an visual nudge which has to be constant with all these animations to orient the user.
+</p>
