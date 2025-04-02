@@ -16,7 +16,14 @@
 </p>
 <h4 style="text-align: left">2. Button label area
 </h4>
-<p style="text-align: left">This shows the button's content.<br>You can apply the text, icon, and the text+icon format using the center alignment by default.
+<p style="text-align: left">This shows the button's content.<br>You can apply the text, icon, and the text+icon format using the center alignment by default.<br>
+</p>
+<h2 style="text-align: left">Hierarchy
+</h2>
+<p style="text-align: left">Button hierarchy emphasizes which button is more important in the context so the user can take action immediately.
+</p>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743608977971-0b404749-1743608977382-rmyzcfl217.png" alt="Hierarchy.png">
 </p>
 <h2 style="text-align: left">States
 </h2>
