@@ -13,6 +13,13 @@
           "locked": false,
           "children": [
             {
+              "title": "NewNewTest",
+              "path": "/design/foundation/newnewtest",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            },
+            {
               "title": "NewTest",
               "path": "/design/foundation/newtest",
               "type": "directory",
@@ -38,6 +45,12 @@
               "locked": false
             },
             {
+              "title": "Color",
+              "path": "/design/foundation/color",
+              "type": "file",
+              "locked": false
+            },
+            {
               "title": "Icons",
               "path": "/design/foundation/icons",
               "type": "file",
@@ -46,18 +59,6 @@
             {
               "title": "Illustration",
               "path": "/design/foundation/illustration",
-              "type": "file",
-              "locked": false
-            },
-            {
-              "title": "Color",
-              "path": "/design/foundation/color",
-              "type": "file",
-              "locked": false
-            },
-            {
-              "title": "Stickers",
-              "path": "/design/foundation/stickers",
               "type": "file",
               "locked": false
             },
@@ -76,6 +77,12 @@
             {
               "title": "Logo",
               "path": "/design/foundation/logo",
+              "type": "file",
+              "locked": false
+            },
+            {
+              "title": "Stickers",
+              "path": "/design/foundation/stickers",
               "type": "file",
               "locked": false
             },
