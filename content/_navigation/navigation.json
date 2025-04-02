@@ -1,6 +1,13 @@
 {
   "navigation": [
     {
+      "title": "Components",
+      "path": "/components",
+      "type": "directory",
+      "locked": false,
+      "children": []
+    },
+    {
       "title": "Design",
       "path": "/design",
       "type": "directory",
