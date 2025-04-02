@@ -34,7 +34,7 @@
               "title": "Illustration",
               "path": "/design/foundation/illustration",
               "type": "file",
-              "locked": true
+              "locked": false
             },
             {
               "title": "Color",
