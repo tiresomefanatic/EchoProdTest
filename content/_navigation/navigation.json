@@ -76,8 +76,8 @@
           ]
         },
         {
-          "title": "Components",
-          "path": "/design/components",
+          "title": "Digital",
+          "path": "/design/digital",
           "type": "directory",
           "locked": false,
           "children":[]
