@@ -68,20 +68,6 @@
               "locked": false
             },
             {
-              "title": "Test",
-              "path": "/design/foundation/test",
-              "type": "directory",
-              "locked": false,
-              "children": [
-                {
-                  "title": "testfile",
-                  "path": "/design/foundation/test/testfile",
-                  "type": "file",
-                  "locked": false
-                }
-              ]
-            },
-            {
               "title": "Typography",
               "path": "/design/foundation/typography",
               "type": "file",
