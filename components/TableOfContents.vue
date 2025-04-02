@@ -81,28 +81,36 @@ const initializeHeadings = () => {
 
     const headingElements = contentArea.querySelectorAll('h1, h2');
     
-    headings.value = Array.from(headingElements).map((element) => {
-      if (!element.id) {
-        element.id = element.textContent?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || '';
-      }
-      
-      return {
-        id: element.id,
-        text: element.textContent || '',
-        element: element as HTMLElement,
-        level: parseInt(element.tagName[1])
-      };
-    });
+    // Filter out empty headings and ensure they have IDs
+    headings.value = Array.from(headingElements)
+      .filter(element => element.textContent && element.textContent.trim() !== '')
+      .map((element) => {
+        if (!element.id) {
+          element.id = element.textContent?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || '';
+        }
+        
+        return {
+          id: element.id,
+          text: element.textContent || '',
+          element: element as HTMLElement,
+          level: parseInt(element.tagName[1])
+        };
+      });
 
     updateActiveHeading();
-  }, 200); // Increased timeout to ensure content is loaded
+  }, 500); // Increased timeout to ensure content is fully loaded
 };
 
 // Watch for route changes
 watch(
   () => route.path,
   () => {
-    initializeHeadings();
+    // Reset headings when route changes
+    headings.value = [];
+    // Re-initialize headings with a delay to ensure content is loaded
+    setTimeout(() => {
+      initializeHeadings();
+    }, 100);
   },
   { immediate: true }
 );
@@ -110,12 +118,17 @@ watch(
 // Watch for content changes
 const setupContentObserver = () => {
   const observer = new MutationObserver(() => {
+    // Reset and re-initialize headings when content changes
+    headings.value = [];
     initializeHeadings();
   });
 
   const observeContent = () => {
     const contentArea = document.querySelector('.markdown-content, .prose-content');
     if (contentArea) {
+      // Disconnect any existing observers first
+      observer.disconnect();
+      // Then observe the content area
       observer.observe(contentArea, {
         childList: true,
         subtree: true,
@@ -130,9 +143,19 @@ const setupContentObserver = () => {
   // Periodically check for content area in case it's not immediately available
   const checkInterval = setInterval(() => {
     const contentArea = document.querySelector('.markdown-content, .prose-content');
-    if (contentArea && !headings.value.length) {
-      observeContent();
-      initializeHeadings();
+    if (contentArea) {
+      if (!headings.value.length) {
+        observeContent();
+        initializeHeadings();
+      }
+      
+      // Check if we have the right headings for the current content
+      const currentHeadingElements = contentArea.querySelectorAll('h1, h2');
+      if (currentHeadingElements.length !== headings.value.length) {
+        headings.value = [];
+        observeContent();
+        initializeHeadings();
+      }
     }
   }, 1000);
 
@@ -142,12 +165,26 @@ const setupContentObserver = () => {
   };
 };
 
+// Add an event listener for the custom content-loaded event
+const handleContentLoaded = () => {
+  headings.value = [];
+  initializeHeadings();
+};
+
 onMounted(() => {
   window.addEventListener('scroll', updateActiveHeading);
+  window.addEventListener('content-loaded', handleContentLoaded);
+  
+  // Force initialization on mount
+  setTimeout(() => {
+    initializeHeadings();
+  }, 300);
+  
   const cleanup = setupContentObserver();
 
   onUnmounted(() => {
     window.removeEventListener('scroll', updateActiveHeading);
+    window.removeEventListener('content-loaded', handleContentLoaded);
     cleanup();
   });
 });

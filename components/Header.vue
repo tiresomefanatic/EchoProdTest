@@ -4,22 +4,43 @@
     <div class="header-content">
       <div class="header-inner">
         <!-- Sidebar Toggle Button (768-1024px only) -->
-        <button 
+        <button
           class="sidebar-toggle"
           aria-label="Toggle sidebar"
           @click.stop.prevent="toggleSidebar"
-          :class="{ 'active': isSidebarOpen }"
+          :class="{ active: isSidebarOpen }"
           tabindex="0"
           role="button"
           :aria-expanded="isSidebarOpen"
         >
-          <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1 1H19" stroke="#1D1B1B" stroke-width="2" stroke-linecap="round"/>
-            <path d="M1 7H19" stroke="#1D1B1B" stroke-width="2" stroke-linecap="round"/>
-            <path d="M1 13H19" stroke="#1D1B1B" stroke-width="2" stroke-linecap="round"/>
+          <svg
+            width="20"
+            height="14"
+            viewBox="0 0 20 14"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M1 1H19"
+              stroke="#1D1B1B"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path
+              d="M1 7H19"
+              stroke="#1D1B1B"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path
+              d="M1 13H19"
+              stroke="#1D1B1B"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
           </svg>
         </button>
-        
+
         <!-- Logo Section -->
         <div class="logo">
           <svg
@@ -89,11 +110,11 @@
           <!-- Right Section -->
           <div class="header-right">
             <!-- Search Toggle (768px-1023px) -->
-            <button 
-              class="search-toggle" 
-              aria-label="Toggle search" 
+            <button
+              class="search-toggle"
+              aria-label="Toggle search"
               @click.stop.prevent="toggleSearch"
-              :class="{ 'active': isSearchOpen }"
+              :class="{ active: isSearchOpen }"
               tabindex="0"
               role="button"
               :aria-expanded="isSearchOpen"
@@ -112,7 +133,7 @@
                 />
               </svg>
             </button>
-            
+
             <!-- Search -->
             <div class="search" :class="{ 'is-open': isSearchOpen }">
               <svg
@@ -145,8 +166,8 @@
 
 <script setup lang="ts">
 import { useRoute, navigateTo } from "#app";
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { useEventBus } from '@vueuse/core';
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import { useEventBus } from "@vueuse/core";
 
 interface NavItem {
   label: string;
@@ -158,7 +179,7 @@ const navItems: NavItem[] = [
   { label: "Design", path: "/design", disabled: false },
   { label: "Develop", path: "/develop", disabled: true },
   { label: "Contribute", path: "/contribute", disabled: true },
-  { label: "Options", path: "/options", disabled: true },
+  { label: "Opinions", path: "/opinions", disabled: true },
 ];
 
 const route = useRoute();
@@ -168,31 +189,31 @@ const isSearchOpen = ref(false);
 const isSidebarOpen = ref(false);
 
 // Create event bus for sidebar
-const sidebarBus = useEventBus('sidebar-toggle');
+const sidebarBus = useEventBus("sidebar-toggle");
 
 // Toggle search with improved handling
 const toggleSearch = () => {
   isSearchOpen.value = !isSearchOpen.value;
-  console.log('Search toggled:', isSearchOpen.value);
-  
+  console.log("Search toggled:", isSearchOpen.value);
+
   // Force DOM update by using direct DOM manipulation
   if (process.client) {
-    const searchElement = document.querySelector('.search');
+    const searchElement = document.querySelector(".search");
     if (searchElement) {
       if (isSearchOpen.value) {
-        searchElement.classList.add('is-open');
+        searchElement.classList.add("is-open");
         // Focus the search input for better UX
         setTimeout(() => {
-          const searchInput = searchElement.querySelector('input');
+          const searchInput = searchElement.querySelector("input");
           if (searchInput) {
             searchInput.disabled = false;
             searchInput.focus();
           }
         }, 10);
       } else {
-        searchElement.classList.remove('is-open');
+        searchElement.classList.remove("is-open");
         // Disable input when closed
-        const searchInput = searchElement.querySelector('input');
+        const searchInput = searchElement.querySelector("input");
         if (searchInput) {
           searchInput.disabled = true;
         }
@@ -204,12 +225,12 @@ const toggleSearch = () => {
 // Toggle sidebar with improved handling
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
-  console.log('Sidebar toggled in Header, new state:', isSidebarOpen.value);
-  
+  console.log("Sidebar toggled in Header, new state:", isSidebarOpen.value);
+
   // Emit event with clear value to ensure it's properly received
   sidebarBus.emit(isSidebarOpen.value);
-  console.log('Emitted sidebar event:', isSidebarOpen.value);
-  
+  console.log("Emitted sidebar event:", isSidebarOpen.value);
+
   // Close search if it's open when toggling sidebar
   if (isSearchOpen.value) {
     isSearchOpen.value = false;
@@ -220,22 +241,24 @@ const toggleSidebar = () => {
 onMounted(() => {
   if (process.client) {
     const handleClickOutside = (event: MouseEvent) => {
-      const searchEl = document.querySelector('.search');
-      const searchToggle = document.querySelector('.search-toggle');
-      
-      if (isSearchOpen.value && 
-          searchEl && 
-          searchToggle && 
-          !searchEl.contains(event.target as Node) && 
-          !searchToggle.contains(event.target as Node)) {
+      const searchEl = document.querySelector(".search");
+      const searchToggle = document.querySelector(".search-toggle");
+
+      if (
+        isSearchOpen.value &&
+        searchEl &&
+        searchToggle &&
+        !searchEl.contains(event.target as Node) &&
+        !searchToggle.contains(event.target as Node)
+      ) {
         isSearchOpen.value = false;
       }
     };
-    
-    document.addEventListener('click', handleClickOutside);
-    
+
+    document.addEventListener("click", handleClickOutside);
+
     onUnmounted(() => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     });
   }
 });
@@ -258,7 +281,7 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(250, 250, 250, 0.60);
+  background: rgba(250, 250, 250, 0.6);
   backdrop-filter: blur(27px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 60;
@@ -350,7 +373,7 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   gap: 8px;
-  color: #1D1B1B;
+  color: #1d1b1b;
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
@@ -360,7 +383,7 @@ onMounted(() => {
 }
 
 .nav-link.active {
-  color: #1D1B1B;
+  color: #1d1b1b;
   opacity: 1;
   font-weight: 600;
 }
@@ -372,7 +395,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 2px;
-  background: #FF5310;
+  background: #ff5310;
 }
 
 .nav-link.disabled {
@@ -393,7 +416,7 @@ onMounted(() => {
 
 .search {
   display: flex;
-  background-color: #E6E6E6;
+  background-color: #e6e6e6;
   width: 248px;
   height: 32px;
   padding: 8px 14px;
@@ -406,7 +429,7 @@ onMounted(() => {
 .search svg {
   width: 16px;
   height: 16px;
-  color: #1D1B1B;
+  color: #1d1b1b;
   opacity: 0.7;
 }
 
@@ -419,17 +442,17 @@ onMounted(() => {
   border: none;
   outline: none;
   font-size: 16px;
-  color: #1D1B1B;
+  color: #1d1b1b;
   padding: 0;
 }
 
 .search-input::placeholder {
-  color: #1D1B1B;
+  color: #1d1b1b;
   opacity: 0.7;
 }
 
 .search-divider {
-  color: #1D1B1B;
+  color: #1d1b1b;
   opacity: 0.3;
   font-size: 14px;
 }
@@ -480,7 +503,7 @@ onMounted(() => {
     padding: 0 22px;
     justify-content: flex-start;
   }
-  
+
   .sidebar-toggle {
     display: flex;
     cursor: pointer;
@@ -490,17 +513,17 @@ onMounted(() => {
     margin-right: auto;
     margin-left: 16px;
   }
-  
+
   .search-toggle {
     display: flex;
     margin-right: 8px;
     cursor: pointer;
   }
-  
+
   .nav {
     display: flex;
   }
-  
+
   .search {
     display: none;
     position: absolute;
@@ -508,13 +531,13 @@ onMounted(() => {
     right: 22px;
     width: 200px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    background-color: #E6E6E6;
+    background-color: #e6e6e6;
     z-index: 100;
     opacity: 0;
     visibility: hidden;
     transition: none; /* Disable transitions for instant toggle */
   }
-  
+
   .search.is-open {
     display: flex !important;
     opacity: 1 !important;
@@ -536,12 +559,12 @@ onMounted(() => {
   .nav {
     display: none;
   }
-  
+
   .search-toggle {
     display: flex;
     margin-right: 8px;
   }
-  
+
   .search {
     display: none;
     position: absolute;
@@ -549,13 +572,13 @@ onMounted(() => {
     right: 16px;
     width: 160px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    background-color: #E6E6E6;
+    background-color: #e6e6e6;
     z-index: 100;
     opacity: 0;
     visibility: hidden;
     transition: none; /* Disable transitions for instant toggle */
   }
-  
+
   .search.is-open {
     display: flex !important;
     opacity: 1 !important;

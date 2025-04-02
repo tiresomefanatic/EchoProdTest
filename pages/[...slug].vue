@@ -408,6 +408,11 @@ const loadGithubContent = async () => {
         githubContent.value = marked(draftContent.content);
         store.updateRawText(draftContent.content);
         contentKey.value++;
+        
+        // Dispatch content-loaded event after content is updated
+        setTimeout(() => {
+          window.dispatchEvent(new Event('content-loaded'));
+        }, 100);
         return;
       }
       
@@ -419,6 +424,11 @@ const loadGithubContent = async () => {
         githubContent.value = marked(cachedGitContent.content);
         store.updateRawText(cachedGitContent.content);
         contentKey.value++;
+        
+        // Dispatch content-loaded event after content is updated
+        setTimeout(() => {
+          window.dispatchEvent(new Event('content-loaded'));
+        }, 100);
         return;
       }
     } else {
@@ -430,6 +440,11 @@ const loadGithubContent = async () => {
         githubContent.value = marked(cachedGitContent.content);
         store.updateRawText(cachedGitContent.content);
         contentKey.value++;
+        
+        // Dispatch content-loaded event after content is updated
+        setTimeout(() => {
+          window.dispatchEvent(new Event('content-loaded'));
+        }, 100);
         return;
       }
     }
@@ -449,6 +464,11 @@ const loadGithubContent = async () => {
     githubContent.value = marked(content);
     store.updateRawText(content);
     contentKey.value++;
+    
+    // Dispatch content-loaded event after content is updated
+    setTimeout(() => {
+      window.dispatchEvent(new Event('content-loaded'));
+    }, 100);
     
   } catch (error) {
     console.error("Error loading GitHub content:", error);
