@@ -103,11 +103,13 @@ import { useGithub } from '~/composables/useGithub';
 import { navigateTo } from '#app';
 import { useToast } from '~/composables/useToast';
 import { useEditorStore } from '~/store/editor';
+import { useSidebarEditorStore } from '~/store/sidebarEditor';
 import CreatePRModal from './CreatePRModal.vue';
 
 const { currentBranch, branches, switchBranch, createBranch, isLoggedIn } = useGithub();
 const { showToast } = useToast();
 const editorStore = useEditorStore();
+const sidebarEditorStore = useSidebarEditorStore();
 
 // Props to receive content path and status from parent
 const props = defineProps({
@@ -286,19 +288,22 @@ const forceUpdate = async () => {
 
 const handleExitBranch = async () => {
   try {
+    // Ensure we exit edit mode in the sidebar before switching branch
+    sidebarEditorStore.exitEditMode();
+    
     // First switch to main branch
     await switchBranch('main');
+    
+    // Call monitorBranchChanges to handle any remaining edit mode state
+    sidebarEditorStore.monitorBranchChanges();
     
     // Then navigate to branches page
     navigateTo('/branches');
     
-
     // Keep single toast for branch switching feedback
     showToast({
       title: 'Branch Switched',
       message: 'Successfully switched to main branch',
-
- 
       type: 'success'
     });
   } catch (error) {

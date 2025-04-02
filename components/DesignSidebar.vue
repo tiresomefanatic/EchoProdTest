@@ -817,7 +817,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useNavigationStore } from "~/store/navigation";
 import { useSidebarEditorStore } from "~/store/sidebarEditor";
@@ -1003,6 +1003,9 @@ onMounted(() => {
   // Always start with sidebar closed on mobile
   if (process.client) {
     isOpen.value = false;
+    
+    // Ensure we check for branch changes and clear drafts when component mounts
+    sidebarEditorStore.monitorBranchChanges();
   }
 
   refreshNavigation(true);
@@ -1014,6 +1017,16 @@ onMounted(() => {
         // Close sidebar when in mobile view
         isOpen.value = false;
       }
+    });
+    
+    // Also set up an interval to check periodically for draft clearing signals
+    const checkInterval = setInterval(() => {
+      sidebarEditorStore.monitorBranchChanges();
+    }, 1000); // Check every second
+    
+    // Clean up interval on component unmount
+    onUnmounted(() => {
+      clearInterval(checkInterval);
     });
   }
 });
@@ -1037,9 +1050,13 @@ const closeMobileMenu = () => {
   }
 };
 
-// Watch for branch changes to refresh navigation
+// Watch for branch changes to refresh navigation and exit edit mode
 watch(currentBranch, async (newBranch) => {
   console.log("Branch changed to:", newBranch);
+  
+  // Use the monitorBranchChanges method to handle edit mode exiting
+  sidebarEditorStore.monitorBranchChanges();
+  
   await refreshNavigation(true);
 });
 

@@ -502,9 +502,30 @@ export const useGithub = () => {
 
   // Handle branch change
   const switchBranch = async (branch: string) => {
+    // Store the previous branch value before changing
+    const previousBranch = currentBranch.value;
+    
+    // Update current branch
     currentBranch.value = branch;
+    
     if (process.client) {
+      // Store new branch in localStorage
       localStorage.setItem("github-current-branch", branch);
+      
+      // Clear any draft changes from the previous branch
+      if (previousBranch && previousBranch !== branch) {
+        // Clear the draft for the previous branch
+        localStorage.removeItem(`navigation-draft-${previousBranch}`);
+        
+        // Also clear draft for current branch to ensure clean state
+        localStorage.removeItem(`navigation-draft-${branch}`);
+        
+        // Signal that any draft changes should be cleared directly
+        // This will be picked up by any component that has the sidebarEditorStore
+        localStorage.setItem("clear-navigation-drafts", "true");
+        
+        console.log(`Cleared draft changes for branch switch from ${previousBranch} to ${branch}`);
+      }
     }
   };
 

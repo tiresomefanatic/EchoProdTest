@@ -12,6 +12,7 @@ interface SidebarEditorState {
   newItemParentPath: string | null;
   newItemName: string;
   hasDraftChanges: boolean; // Track if we have unsaved navigation changes
+  previousBranch: string; // Track the current branch for change detection
 }
 
 export const useSidebarEditorStore = defineStore("sidebarEditor", {
@@ -22,6 +23,7 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
     newItemParentPath: null,
     newItemName: "",
     hasDraftChanges: false,
+    previousBranch: process.client ? localStorage.getItem("github-current-branch") || "main" : "main",
   }),
 
   actions: {
@@ -30,6 +32,41 @@ export const useSidebarEditorStore = defineStore("sidebarEditor", {
       // Reset state when exiting edit mode
       if (!this.isEditMode) {
         this.resetState();
+      }
+    },
+    
+    // Force exit edit mode (used during branch changes)
+    exitEditMode() {
+      if (this.isEditMode) {
+        this.isEditMode = false;
+        this.resetState();
+      }
+    },
+    
+    // Monitor branch changes and exit edit mode when branch changes
+    monitorBranchChanges() {
+      if (process.client) {
+        // Check for direct clear signal set by switchBranch
+        const shouldClearDrafts = localStorage.getItem("clear-navigation-drafts") === "true";
+        if (shouldClearDrafts) {
+          console.log("Detected clear-navigation-drafts signal, clearing drafts");
+          this.clearDraftNavigationStructure();
+          this.hasDraftChanges = false;
+          localStorage.removeItem("clear-navigation-drafts");
+        }
+
+        // Check for branch changes
+        const currentBranch = localStorage.getItem("github-current-branch") || "main";
+        if (currentBranch !== this.previousBranch) {
+          console.log(`Branch changed from ${this.previousBranch} to ${currentBranch}, exiting edit mode`);
+          // Exit edit mode
+          this.exitEditMode();
+          // Clear any draft changes to remove the Commit Changes button
+          this.clearDraftNavigationStructure();
+          this.hasDraftChanges = false;
+          // Update tracked branch
+          this.previousBranch = currentBranch;
+        }
       }
     },
 
