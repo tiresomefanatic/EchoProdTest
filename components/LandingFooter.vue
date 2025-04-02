@@ -86,10 +86,10 @@
   
   .footer-title {
     color: #000;
-    font-family: inter;
+    font-family: var(--font-primary);
     font-size: 20px;
     font-style: normal;
-    font-weight: 400;
+    font-weight: 700;
     line-height: 120%;
   }
   
@@ -108,7 +108,7 @@
   
   .section-title, .help-title {
     color: #000;
-    font-family: inter;
+    font-family: var(--font-primary);
     font-size: 16px;
     font-style: normal;
     font-weight: 600;
@@ -136,7 +136,7 @@
   
   .feedback-button span {
     color: #000;
-    font-family: inter;
+    font-family: var(--font-primary);
     font-size: 16px;
     font-weight: 600;
     line-height: 140%;
@@ -144,7 +144,7 @@
   
   .section-text {
     color: #1E1E1E;
-    font-family: 'PP Neue Montreal';
+    font-family: var(--font-primary);
     font-size: 14px;
     font-style: normal;
     font-weight: 400;
@@ -166,7 +166,7 @@
   
   .contribution-button span {
     color: #000;
-    font-family: inter;
+    font-family: var(--font-primary);
     font-size: 16px;
     font-weight: 600;
     line-height: 140%;
@@ -174,7 +174,7 @@
   
   .learn-link {
     color: #518EEA;
-    font-family: 'PP Neue Montreal';
+    font-family: var(--font-primary);
     font-size: 16px;
     font-style: normal;
     font-weight: 530;
@@ -193,7 +193,7 @@
   
   .help-link {
     color: #518EEA;
-    font-family: 'PP Neue Montreal';
+    font-family: var(--font-primary);
     font-size: 16px;
     font-style: normal;
     font-weight: 530;
