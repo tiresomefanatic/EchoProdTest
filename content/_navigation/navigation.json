@@ -121,12 +121,6 @@
           ]
         },
         {
-          "title": "experiments",
-          "path": "/design/experiments",
-          "type": "file",
-          "locked": false
-        },
-        {
           "title": "Index",
           "path": "/design/index",
           "type": "file",
@@ -135,12 +129,6 @@
         {
           "title": "Introduction",
           "path": "/design/introduction",
-          "type": "file",
-          "locked": false
-        },
-        {
-          "title": "Motion Design",
-          "path": "/design/Motion Design",
           "type": "file",
           "locked": false
         }
