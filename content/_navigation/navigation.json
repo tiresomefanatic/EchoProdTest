@@ -23,7 +23,7 @@
               "title": "Animation",
               "path": "/design/foundation/animation",
               "type": "file",
-              "locked": true
+              "locked": false
             },
             {
               "title": "Applications",
