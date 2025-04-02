@@ -191,6 +191,7 @@ onUnmounted(() => {
   border-radius: 6px;
   transition: border-color 0.15s;
   resize: vertical;
+  color: #1f2937;
 }
 
 .form-input:focus {

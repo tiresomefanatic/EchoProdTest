@@ -1863,6 +1863,7 @@ const handleExit = () => {
   border-radius: 4px;
   font-size: 1rem;
   resize: vertical;
+  color: #333;
 }
 
 .commit-actions {

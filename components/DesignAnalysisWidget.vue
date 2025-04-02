@@ -1073,6 +1073,7 @@ const handleAdditionalFileUpload = (event) => {
   padding: 0.5rem;
   font-size: 0.875rem;
   resize: vertical;
+  color: #374151;
 }
 
 .content-textarea:focus {
@@ -1565,4 +1566,3 @@ const handleAdditionalFileUpload = (event) => {
   margin-bottom: 0.25rem;
 }
 </style>
-

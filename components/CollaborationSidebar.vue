@@ -875,6 +875,7 @@ onMounted(async () => {
   border-radius: 4px;
   margin-bottom: 0.75rem;
   font-size: 14px;
+  color: #374151;
 }
 
 .branch-actions {

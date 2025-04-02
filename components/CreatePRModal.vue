@@ -263,6 +263,7 @@ const handleSubmit = async () => {
   border: 1px solid #D1D5DB;
   border-radius: 6px;
   background-color: #F9FAFB;
+  color: #374151;
 }
 
 .form-select:focus,
