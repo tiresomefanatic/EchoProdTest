@@ -79,7 +79,7 @@
     overflow-x: hidden;
   }
 
-  @media screen and (min-width: 1024px) {
+  @media screen and (min-width: 1025px) {
     .footer {
       margin-left: 40px;
     }
