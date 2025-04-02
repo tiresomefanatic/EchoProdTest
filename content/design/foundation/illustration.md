@@ -1,164 +1,38 @@
----
-title: Illustration
-description: Echo Design System illustration documentation
----
-
-<div class="design-layout">
-<div class="design-content">
-
-# Illustration
-
-Lorem ipsum dolor sit amet consectetur. Et ultrices dolor ut. Vitae pharetra rutrum dolor vestibulum pharetra et. Pretium consectetur venenatis lacus quam dolor lacinia.
-
-<div class="illustration-section">
-  <div class="section-heading">
-    <h2>Style</h2>
-  </div>
-<div class="section-content">
-    <div class="style-grid">
-      <img src="/images/illustration-style-1.svg" alt="Pen illustration" />
-      <img src="/images/illustration-style-2.svg" alt="Charger illustration" />
-      <img src="/images/illustration-style-3.svg" alt="Camera mount illustration" />
-      <img src="/images/illustration-style-4.svg" alt="Scooter illustration" />
-      <img src="/images/illustration-style-5.svg" alt="Device illustration" />
-      <img src="/images/illustration-style-6.svg" alt="Business card illustration" />
-      <img src="/images/illustration-style-7.svg" alt="Package illustration" />
-      <img src="/images/illustration-style-8.svg" alt="Product illustration" />
-    </div>
-    <p class="style-description">VIDA has a very strong illustration language. Generally the rule of thumb is, make sure to use flat drawings usually in an orthographic front view for the best angle to best convey the object being illustrated with no more than 4-5 colours and shades. Keep the illustrations simple, marking only the important details.</p>
-  </div>
-</div>
-
-<div class="illustration-section">
-  <div class="section-heading">
-    <h2>Brand illustration</h2>
-  </div>
-  <div class="section-content">
-    <div class="illustration-showcase">
-      <img src="/images/brand-illustration.svg" alt="Brand illustration example" />
-    </div>
-  </div>
-</div>
-
-<div class="illustration-section">
-  <div class="section-heading">
-    <h2>Product illustration</h2>
-  </div>
-  <div class="section-content">
-    <div class="illustration-showcase">
-      <img src="/images/product-illustration.svg" alt="Product illustration example" />
-    </div>
-  </div>
-</div>
-<div class="illustration-section">
-  <div class="section-heading">
-    <h2>Mascot illustration</h2>
-  </div>
-  <div class="section-content">
-    <div class="illustration-showcase">
-      <img src="/images/mascot-illustration.svg" alt="Mascot illustration example" />
-    </div>
-  </div>
-</div>
-
-<div class="illustration-section">
-  <div class="section-heading">
-    <h2>Explorative illustrations</h2>
-  </div>
-  <div class="section-content">
-    <div class="illustration-showcase">
-      <img src="/images/explorative-illustration.svg" alt="Explorative illustration example" />
-    </div>
-  </div>
-</div>
-
-</div>
-</div>
-
-<style>
-.design-layout {
-  display: flex;
-  gap: 2rem;
-}
-
-.design-sidebar {
-  width: 240px;
-  flex-shrink: 0;
-}
-
-.design-content {
-  flex: 1;
-  max-width: 800px;
-}
-
-.illustration-section {
-  display: flex;
-  gap: 2rem;
-  margin: 3rem 0;
-}
-
-.section-heading {
-  flex: 1;
-}
-
-.section-heading h2 {
-  margin: 0;
-}
-
-.section-content {
-  flex: 2;
-}
-
-.style-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.style-grid img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.style-description {
-  color: #666;
-  line-height: 1.6;
-  margin: 0;
-}
-
-.illustration-showcase {
-  background: #f5f5f5;
-  padding: 2rem;
-  border-radius: 4px;
-}
-
-.illustration-showcase img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-@media (max-width: 768px) {
-  .design-layout {
-    flex-direction: column;
-  }
-  
-  .design-sidebar {
-    width: 100%;
-  }
-
-  .illustration-section {
-    flex-direction: column;
-  }
-
-  .section-heading {
-    margin-bottom: 1rem;
-  }
-
-  .style-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-</style>
+<h2 style="text-align: left">
+<span>Illustration language</span>
+</h2>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743601265617-f6607e94-1743601264875-4pgyx2ew25a.png" alt="Frame 1410116349.png">
+<span>VIDA has a very strong illustration language. Generally the rule of thumb is, make sure to use flat drawings usually in an orthographic front view (or the best angle to best convey the object being illustrated) with no more than 4-5 colours and shades. Keep the illustrations simple, maintaining only the important details.</span>
+</p>
+<h2 style="text-align: left">
+<span>Vehicle illustrations</span>
+</h2>
+<p style="text-align: left">
+<span>The front and side view of the vehicle is illustrated as we are using only orthographic views. The same illustration has all the colour variations of the model and such illustrations would be made for upcoming models.</span>
+</p>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743601459825-1241c205-1743601458460-gq3ygeh0sc.png" alt="Group 1410118475.png">
+</p>
+<h2 style="text-align: left">
+<span>Illustrations and component system</span>
+</h2>
+<p style="text-align: left">
+<span>Switching between views and colours can be done by using properties in Figma.</span>
+</p>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743601541500-88c9f933-1743601540505-w1mv8q2p3je.png" alt="image 17.png">
+</p>
+<h2 style="text-align: left">
+<span>Charger illustrations</span>
+</h2>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743601624179-127a8903-1743601623405-5ulptsqex6c.png" alt="image 18.png">
+</p>
+<h2 style="text-align: left">Animated illustrations
+</h2>
+<p style="text-align: left">
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743601679052-75e0c644-1743601676256-j95e3ih2y4n.gif" alt="L1 Alerts .gif">
+</p>
+<p style="text-align: left">
+</p>
