@@ -21,12 +21,18 @@
 
       <!-- Preview -->
       <div v-if="preview" class="mt-4">
-        <img :src="preview" alt="Preview" class="max-w-xs rounded-lg shadow-md" />
+        <img
+          :src="preview"
+          alt="Preview"
+          class="max-w-xs rounded-lg shadow-md"
+        />
 
         <!-- Image Details Form -->
         <div class="mt-4 space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Alt Text</label>
+            <label class="block text-sm font-medium text-gray-700"
+              >Alt Text</label
+            >
             <input
               v-model="altText"
               type="text"
@@ -47,21 +53,27 @@
 
       <!-- Previously Uploaded Images -->
       <div v-if="storedImages.length > 0" class="mt-8">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Previously Uploaded Images</h3>
+        <h3 class="text-lg font-medium text-gray-900 mb-4">
+          Previously Uploaded Images
+        </h3>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div 
-            v-for="image in storedImages" 
-            :key="image.url" 
+          <div
+            v-for="image in storedImages"
+            :key="image.url"
             class="relative group cursor-pointer"
             @click="selectStoredImage(image)"
           >
-            <img 
-              :src="image.url" 
+            <img
+              :src="image.url"
               :alt="image.name"
               class="w-full h-32 object-cover rounded-lg shadow-sm transition-transform hover:scale-105"
             />
-            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity rounded-lg flex items-center justify-center">
-              <span class="text-white opacity-0 group-hover:opacity-100">Select</span>
+            <div
+              class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity rounded-lg flex items-center justify-center"
+            >
+              <span class="text-white opacity-0 group-hover:opacity-100"
+                >Select</span
+              >
             </div>
           </div>
         </div>
@@ -69,7 +81,9 @@
 
       <!-- Loading State -->
       <div v-if="isLoading" class="flex justify-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+        ></div>
       </div>
 
       <!-- Error Message -->
@@ -165,7 +179,7 @@ const confirmUpload = async () => {
 
   try {
     const imageUrl = await uploadImage(file);
-    console.log('MinIO upload successful:', imageUrl);
+    console.log("MinIO upload successful:", imageUrl);
 
     emit("uploaded", {
       url: imageUrl,
@@ -181,8 +195,9 @@ const confirmUpload = async () => {
     // Refresh the list of stored images
     await listStoredImages();
   } catch (e) {
-    console.error('MinIO upload error:', e);
-    error.value = e instanceof Error ? e.message : "Failed to upload image to MinIO";
+    console.error("MinIO upload error:", e);
+    error.value =
+      e instanceof Error ? e.message : "Failed to upload image to MinIO";
     emit("error", error.value);
   } finally {
     uploading.value = false;

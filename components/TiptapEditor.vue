@@ -28,7 +28,7 @@ import TextStyle from "@tiptap/extension-text-style";
 import Link from "@tiptap/extension-link";
 
 import ImageUploader from "~/components/ImageUploader.vue";
-import FloatingWidget from './FloatingWidget.vue';
+import FloatingWidget from "./FloatingWidget.vue";
 
 interface Props {
   content?: string;
@@ -343,17 +343,23 @@ const editorOptions = {
 };
 
 // Watch for external mode changes via props
-watch(() => props.externalRawMode, (newValue) => {
-  if (newValue !== undefined) {
-    rawMode.value = newValue;
+watch(
+  () => props.externalRawMode,
+  (newValue) => {
+    if (newValue !== undefined) {
+      rawMode.value = newValue;
+    }
   }
-});
+);
 
-watch(() => props.externalPreviewMode, (newValue) => {
-  if (newValue !== undefined) {
-    previewMode.value = newValue;
+watch(
+  () => props.externalPreviewMode,
+  (newValue) => {
+    if (newValue !== undefined) {
+      previewMode.value = newValue;
+    }
   }
-});
+);
 
 // Computed properties
 const showCommitButton = computed(() => {
@@ -369,9 +375,9 @@ const hasChanges = computed(() => {
 });
 
 const contentSource = computed(() => {
-  if (!props.filePath) return 'New File';
-  if (editorStore.hasDraft(props.filePath)) return 'Draft';
-  return 'Committed';
+  if (!props.filePath) return "New File";
+  if (editorStore.hasDraft(props.filePath)) return "Draft";
+  return "Committed";
 });
 
 const sanitizedPreviewContent = computed(() => {
@@ -468,10 +474,10 @@ const handleLoadSave = async (content: string) => {
       if (wasEditorFocused) {
         savedSelection = editor.value.state.selection;
       }
-      
+
       // Update editor content
       editor.value.commands.setContent(content);
-      
+
       // Restore selection and focus if editor was focused
       if (wasEditorFocused && savedSelection) {
         editor.value.commands.focus();
@@ -497,12 +503,20 @@ const handleLoadSave = async (content: string) => {
   }
 };
 
-const handleImageUploaded = (details: {
-  url: string;
-  alt: string;
-}) => {
+const handleImageUploaded = (details: { url: string; alt: string }) => {
   if (!editor.value) return;
 
+  // Capture the current scroll position of window and editor before inserting
+  const windowScrollY = window.scrollY;
+  const editorContainer = document.querySelector('.editor-scroll-container') as HTMLElement;
+  const editorScrollTop = editorContainer?.scrollTop || 0;
+  
+  // Add temporary class to track that we're in the middle of image insertion
+  document.body.classList.add('inserting-image');
+  
+  // Set body scroll BEFORE insertion to ensure it stays scrollable
+  document.body.style.overflow = 'auto';
+  
   editor.value
     .chain()
     .focus()
@@ -513,20 +527,43 @@ const handleImageUploaded = (details: {
     .run();
 
   // Set default center alignment
-  const imageNode = editor.value.view.state.selection.$anchor.nodeAfter;
-  if (imageNode) {
-    editor.value
-      .chain()
-      .focus()
-      .setNodeAttribute(
-        imageNode.type,
-        "style",
-        "display: block; margin: 0 auto; float: none"
-      )
-      .run();
+  try {
+    const imageNode = editor.value.view.state.selection.$anchor.nodeAfter;
+    if (imageNode) {
+      editor.value
+        .chain()
+        .focus()
+        .setNodeAttribute(
+          imageNode.type,
+          "style",
+          "display: block; margin: 0 auto; float: none"
+        )
+        .run();
+    }
+  } catch (e) {
+    console.warn('Could not set image alignment:', e);
   }
 
   showImageDialog.value = false;
+  
+  // CRITICAL: After insertion, use setTimeout to reset scrolling
+  setTimeout(() => {
+    // Force scroll to be enabled
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
+    
+    // Remove the temporary class
+    document.body.classList.remove('inserting-image');
+    
+    // Restore window scroll position
+    window.scrollTo(0, windowScrollY);
+    
+    // Add a small delay before forcing a reflow
+    setTimeout(() => {
+      // Force a reflow by triggering resize event
+      window.dispatchEvent(new Event('resize'));
+    }, 50);
+  }, 100);
 };
 
 const handleImageError = (message: string) => {
@@ -586,32 +623,38 @@ watch(
     if (newContent && editor.value) {
       // Don't update if content is the same or if the editor has focus
       // This prevents the cursor from jumping when typing
-      if (editor.value.isFocused && newContent === formatHTML(editor.value.getHTML())) {
+      if (
+        editor.value.isFocused &&
+        newContent === formatHTML(editor.value.getHTML())
+      ) {
         return;
       }
-      
-      console.log("rawText changed, updating editor content:", newContent.length);
+
+      console.log(
+        "rawText changed, updating editor content:",
+        newContent.length
+      );
       const formattedContent = formatHTML(newContent);
-      
+
       // Store current selection if editor is focused
       const wasEditorFocused = editor.value.isFocused;
       let savedSelection = null;
       if (wasEditorFocused) {
         savedSelection = editor.value.state.selection;
       }
-      
+
       // Force editor update with selection preservation
       editor.value.commands.setContent(formattedContent, false);
-      
+
       // Restore selection if editor was focused
       if (wasEditorFocused && savedSelection) {
         editor.value.commands.focus();
         editor.value.chain().setTextSelection(savedSelection.from).run();
       }
-      
+
       // Update local content reference
       localContent.value = formattedContent;
-      
+
       // Also update preview if active
       if (previewMode.value) {
         previewContent.value = formattedContent;
@@ -633,7 +676,7 @@ watch(
           props.filePath,
           newBranch
         );
-        
+
         if (content) {
           const formattedContent = formatHTML(content);
           store.updateRawText(formattedContent);
@@ -880,7 +923,7 @@ onMounted(async () => {
     },
     onUpdate: ({ editor: ed }) => {
       const content = formatHTML(ed.getHTML());
-      
+
       // Only emit update if content actually changed
       // This prevents unnecessary update cycles that can affect cursor position
       if (content !== localContent.value) {
@@ -911,56 +954,101 @@ onMounted(async () => {
 });
 
 onMounted(() => {
+  // CRITICAL FIX: Create a style element that sets proper CSS for editor scrolling
+  // without preventing the page from scrolling
+  if (process.client) {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+      /* Ensure editor container scrolls properly but page stays scrollable */
+      .editor-scroll-container {
+        overflow-y: auto !important;
+        height: calc(100vh - 220px) !important; /* Reserve space for the header/toolbar */
+        max-height: 80vh !important;
+        position: relative !important;
+      }
+      
+      /* Critical: Ensure body is ALWAYS scrollable */
+      body {
+        overflow: auto !important;
+      }
+      
+      /* Ensure editor doesn't take over page scroll */
+      .editor-layout, .editor-main {
+        position: relative !important;
+        overflow: visible !important;
+      }
+    `;
+    document.head.appendChild(styleEl);
+    (window as any)._editorFixStyleEl = styleEl;
+  }
+  
   // Get the scroll container
   const scrollContainer = document.querySelector(".editor-scroll-container");
-  
+
   if (scrollContainer) {
-    // Create a single wheel event handler that will be used for all wheel events
+    // Make the editor scroll container handle its own scrolling without affecting the page
+    // We'll create a wheel handler that ONLY affects events originating within the editor content
     const handleWheel = (e: WheelEvent) => {
+      // Determine if event originated within the editor content
+      const editorContent = document.querySelector('.editor-content');
+      if (!editorContent || !editorContent.contains(e.target as HTMLElement)) {
+        return; // Let the normal page scroll handle this event
+      }
+      
       // Skip handling if the editor is not visible or in a modal
       if (!(scrollContainer as HTMLElement).offsetParent) return;
-      
+
       // Don't handle wheel events inside modals or in the collaboration sidebar
       const target = e.target as HTMLElement;
       if (
-        target.closest('.modal-overlay') || 
-        target.closest('.commit-dialog') ||
-        target.closest('div[class*="collaboration"]')
+        target.closest(".modal-overlay") ||
+        target.closest(".commit-dialog") ||
+        target.closest('div[class*="collaboration"]') ||
+        target.closest('.image-uploader')
       ) {
         return;
       }
       
-      // Adjust scroll speed based on deltaMode
-      let scrollAmount = e.deltaY;
+      // Check if we're at the top or bottom of the editor content
+      // If so, let the page scroll naturally
+      const container = scrollContainer as HTMLElement;
+      const isAtTop = container.scrollTop <= 0 && e.deltaY < 0;
+      const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 5 && e.deltaY > 0;
       
-      // If the deltaMode is line (1) or page (2), adjust the scroll amount
-      if (e.deltaMode === 1) {
-        // Line mode - multiply by 20 for line height
-        scrollAmount *= 20;
-      } else if (e.deltaMode === 2) {
-        // Page mode - multiply by the height of the container
-        scrollAmount *= (scrollContainer as HTMLElement).clientHeight;
+      if (isAtTop || isAtBottom) {
+        return; // Let the page scroll naturally
       }
-      
-      // Apply a scaling factor for smoother scrolling
+
+      // Only handle scrolling within the editor's content area
+      let scrollAmount = e.deltaY;
+
+      // Adjust scroll speed
+      if (e.deltaMode === 1) {
+        scrollAmount *= 20; // Line mode
+      } else if (e.deltaMode === 2) {
+        scrollAmount *= container.clientHeight; // Page mode
+      }
+
+      // Smoother scrolling
       scrollAmount *= 0.5;
-      
-      // Directly scroll the container by the calculated amount
-      (scrollContainer as HTMLElement).scrollTop += scrollAmount;
-      
-      // Prevent the default scroll behavior to avoid double scrolling
+
+      // Scroll the editor container only
+      container.scrollTop += scrollAmount;
+
+      // Since we're handling the scroll within the editor, prevent default
       e.preventDefault();
     };
-    
-    // Add the wheel event listener to the document to capture all wheel events
-    document.addEventListener('wheel', handleWheel, { passive: false });
-    
-    // Store the handler for cleanup
+
+    // IMPORTANT: Attach wheel handler to the editor container ONLY
+    scrollContainer.addEventListener("wheel", handleWheel, { passive: false });
+
+    // Store for cleanup
     (window as any)._editorWheelHandler = handleWheel;
+    (window as any)._editorScrollContainer = scrollContainer;
   }
   
-  // Prevent body scrolling when editor is mounted
-  document.body.style.overflow = 'hidden';
+  // CRITICAL: NEVER prevent body scrolling - this is the cause of the main issue
+  document.body.style.overflow = "auto";
 });
 
 // Cleanup
@@ -971,21 +1059,30 @@ onBeforeUnmount(() => {
   if (monacoEditor.value) {
     monacoEditor.value.dispose();
   }
-  
-  // Remove the document-level wheel event listener
+
+  // Remove the wheel event listener from the editor container
   const handleWheel = (window as any)._editorWheelHandler;
-  if (handleWheel) {
-    document.removeEventListener('wheel', handleWheel);
+  const scrollContainer = (window as any)._editorScrollContainer;
+  if (handleWheel && scrollContainer) {
+    scrollContainer.removeEventListener("wheel", handleWheel);
     delete (window as any)._editorWheelHandler;
+    delete (window as any)._editorScrollContainer;
   }
   
-  // Restore body scrolling when editor is unmounted
-  document.body.style.overflow = '';
+  // Remove the fix style element
+  const styleEl = (window as any)._editorFixStyleEl;
+  if (styleEl && styleEl.parentNode) {
+    styleEl.parentNode.removeChild(styleEl);
+    delete (window as any)._editorFixStyleEl;
+  }
+
+  // Ensure body scrolling is always enabled
+  document.body.style.overflow = "auto";
 });
 
 // Update the handleExit method
 const handleExit = () => {
-  emit('exit');
+  emit("exit");
 };
 </script>
 
@@ -998,7 +1095,7 @@ const handleExit = () => {
             <!-- Removed filepath and content source indicators -->
           </div>
 
-          <div class="toolbar-right" style="display: none;">
+          <div class="toolbar-right" style="display: none">
             <!-- Editor View -->
             <template v-if="!previewMode && !rawMode">
               <button class="toolbar-button" @click="rawMode = true">
@@ -1031,12 +1128,7 @@ const handleExit = () => {
               >
                 Save
               </button>
-              <button
-                class="toolbar-button"
-                @click="handleExit"
-              >
-                Exit
-              </button>
+              <button class="toolbar-button" @click="handleExit">Exit</button>
             </template>
 
             <!-- Raw View -->
@@ -1061,12 +1153,7 @@ const handleExit = () => {
               >
                 Save
               </button>
-              <button
-                class="toolbar-button"
-                @click="handleExit"
-              >
-                Exit
-              </button>
+              <button class="toolbar-button" @click="handleExit">Exit</button>
             </template>
 
             <!-- Preview View -->
@@ -1088,12 +1175,7 @@ const handleExit = () => {
               >
                 Save
               </button>
-              <button
-                class="toolbar-button"
-                @click="handleExit"
-              >
-                Exit
-              </button>
+              <button class="toolbar-button" @click="handleExit">Exit</button>
             </template>
           </div>
         </div>
@@ -1116,9 +1198,7 @@ const handleExit = () => {
           </button>
           <button
             class="menubar-button"
-            @click="
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            "
+            @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
             :class="{
               'is-active': editor.isActive('heading', { level: 1 }),
             }"
@@ -1127,9 +1207,7 @@ const handleExit = () => {
           </button>
           <button
             class="menubar-button"
-            @click="
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            "
+            @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
             :class="{
               'is-active': editor.isActive('heading', { level: 2 }),
             }"
@@ -1146,8 +1224,7 @@ const handleExit = () => {
           <select
             class="font-size-select"
             @change="
-              (e) =>
-                editor.chain().focus().setFontSize(e.target.value).run()
+              (e) => editor.chain().focus().setFontSize(e.target.value).run()
             "
           >
             <option value="">Font Size</option>
@@ -1323,7 +1400,7 @@ const handleExit = () => {
     </div>
 
     <!-- Add the FloatingWidget component -->
-    <FloatingWidget v-if="editor"/>
+    <FloatingWidget v-if="editor" />
   </div>
 </template>
 
@@ -1882,13 +1959,13 @@ const handleExit = () => {
     padding: 0 4px;
     font-size: 12px;
   }
-  
+
   .font-size-select {
     height: 28px;
     min-width: 80px;
     font-size: 12px;
   }
-  
+
   .toolbar-button {
     font-size: 12px;
     padding: 4px 8px;
