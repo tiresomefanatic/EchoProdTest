@@ -20,6 +20,20 @@
           "locked": false,
           "children": [
             {
+              "title": "Test",
+              "path": "/design/foundation/test",
+              "type": "directory",
+              "locked": false,
+              "children": [
+                {
+                  "title": "testfile",
+                  "path": "/design/foundation/test/testfile",
+                  "type": "file",
+                  "locked": false
+                }
+              ]
+            },
+            {
               "title": "Animation",
               "path": "/design/foundation/animation",
               "type": "file",
@@ -32,6 +46,12 @@
               "locked": true
             },
             {
+              "title": "Color",
+              "path": "/design/foundation/color",
+              "type": "file",
+              "locked": false
+            },
+            {
               "title": "Icons",
               "path": "/design/foundation/icons",
               "type": "file",
@@ -42,12 +62,6 @@
               "path": "/design/foundation/illustration",
               "type": "file",
               "locked": true
-            },
-            {
-              "title": "Color",
-              "path": "/design/foundation/color",
-              "type": "file",
-              "locked": false
             },
             {
               "title": "Imagery",
