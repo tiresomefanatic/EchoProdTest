@@ -1079,7 +1079,8 @@ watch(isEditing, (newValue) => {
   
   .text-container {
     flex:0;
-    min-width:539px
+    min-width:539px;
+    width: 100%;
   }
   
   .sidebar {
