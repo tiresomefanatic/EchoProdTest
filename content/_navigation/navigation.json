@@ -32,6 +32,12 @@
               "locked": true
             },
             {
+              "title": "Components",
+              "path": "/design/foundation/components",
+              "type": "file",
+              "locked": true
+            },
+            {
               "title": "Icons",
               "path": "/design/foundation/icons",
               "type": "file",
