@@ -1,18 +1,17 @@
-<h2 style="text-align: left"><strong>Introduction</strong>
+<h1 style="text-align: left">Welcome to ECHO
+</h1>
+<h2 style="text-align: left">Evolving with Collaborative and Holistic Orchestration
 </h2>
-<p style="text-align: left">
-<span style="font-size: 16px">Echo is the Design System we use to create Vida products. Our main goal is to offer everything in one place — assets, resources, files, and guidelines. Always accessible to the people that need them and always available in the spaces that we work in.</span>
+<p style="text-align: left">ECHO is the design system that powers <em>VIDA</em>, Hero MotoCorp’s electric mobility brand. It is more than a collection of components — it’s a living repository of our shared design wisdom. ECHO captures the spirit, decisions, and standards that shape how VIDA looks, feels, moves, and speaks across every touchpoint — from digital screens and physical products to packaging, spaces, sound, and experiences.
 </p>
 <p style="text-align: left">
 <img src="/images/echo-dna.png" alt="Echo DNA">
 </p>
-<h2 style="text-align: left"><strong>Our Vision</strong>
-</h2>
-<p style="text-align: left">Using the power of our scale, we want to democratise electric mobility for the planet.
+<p style="text-align: left">Born from the need to unify and scale design across disciplines, ECHO brings together foundations, guidelines, assets, and thought processes into one cohesive system. Whether you're designing an app interface, a showroom experience, or a piece of merchandise, ECHO is here to ensure that every expression of VIDA is deliberate, consistent, and unmistakably ours.
 </p>
-<h2 style="text-align: left"><strong>Our Mission</strong>
-</h2>
-<p style="text-align: left">Equipping the world with the best in riding tech and empowering people to make moves that matter, today.
+<p style="text-align: left">This system is still evolving. As VIDA grows, so will ECHO — continuously refined by our teams, conversations, and learnings. You're not just a user of this system — you're a contributor, a storyteller, a guardian of our brand’s coherence and expression.
+</p>
+<p style="text-align: left">
 </p>
 <h2 style="text-align: left"><strong>Our Values</strong>
 </h2>
@@ -30,8 +29,6 @@
 </p>
 <h2 style="text-align: left"><strong>Brand Personality</strong>
 </h2>
-<p style="text-align: left">
-</p>
 <h3 style="text-align: left"><strong>Positive</strong>
 </h3>
 <p style="text-align: left">Green mobility should be a global reality. We're chasing this ambition with all our technological might. Fuelled to overcome all constraints that might come our way.
