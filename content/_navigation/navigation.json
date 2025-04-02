@@ -27,6 +27,13 @@
               "children": []
             },
             {
+              "title": "NewTestTest",
+              "path": "/design/foundation/newtesttest",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            },
+            {
               "title": "TestTest",
               "path": "/design/foundation/testtest",
               "type": "directory",
