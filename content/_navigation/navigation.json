@@ -43,6 +43,12 @@
               "locked": false
             },
             {
+              "title": "Stickers",
+              "path": "/design/foundation/stickers",
+              "type": "file",
+              "locked": false
+            },
+            {
               "title": "Imagery",
               "path": "/design/foundation/imagery",
               "type": "file",
