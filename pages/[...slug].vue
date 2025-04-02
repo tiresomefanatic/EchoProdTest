@@ -97,68 +97,68 @@
       <div class="main-container">
         <div class="content">
           <DesignSidebar v-if="!isEditing" class="sidebar" />
-          <div class="text-container">
-            <div class="body-container">
-              <ClientOnly>
-                <!-- Move contribution banner here -->
-                <div v-if="isLoggedIn && !isEditing && currentBranch !== 'main'" class="contribution-banner">
-                  <div class="banner-content">
-                    <p class="banner-text">Would you like to contribute to this document?</p>
-                    <button @click="handleEditClick" class="banner-button">
-                      Edit this document
-                    </button>
-                  </div>
-                </div>
-                
-                <div v-if="isEditing" class="editor-container">
-                  <div class="editor-content-wrapper" :style="editorContentStyle">
-                    <TiptapEditor
-                      :content="editorContent"
-                      :filePath="contentPath"
-                      :externalRawMode="isRawMode"
-                      :externalPreviewMode="isPreviewMode"
-                      @update:content="handleContentChange"
-                      @save="handleShowCommitModal"
-                      @error="handleEditorError"
-                      @exit="exitEditor"
-                      ref="tiptapEditorRef"
-                    />
-                  </div>
-                  <CollaborationSidebar
-                    v-if="isLoggedIn"
-                    :filePath="contentPath"
-                    @load-save="handleLoadSave"
-                  />
-                </div>
-                <div v-else class="prose-content">
-                  <div :key="githubContent">
-                    <template v-if="!isLoggedIn">
-                      <ContentDoc :path="path" :head="false">
-                        <template #empty>
-                          <p>No content found.</p>
+          <div class="flex flex-col content-and-footer-wrapper">
+            <div class="flex content-and-toc-wrapper">
+              <div class="text-container">
+                <div class="body-container">
+                  <ClientOnly>
+                    <div v-if="isLoggedIn && !isEditing && currentBranch !== 'main'" class="contribution-banner">
+                      <div class="banner-content">
+                        <p class="banner-text">Would you like to contribute to this document?</p>
+                        <button @click="handleEditClick" class="banner-button">
+                          Edit this document
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div v-if="isEditing" class="editor-container">
+                      <div class="editor-content-wrapper" :style="editorContentStyle">
+                        <TiptapEditor
+                          :content="editorContent"
+                          :filePath="contentPath"
+                          :externalRawMode="isRawMode"
+                          :externalPreviewMode="isPreviewMode"
+                          @update:content="handleContentChange"
+                          @save="handleShowCommitModal"
+                          @error="handleEditorError"
+                          @exit="exitEditor"
+                          ref="tiptapEditorRef"
+                        />
+                      </div>
+                      <CollaborationSidebar
+                        v-if="isLoggedIn"
+                        :filePath="contentPath"
+                        @load-save="handleLoadSave"
+                      />
+                    </div>
+                    <div v-else class="prose-content">
+                      <div :key="githubContent">
+                        <template v-if="!isLoggedIn">
+                          <ContentDoc :path="path" :head="false">
+                            <template #empty>
+                              <p>No content found.</p>
+                            </template>
+                            <template #not-found>
+                              <p>Content not found. Path: {{ path }}</p>
+                            </template>
+                          </ContentDoc>
                         </template>
-                        <template #not-found>
-                          <p>Content not found. Path: {{ path }}</p>
+                        <template v-else>
+                          <div v-html="githubContent" class="markdown-content"></div>
                         </template>
-                      </ContentDoc>
-                    </template>
-                    <template v-else>
-                      <div v-html="githubContent" class="markdown-content"></div>
-                    </template>
-                  </div>
-                  
-                  <!-- Move the Footer here to be directly under content -->
-                  <Footer v-if="!isEditing" class="content-aligned-footer" />
+                      </div>
+                    </div>
+                  </ClientOnly>
                 </div>
-              </ClientOnly>
+              </div>
+              <TableOfContents v-if="!isEditing" class="table-of-contents" />
             </div>
+            <Footer v-if="!isEditing" class="content-aligned-footer" />
           </div>
-          <TableOfContents v-if="!isEditing" class="table-of-contents" />
         </div>
       </div>
     </ClientOnly>
 
-    <!-- Add the CommitModal component -->
     <CommitModal 
       :is-open="isCommitModalOpen" 
       :file-path="contentPath"
@@ -1099,7 +1099,8 @@ watch(isEditing, (newValue) => {
   
   .text-container {
     flex:0;
-    min-width:539px
+    min-width:539px;
+    width: 100%;
   }
   
   .sidebar {
@@ -1981,7 +1982,16 @@ watch(isEditing, (newValue) => {
 .content-aligned-footer {
   width: 100%;
   margin-top: 64px;
+  display: flex;
+  justify-content: start;
 }
+
+@media screen and (min-width: 1024px) and (max-width: 1379px) {
+  .content-aligned-footer {
+    max-width: 745px;
+  }
+}
+
 
 /* Make sure the footer doesn't inherit any max-width constraints from parent containers */
 :deep(.content-aligned-footer) {

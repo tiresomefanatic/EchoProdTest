@@ -28,16 +28,6 @@
           </div>
           
           <div class="form-group">
-            <label for="welcome-message" class="form-label">Welcome Message</label>
-            <textarea
-              id="welcome-message"
-              class="form-textarea"
-              rows="3"
-              v-model="welcomeMessage"
-            ></textarea>
-          </div>
-          
-          <div class="form-group">
             <label for="chat-history" class="form-label">Chat History Retention</label>
             <div class="select-wrapper">
               <select id="chat-history" class="form-select" v-model="chatHistoryRetention">
@@ -48,6 +38,65 @@
                 <option value="365">1 year</option>
               </select>
               <div class="select-arrow"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Prompt Management Section -->
+        <div class="settings-section">
+          <div class="section-header">
+            <h3 class="section-title">Prompt Management</h3>
+            <button class="add-prompt-button" @click="addNewPrompt">
+              <PlusIcon class="button-icon" />
+              Add Prompt
+            </button>
+          </div>
+          
+          <div class="prompt-list">
+            <div v-if="prompts.length === 0" class="empty-prompt-message">
+              No prompts available. Add a prompt to get started.
+            </div>
+            
+            <div 
+              v-for="(prompt, index) in prompts" 
+              :key="index" 
+              class="prompt-item"
+              :class="{ 'active-prompt': selectedPromptIndex === index }"
+            >
+              <div class="prompt-content">
+                <div class="prompt-header">
+                  <h4 class="prompt-title">{{ prompt.title }}</h4>
+                  <div class="prompt-actions">
+                    <button 
+                      class="prompt-action-button" 
+                      @click="editPrompt(index)"
+                      aria-label="Edit prompt"
+                    >
+                      <EditIcon class="action-icon" />
+                    </button>
+                    <button 
+                      class="prompt-action-button" 
+                      @click="deletePrompt(index)"
+                      aria-label="Delete prompt"
+                    >
+                      <TrashIcon class="action-icon" />
+                    </button>
+                  </div>
+                </div>
+                <p class="prompt-preview">{{ truncateText(prompt.content, 150) }}</p>
+                <div class="prompt-footer">
+                  <div class="prompt-info">
+                    <span class="prompt-date">Last edited: {{ prompt.lastEdited }}</span>
+                  </div>
+                  <button 
+                    class="select-prompt-button" 
+                    @click="selectPrompt(index)"
+                    :class="{ 'selected': selectedPromptIndex === index }"
+                  >
+                    {{ selectedPromptIndex === index ? 'Selected' : 'Select' }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -100,18 +149,6 @@
             </p>
           </div>
           
-          <div class="form-group">
-            <label for="system-prompt" class="form-label">System Prompt</label>
-            <textarea
-              id="system-prompt"
-              class="form-textarea"
-              v-model="systemPrompt"
-              rows="5"
-            ></textarea>
-            <p class="form-help-text">
-              Instructions that define how the AI assistant behaves and responds.
-            </p>
-          </div>
         </div>
         
         <!-- Security & Access Section -->
@@ -193,6 +230,38 @@
       </div>
     </div>
     
+    <!-- Prompt Edit Dialog -->
+    <div v-if="isPromptDialogOpen" class="dialog-overlay" @click="closePromptDialog">
+      <div class="dialog-content" @click.stop>
+        <div class="dialog-header">
+          <h3 class="dialog-title">{{ editingPromptIndex === -1 ? 'Add New Prompt' : 'Edit Prompt' }}</h3>
+          <button class="dialog-close-button" @click="closePromptDialog">
+            <XIcon class="close-icon" />
+          </button>
+        </div>
+        <div class="dialog-body">
+          <div class="form-group">
+            <label for="prompt-title" class="form-label">Prompt Title</label>
+            <input id="prompt-title" type="text" class="form-input" v-model="editingPrompt.title" placeholder="Enter a descriptive title for this prompt" />
+          </div>
+          <div class="form-group">
+            <label for="prompt-content" class="form-label">Prompt Content</label>
+            <textarea
+              id="prompt-content"
+              class="form-textarea"
+              v-model="editingPrompt.content"
+              rows="8"
+              placeholder="Enter the prompt content that will be sent to the AI model"
+            ></textarea>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="cancel-button" @click="closePromptDialog">Cancel</button>
+          <button class="save-prompt-button" @click="savePrompt">Save Prompt</button>
+        </div>
+      </div>
+    </div>
+    
     <div class="status-card">
       <BotIcon class="status-icon" />
       <div class="status-text">
@@ -212,13 +281,16 @@ import {
   RefreshCw as RefreshCwIcon, 
   Bot as BotIcon, 
   Zap as ZapIcon, 
-  Shield as ShieldIcon
+  Shield as ShieldIcon,
+  Plus as PlusIcon,
+  Edit as EditIcon,
+  Trash as TrashIcon,
+  X as XIcon
 } from 'lucide-vue-next';
 
 // State
 const isAIEnabled = ref(true);
 const assistantName = ref("Echo Design Assistant");
-const welcomeMessage = ref("Hello! I'm the Echo Design Assistant. How can I help you with the Echo design system today?");
 const chatHistoryRetention = ref("30");
 const temperature = ref(0.7);
 const maxTokens = ref(2048);
@@ -232,7 +304,111 @@ const accessLevel = ref("team");
 const isSaving = ref(false);
 const isRestarting = ref(false);
 
-// Methods
+// Prompt Management
+const prompts = ref([
+  {
+    id: 1,
+    title: "Design System Onboarding",
+    content: "Hello! I'm the Echo Design Assistant. I help new team members understand our design system. How can I help you today?",
+    lastEdited: "2023-08-15"
+  },
+  {
+    id: 2,
+    title: "Component Documentation",
+    content: "Welcome to Echo's component library! I can help you understand how to implement our components correctly. What component are you working with?",
+    lastEdited: "2023-09-10"
+  },
+  {
+    id: 3,
+    title: "Color System Guide",
+    content: "Hi there! I can help you understand Hero Vida's color system and guidelines. Let me know what specific color information you need!",
+    lastEdited: "2023-10-22"
+  }
+]);
+
+const selectedPromptIndex = ref(0);
+const isPromptDialogOpen = ref(false);
+const editingPromptIndex = ref(-1);
+const editingPrompt = ref({
+  title: '',
+  content: '',
+  lastEdited: ''
+});
+
+// Prompt Management Methods
+const selectPrompt = (index) => {
+  selectedPromptIndex.value = index;
+};
+
+const addNewPrompt = () => {
+  editingPromptIndex.value = -1;
+  editingPrompt.value = {
+    title: '',
+    content: '',
+    lastEdited: new Date().toISOString().split('T')[0]
+  };
+  isPromptDialogOpen.value = true;
+};
+
+const editPrompt = (index) => {
+  editingPromptIndex.value = index;
+  editingPrompt.value = { ...prompts.value[index] };
+  isPromptDialogOpen.value = true;
+};
+
+const deletePrompt = (index) => {
+  if (confirm('Are you sure you want to delete this prompt?')) {
+    prompts.value.splice(index, 1);
+    
+    // If the deleted prompt was selected, select the first prompt or none if empty
+    if (selectedPromptIndex.value === index) {
+      selectedPromptIndex.value = prompts.value.length > 0 ? 0 : -1;
+    } else if (selectedPromptIndex.value > index) {
+      // Adjust selected index if it was after the deleted one
+      selectedPromptIndex.value--;
+    }
+  }
+};
+
+const savePrompt = () => {
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (editingPromptIndex.value === -1) {
+    // Add new prompt
+    prompts.value.push({
+      ...editingPrompt.value,
+      id: Date.now(), 
+      lastEdited: today
+    });
+    selectedPromptIndex.value = prompts.value.length - 1; // Select the new prompt
+  } else {
+    // Update existing prompt
+    prompts.value[editingPromptIndex.value] = {
+      ...editingPrompt.value,
+      lastEdited: today
+    };
+  }
+  
+  closePromptDialog();
+};
+
+const closePromptDialog = () => {
+  isPromptDialogOpen.value = false;
+  editingPromptIndex.value = -1;
+  editingPrompt.value = {
+    title: '',
+    content: '',
+    lastEdited: ''
+  };
+};
+
+// Utility Methods
+const truncateText = (text, maxLength) => {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+// Original Methods
 const handleSaveSettings = () => {
   isSaving.value = true;
   // Simulate API call
@@ -294,6 +470,15 @@ const handleRestartBot = () => {
   gap: 1.5rem;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
 .section-title {
   font-size: 1rem;
   font-weight: 600;
@@ -303,6 +488,264 @@ const handleRestartBot = () => {
   border-bottom: 1px solid #e5e7eb;
 }
 
+.section-header .section-title {
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* Prompt Management Styles */
+.add-prompt-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-prompt-button:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.prompt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.empty-prompt-message {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 0.375rem;
+}
+
+.prompt-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.active-prompt {
+  border-color: #FF5310;
+  box-shadow: 0 0 0 1px rgba(255, 83, 16, 0.2);
+}
+
+.prompt-content {
+  padding: 1rem;
+}
+
+.prompt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.prompt-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.prompt-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.prompt-action-button {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prompt-action-button:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.action-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.prompt-preview {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.25rem;
+  margin: 0.5rem 0;
+  white-space: pre-line;
+}
+
+.prompt-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.prompt-info {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.prompt-date {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.select-prompt-button {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-prompt-button:hover {
+  background-color: #e5e7eb;
+}
+
+.select-prompt-button.selected {
+  background-color: #FF5310;
+  color: white;
+}
+
+/* Dialog Styles */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.dialog-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  width: 90%;
+  max-width: 32rem;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dialog-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.dialog-close-button {
+  background: none;
+  border: none;
+  color: #6b7280;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+
+.dialog-close-button:hover {
+  background-color: #f3f4f6;
+}
+
+.close-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.dialog-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.dialog-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.cancel-button {
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button:hover {
+  background-color: #f9fafb;
+}
+
+.save-prompt-button {
+  padding: 0.5rem 1rem;
+  background-color: #FF5310;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-prompt-button:hover {
+  background-color: rgba(255, 83, 16, 0.9);
+}
+
+/* Original styles */
 .card-footer {
   padding: 1.5rem;
   border-top: 1px solid #e5e7eb;
