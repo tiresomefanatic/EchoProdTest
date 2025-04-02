@@ -106,6 +106,12 @@
                   "path": "/design/digital/buttons",
                   "type": "file",
                   "locked": false
+                },
+                {
+                  "title": "Form Fields",
+                  "path": "/design/digital/components/form-fields",
+                  "type": "file",
+                  "locked": false
                 }
               ]
             }
