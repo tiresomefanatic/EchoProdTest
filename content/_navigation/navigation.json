@@ -27,6 +27,13 @@
               "children": []
             },
             {
+              "title": "TestTest",
+              "path": "/design/foundation/testtest",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            },
+            {
               "title": "Animation",
               "path": "/design/foundation/animation",
               "type": "file",
