@@ -91,7 +91,7 @@
                   "title": "Bottom Sheets",
                   "path": "/design/digital/components/bottom-sheets",
                   "type": "file",
-                  "locked": false
+                  "locked": true
                 },
                 {
                   "title": "Button",
