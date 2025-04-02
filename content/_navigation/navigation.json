@@ -80,7 +80,15 @@
           "path": "/design/digital",
           "type": "directory",
           "locked": false,
-          "children":[]
+          "children": [
+            {
+              "title": "Components",
+              "path": "/design/digital/components",
+              "type": "directory",
+              "locked": false,
+              "children": []
+            }
+          ]
         },
         {
           "title": "Product",
