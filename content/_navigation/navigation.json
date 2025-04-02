@@ -102,14 +102,14 @@
               "locked": false,
               "children": [
                 {
-                  "title": "Button",
-                  "path": "/design/digital/buttons",
+                  "title": "Bottom Sheets",
+                  "path": "/design/digital/components/bottom-sheets",
                   "type": "file",
                   "locked": false
                 },
                 {
-                  "title": "Form Fields",
-                  "path": "/design/digital/components/form-fields",
+                  "title": "Button",
+                  "path": "/design/digital/buttons",
                   "type": "file",
                   "locked": false
                 }
