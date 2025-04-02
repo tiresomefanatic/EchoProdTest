@@ -784,6 +784,8 @@
         <button
           class="dropdown-item delete"
           @click.stop="handleDeleteItem(activeDropdown)"
+          :disabled="isItemLocked(activeDropdown)"
+          :class="{ 'disabled': isItemLocked(activeDropdown) }"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -816,7 +818,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useNavigationStore } from "~/store/navigation";
 import { useSidebarEditorStore } from "~/store/sidebarEditor";
 import { useToast, type ToastConfig } from "~/composables/useToast";
@@ -827,6 +829,7 @@ import NewFileModal from "~/components/modals/NewFileModal.vue";
 import NewFolderModal from "~/components/modals/NewFolderModal.vue";
 
 const route = useRoute();
+const router = useRouter();
 const isOpen = ref(false);
 const isCollapsed = ref<Record<string, boolean>>({});
 const isCommitting = ref(false);
@@ -1134,11 +1137,198 @@ onMounted(() => {
 });
 
 // delete handler
-const handleDeleteItem = (itemPath: string) => {
-  // For now, just close the dropdown
+const handleDeleteItem = async (itemPath: string) => {
+  // Close the dropdown
   activeDropdown.value = null;
 
-  console.log("Delete item:", itemPath);
+  // Get item information
+  const item = findItemByPath(itemPath, navigationStructure.value);
+  if (!item) {
+    console.error("Item not found:", itemPath);
+    return;
+  }
+  
+  // Prevent deletion of locked items
+  if (item.locked) {
+    const { showToast } = useToast();
+    showToast({
+      title: "Cannot Delete",
+      message: `This item is locked and cannot be deleted.`,
+      type: "error",
+    });
+    return;
+  }
+
+  // Confirmation based on item type
+  const confirmMessage = item.type === 'directory' 
+    ? `Are you sure you want to delete the folder "${item.title}" and all its contents?` 
+    : `Are you sure you want to delete the file "${item.title}"?`;
+
+  // Show confirmation dialog
+  const confirmed = window.confirm(confirmMessage);
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const sidebarEditorStore = useSidebarEditorStore();
+    const { createNewContent, deleteContent } = useGithub();
+    const { showToast } = useToast();
+    const navigationStore = useNavigationStore();
+    
+    // Get current navigation structure (either from draft or current structure)
+    let navigationData;
+    const existingDraft = sidebarEditorStore.getDraftNavigationStructure();
+    
+    if (existingDraft) {
+      navigationData = existingDraft;
+    } else {
+      // Use current structure and create a new object to avoid reference issues
+      navigationData = {
+        navigation: JSON.parse(JSON.stringify(navigationStore.getCurrentStructure))
+      };
+    }
+
+    // Function to remove an item from navigation structure
+    const removeItemFromNavigation = (items, path) => {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].path === path) {
+          // Found the item to remove
+          items.splice(i, 1);
+          return true;
+        }
+        if (items[i].type === 'directory' && items[i].children) {
+          if (removeItemFromNavigation(items[i].children, path)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    // If item is a directory, we need to delete all files within it recursively
+    if (item.type === 'directory') {
+      // Get all paths to delete (the directory and all its children)
+      const pathsToDelete = [];
+      const contentPathsToDelete = [];
+      
+      const collectPaths = (item) => {
+        pathsToDelete.push(item.path);
+        
+        // Convert navigation path to actual content path
+        // Navigation paths look like: /design/foundation/color
+        // Content paths look like: content/design/foundation/color.md
+        if (item.type === 'file') {
+          const contentPath = `content${item.path}.md`;
+          contentPathsToDelete.push(contentPath);
+        } else if (item.type === 'directory') {
+          // For a directory, add the directory path
+          const contentDirPath = `content${item.path}`;
+          contentPathsToDelete.push(contentDirPath);
+          
+          // Process all children
+          if (item.children) {
+            item.children.forEach(child => collectPaths(child));
+          }
+        }
+      };
+      
+      collectPaths(item);
+      
+      // Delete all collected paths from navigation structure
+      let deletedCount = 0;
+      for (const pathToDelete of pathsToDelete) {
+        if (removeItemFromNavigation(navigationData.navigation, pathToDelete)) {
+          deletedCount++;
+        }
+      }
+      
+      console.log(`Deleted ${deletedCount} items from navigation structure`);
+      
+      // Now delete the actual files and directories
+      for (const contentPath of contentPathsToDelete) {
+        try {
+          await deleteContent(contentPath);
+          console.log(`Deleted file/directory: ${contentPath}`);
+        } catch (error) {
+          console.error(`Error deleting ${contentPath}:`, error);
+          // Continue with other deletions even if one fails
+        }
+      }
+    } else {
+      // Simple file deletion
+      if (!removeItemFromNavigation(navigationData.navigation, itemPath)) {
+        throw new Error(`Could not find item at path: ${itemPath} in navigation structure`);
+      }
+      
+      // Delete the actual file
+      try {
+        // Convert navigation path to content path
+        const contentPath = `content${itemPath}.md`;
+        await deleteContent(contentPath);
+        console.log(`Deleted file: ${contentPath}`);
+      } catch (error) {
+        console.error(`Error deleting file:`, error);
+        throw error;
+      }
+    }
+    
+    // Save to draft
+    sidebarEditorStore.saveDraftNavigationStructure(navigationData);
+    
+    // Update the navigation store to use the draft
+    navigationStore.applyDraft(navigationData);
+    
+    showToast({
+      title: "Success",
+      message: item.type === 'directory' 
+        ? `Folder "${item.title}" and its contents deleted (draft saved)` 
+        : `File "${item.title}" deleted (draft saved)`,
+      type: "success",
+    });
+    
+    // Navigate to appropriate page
+    const currentPath = route.path;
+    
+    // Helper function to get parent path
+    const getParentPath = (path) => {
+      // Remove trailing slash if present
+      const cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
+      // Get the parent path by removing the last segment
+      const lastSlashIndex = cleanPath.lastIndexOf('/');
+      if (lastSlashIndex <= 0) {
+        // If at root level or no slash found, go to homepage
+        return '/';
+      }
+      return cleanPath.substring(0, lastSlashIndex);
+    };
+    
+    // Check if we're currently on the deleted item's page or one of its children
+    if (currentPath === itemPath || currentPath.startsWith(`${itemPath}/`)) {
+      // We're deleting the current page or a parent of the current page, navigate to parent
+      const parentPath = getParentPath(itemPath);
+      
+      // Determine the target path - if parent is a directory, append '/index'
+      let targetPath = parentPath;
+      const parentItem = findItemByPath(parentPath, navigationStructure.value);
+      
+      if (parentItem && parentItem.type === 'directory') {
+        // For top-level directories like '/design', navigate to their index
+        targetPath = `${parentPath}/index`;
+      }
+      
+      console.log(`Navigating from ${currentPath} to ${targetPath}`);
+      router.push(targetPath);
+    }
+  } catch (error) {
+    console.error("Error deleting item:", error);
+    const { showToast } = useToast();
+    showToast({
+      title: "Error",
+      message: `Failed to delete item: ${error.message}`,
+      type: "error",
+    });
+  }
 };
 
 // Helper function to recursively find an item by path
@@ -1698,8 +1888,23 @@ const handleToggleLock = (itemPath: string) => {
   background-color: #f5f5f5;
 }
 
+.dropdown-item:disabled,
+.dropdown-item.disabled:hover {
+  background-color: transparent;
+}
+
 .dropdown-item.delete {
   color: #e53935;
+}
+
+.dropdown-item.delete.disabled {
+  color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dropdown-item.delete.disabled svg path {
+  stroke: #ccc;
 }
 
 .dropdown-item.delete:hover {
@@ -1735,9 +1940,28 @@ const handleToggleLock = (itemPath: string) => {
   background-color: #f5f5f5;
 }
 
+.dropdown-item:disabled,
+.dropdown-item.disabled:hover {
+  background-color: transparent;
+}
+
+
+
 .global-dropdown-menu .dropdown-item.delete {
   color: #e53935;
 }
+
+.dropdown-item.delete.disabled {
+  color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dropdown-item.delete.disabled svg path {
+  stroke: #ccc;
+}
+
+
 
 .global-dropdown-menu .dropdown-item.delete:hover {
   background-color: #ffebee;
