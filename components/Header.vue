@@ -179,7 +179,7 @@ const navItems: NavItem[] = [
   { label: "Design", path: "/design", disabled: false },
   { label: "Develop", path: "/develop", disabled: true },
   { label: "Contribute", path: "/contribute", disabled: true },
-  { label: "Opinions", path: "/opinions", disabled: true },
+  { label: "Opinion", path: "/opinions", disabled: true },
 ];
 
 const route = useRoute();
