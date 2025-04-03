@@ -88,16 +88,16 @@
               "locked": false,
               "children": [
                 {
-                  "title": "Bottom Sheets",
-                  "path": "/design/digital/components/bottom-sheets",
-                  "type": "file",
-                  "locked": true
-                },
-                {
                   "title": "Button",
                   "path": "/design/digital/buttons",
                   "type": "file",
                   "locked": false
+                },
+                {
+                  "title": "Bottom Sheets",
+                  "path": "/design/digital/components/bottom-sheets",
+                  "type": "file",
+                  "locked": true
                 }
               ]
             }
