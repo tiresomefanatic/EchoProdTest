@@ -479,7 +479,7 @@ const handleAdditionalFileUpload = (event) => {
               id="content-textarea"
               v-model="content"
               placeholder="Add any context about the design you're uploading..."
-              class="content-textarea"
+              class="content-textarea !text-white"
             ></textarea>
           </div>
           
