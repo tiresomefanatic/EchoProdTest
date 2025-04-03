@@ -17,6 +17,7 @@
 <h4 style="text-align: left">2. Button label area
 </h4>
 <p style="text-align: left">This shows the button's content.<br>You can apply the text, icon, and the text+icon format using the center alignment by default.<br>
+<br>New line added! Ta da <br>
 </p>
 <h2 style="text-align: left">Hierarchy
 </h2>
