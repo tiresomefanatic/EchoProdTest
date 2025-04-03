@@ -489,7 +489,7 @@ onMounted(() => {
   .header-inner {
     padding: auto;
     max-width: 1220px;
-    padding-right: 230px;
+    padding-right: 232px;
   }
 }
 
