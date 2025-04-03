@@ -229,7 +229,7 @@ const toggleSidebar = () => {
 
   // Emit event with clear value to ensure it's properly received
   sidebarBus.emit(isSidebarOpen.value);
-  console.log("Emitted sidebar event:", isSidebarOpen.value);
+  console.log("Emitting sidebar event:", isSidebarOpen.value);
 
   // Close search if it's open when toggling sidebar
   if (isSearchOpen.value) {

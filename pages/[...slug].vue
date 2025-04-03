@@ -144,7 +144,13 @@
                           </ContentDoc>
                         </template>
                         <template v-else>
-                          <div v-html="githubContent" class="markdown-content"></div>
+                          <div v-if="isContentLoading" class="content-loading-spinner">
+                            <div class="spinner-container">
+                              <div class="spinner"></div>
+                              <div class="loading-text">Loading content...</div>
+                            </div>
+                          </div>
+                          <div v-else v-html="githubContent" class="markdown-content"></div>
                         </template>
                       </div>
                     </div>
@@ -153,7 +159,7 @@
               </div>
               <TableOfContents v-if="!isEditing" class="table-of-contents" />
             </div>
-            <Footer v-if="!isEditing" class="content-aligned-footer" />
+            <Footer v-if="!isEditing && !isContentLoading" class="content-aligned-footer" />
           </div>
         </div>
       </div>
@@ -196,6 +202,9 @@ import Footer from "~/components/Footer.vue";
 import { useEventBus } from '@vueuse/core';
 import CommitModal from "~/components/CommitModal.vue";
 import FloatingWidget from "~/components/FloatingWidget.vue";
+
+// Content loading state
+const isContentLoading = ref(true);
 
 // Initialize GitHub functionality and services
 const {
@@ -271,6 +280,8 @@ onMounted(() => {
   if (!path) {
     navigateTo("/");
   }
+  // Set loading state to true on initial load
+  isContentLoading.value = true;
   console.log('isEditing value:', isEditing.value);
 });
 
@@ -390,6 +401,9 @@ const tiptapEditorRef = ref(null);
  */
 const loadGithubContent = async () => {
   if (!isLoggedIn.value) return;
+  
+  // Set loading state to true when loading content
+  isContentLoading.value = true;
 
   try {
     let contentPathToLoad = contentPath.value;
@@ -411,6 +425,7 @@ const loadGithubContent = async () => {
         
         // Dispatch content-loaded event after content is updated
         setTimeout(() => {
+          isContentLoading.value = false;
           window.dispatchEvent(new Event('content-loaded'));
         }, 100);
         return;
@@ -427,6 +442,7 @@ const loadGithubContent = async () => {
         
         // Dispatch content-loaded event after content is updated
         setTimeout(() => {
+          isContentLoading.value = false;
           window.dispatchEvent(new Event('content-loaded'));
         }, 100);
         return;
@@ -443,6 +459,7 @@ const loadGithubContent = async () => {
         
         // Dispatch content-loaded event after content is updated
         setTimeout(() => {
+          isContentLoading.value = false;
           window.dispatchEvent(new Event('content-loaded'));
         }, 100);
         return;
@@ -467,6 +484,7 @@ const loadGithubContent = async () => {
     
     // Dispatch content-loaded event after content is updated
     setTimeout(() => {
+      isContentLoading.value = false;
       window.dispatchEvent(new Event('content-loaded'));
     }, 100);
     
@@ -719,6 +737,7 @@ const handleContentCreated = async () => {
 watch(
   () => route.path,
   async () => {
+    isContentLoading.value = true;
     if (isLoggedIn.value && !isEditing.value) {
       console.log(
         "Route changed, loading GitHub content for path:",
@@ -1997,5 +2016,44 @@ watch(isEditing, (newValue) => {
 :deep(.content-aligned-footer) {
   box-sizing: border-box;
   max-width: none;
+}
+
+/* Spinner styles */
+.content-loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  width: 100%;
+}
+
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-left-color: #3b82f6;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  color: #6b7280;
+  font-size: 16px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
