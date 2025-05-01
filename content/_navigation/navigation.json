@@ -16,13 +16,19 @@
               "title": "Animation",
               "path": "/design/foundation/animation",
               "type": "file",
-              "locked": true
+              "locked": false
             },
             {
               "title": "Applications",
               "path": "/design/foundation/applications",
               "type": "file",
               "locked": true
+            },
+            {
+              "title": "Color",
+              "path": "/design/foundation/color",
+              "type": "file",
+              "locked": false
             },
             {
               "title": "Color",
@@ -43,18 +49,6 @@
               "locked": false
             },
             {
-              "title": "Color",
-              "path": "/design/foundation/color",
-              "type": "file",
-              "locked": false
-            },
-            {
-              "title": "Stickers",
-              "path": "/design/foundation/stickers",
-              "type": "file",
-              "locked": false
-            },
-            {
               "title": "Imagery",
               "path": "/design/foundation/imagery",
               "type": "file",
@@ -69,6 +63,12 @@
             {
               "title": "Logo",
               "path": "/design/foundation/logo",
+              "type": "file",
+              "locked": false
+            },
+            {
+              "title": "Stickers",
+              "path": "/design/foundation/stickers",
               "type": "file",
               "locked": false
             },
