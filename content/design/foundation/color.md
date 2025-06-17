@@ -46,8 +46,8 @@
 <p style="text-align: left"><strong>`Value`</strong>is the numeric weight (<code>100</code> to <code>900</code>, with <code>500</code> as the base)
 </p>
 <p style="text-align: left">
-<br>
-<span style="font-size: 18px">Examples:</span>
+<span style="font-size: 16px">
+<br>Examples:</span>
 </p>
 <p style="text-align: left">
 <span style="font-size: 16px"><strong>`Cyan/500`</strong>→ Base cyan accent</span>
@@ -69,10 +69,10 @@
 </h2>
 <p style="text-align: left">Echo follows the format:
 </p>
-<p style="text-align: left">"[Category] [Role] → maps to → [Primitive/Scale]"<br>
+<p style="text-align: left">[Category] [Role] → maps to → [Primitive/Scale]<br>
 </p>
 <p style="text-align: left">
-<span style="font-size: 18px">Examples:</span>
+<span style="font-size: 16px">Examples:</span>
 </p>
 <p style="text-align: left">
 <code>[Content] [Primary]</code> → <code>[Neutral]/[900]</code>
