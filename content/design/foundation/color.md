@@ -34,7 +34,7 @@
 <img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1750165145854-37dfa75b-1750165143918-u1e6sjcer5r.jpg" alt="Cyan Hues.jpg">This scale structure applies identically to Red, Yellow, Green, Blue, and the Brand colours.
 </p>
 <h2 style="text-align: left">
-<span style="font-size: 24px"><strong>Naming Convention</strong></span>
+<span style="font-size: 24px"><strong>Primary Colour Naming Convention</strong></span>
 </h2>
 <p style="text-align: left">Echo follows a naming convention based on: <strong>Colour/Value</strong>
 </p>
@@ -65,7 +65,7 @@
 <p style="text-align: left">While primitive colours define the raw hues and values, <strong>semantic colours</strong> map those values to <strong>functional roles</strong> in the UI—like indicating status, structuring layers, or guiding user interaction. These mappings ensure that the same logic and visual language are applied consistently across surfaces, states, and modes.
 </p>
 <h2 style="text-align: left">
-<span style="font-size: 24px"><strong>Naming Convention</strong></span>
+<span style="font-size: 24px"><strong>Semantic Colour Naming Convention</strong></span>
 </h2>
 <p style="text-align: left">Echo follows the format:
 </p>
