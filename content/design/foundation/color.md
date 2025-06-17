@@ -31,9 +31,7 @@
 <p style="text-align: left">Example: Cyan Colour Scale
 </p>
 <p style="text-align: left">
-<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1750165145854-37dfa75b-1750165143918-u1e6sjcer5r.jpg" alt="Cyan Hues.jpg">
-</p>
-<p style="text-align: left">This scale structure applies identically to Red, Yellow, Green, Blue, and the Brand colours.
+<img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1750165145854-37dfa75b-1750165143918-u1e6sjcer5r.jpg" alt="Cyan Hues.jpg">This scale structure applies identically to Red, Yellow, Green, Blue, and the Brand colours.
 </p>
 <h2 style="text-align: left">
 <span style="font-size: 24px"><strong>Naming Convention</strong></span>
