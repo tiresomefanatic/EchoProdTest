@@ -15,7 +15,7 @@
 <img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1748844832292-c2da81fd-1748844831494-750yfnrd0ae.jpg" alt="The primitive colours of Hero Design System.">Each primitive hue is expanded into a <strong>9-point scale</strong> of tints and shades, enabling a rich yet controlled design vocabulary.
 </p>
 <h3 style="text-align: left">
-<span style="font-size: 24px">Colour Scale Logic</span>
+<span style="font-size: 24px"><strong>Colour Scale Logic</strong></span>
 </h3>
 <p style="text-align: left">Each primitive colour has a <strong>9-step scale</strong>, ranging from light tints to deep shades:
 </p>
@@ -34,7 +34,7 @@
 <img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1748615665029-5942c027-1748615663513-aqpwxx3wukj.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Credential=cipRRh8D5NgHPVuaj4zW8kzGQg6EUsES%2F20250602%2Fus-east-1%2Fs3%2Faws4_request&amp;X-Amz-Date=20250602T061645Z&amp;X-Amz-Expires=86400&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Signature=e5af002505304f0429f152df0e0903c8a0c776602f57d50515012e92044f0838" alt="uploads/1748615665029-5942c027-1748615663513-aqpwxx3wukj.jpg">This scale structure applies identically to Red, Yellow, Green, Blue, and the Brand colours.
 </p>
 <h3 style="text-align: left">
-<span style="font-size: 24px">Naming Convention</span>
+<span style="font-size: 24px"><strong>Naming Convention</strong></span>
 </h3>
 <p style="text-align: left">Echo follows a naming convention based on: <strong>Colour/Value</strong>
 </p>
@@ -65,7 +65,7 @@
 <p style="text-align: left">
 </p>
 <p style="text-align: left">
-<span style="font-size: 24px">Naming Convention</span>
+<span style="font-size: 24px"><strong>Naming Convention</strong></span>
 </p>
 <p style="text-align: left">Echo follows the format:
 </p>
