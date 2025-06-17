@@ -86,7 +86,7 @@
 <p style="text-align: left">
 </p>
 <p style="text-align: left">
-<span style="font-size: 24px">Semantic tokens communicate meaning. They're categorized into:</span>
+<span style="font-size: 18px">Semantic tokens communicate meaning. They're categorized into:</span>
 </p>
 <p style="text-align: left">1. Content Tokens
 </p>
