@@ -77,7 +77,7 @@
                 active: $route.path.startsWith(item.path),
                 disabled: item.disabled,
               }"
-              @click.prevent="!item.disabled && navigateTo(item.path + '/')"
+              @click.prevent="handleNavigation(item)"
             >
               {{ item.label }}
               <span v-if="item.disabled" class="lock-icon">
@@ -179,7 +179,7 @@ const navItems: NavItem[] = [
   { label: "Design", path: "/design", disabled: false },
   { label: "Develop", path: "/develop", disabled: true },
   { label: "Contribute", path: "/contribute", disabled: true },
-  { label: "Opinions", path: "/opinions", disabled: true },
+  { label: "Opinions", path: "/opinions", disabled: false },
 ];
 
 const route = useRoute();
@@ -190,6 +190,12 @@ const isSidebarOpen = ref(false);
 
 // Create event bus for sidebar
 const sidebarBus = useEventBus("sidebar-toggle");
+
+// Handle navigation for internal routes
+const handleNavigation = (item: NavItem) => {
+  if (item.disabled) return;
+  navigateTo(item.path + '/');
+};
 
 // Toggle search with improved handling
 const toggleSearch = () => {

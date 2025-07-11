@@ -11,6 +11,7 @@ import Text from "@tiptap/extension-text";
 import Image from "@tiptap/extension-image";
 import ColorWheelExtension from "~/extensions/colorWheelExtension";
 import CollaborationSidebar from "~/components/CollaborationSidebar.vue";
+import Header from "~/components/Header.vue";
 import { useGithub } from "~/composables/useGithub";
 import { useToast } from "~/composables/useToast";
 import { useNuxtApp } from "#app";
@@ -28,14 +29,29 @@ import TextStyle from "@tiptap/extension-text-style";
 import Link from "@tiptap/extension-link";
 
 import ImageUploader from "~/components/ImageUploader.vue";
-import FloatingWidget from "./FloatingWidget.vue";
-import AIEditingAssistant from "./AIEditingAssistant.vue";
+import EnhanceModal from "~/components/EnhanceModal.vue";
 
 interface Props {
   content?: string;
   filePath?: string;
   externalRawMode?: boolean;
   externalPreviewMode?: boolean;
+  initialTitle?: string;
+  initialTags?: string;
+  initialCategory?: string;
+}
+
+interface DraftData {
+  id: string;
+  title: string;
+  content: string;
+  tags: string;
+  category: string;
+  author: string;
+  createdAt: Date;
+  lastModified: Date;
+  wordCount: number;
+  status: 'draft' | 'published';
 }
 
 const handleInsertComponent = (componentId: string) => {
@@ -127,7 +143,17 @@ const showCommitDialog = ref(false);
 const commitMessage = ref("");
 const isCommitting = ref(false);
 const showImageDialog = ref(false);
+const showEnhanceModal = ref(false);
+const selectedText = ref("");
+const hasTextSelection = ref(false);
+const enhanceModalPosition = ref({ x: 0, y: 0 });
 
+// Article state
+const articleTitle = ref(props.initialTitle || "");
+const articleTags = ref(props.initialTags || "");
+const articleCategory = ref(props.initialCategory || "Design");
+const lastSavedAt = ref<Date | null>(null);
+const isDraftSaved = ref(false);
 
 // Store setup
 const store = useStore();
@@ -363,6 +389,34 @@ watch(
   }
 );
 
+// Watch for initial data changes
+watch(
+  () => props.initialTitle,
+  (newTitle) => {
+    if (newTitle !== undefined) {
+      articleTitle.value = newTitle;
+    }
+  }
+);
+
+watch(
+  () => props.initialTags,
+  (newTags) => {
+    if (newTags !== undefined) {
+      articleTags.value = newTags;
+    }
+  }
+);
+
+watch(
+  () => props.initialCategory,
+  (newCategory) => {
+    if (newCategory !== undefined) {
+      articleCategory.value = newCategory;
+    }
+  }
+);
+
 // Computed properties
 const showCommitButton = computed(() => {
   return props.filePath && isLoggedIn.value;
@@ -388,24 +442,76 @@ const sanitizedPreviewContent = computed(() => {
 
 // Save and commit handlers
 const handleSave = () => {
-  if (!props.filePath) return;
+  if (!editor.value) {
+    showToast({
+      title: "Error",
+      message: "Editor not ready",
+      type: "error",
+    });
+    return;
+  }
 
-  // Format the content before saving
-  const formattedContent = formatHTML(localContent.value);
-  console.log("Editor saving content - Length:", formattedContent.length);
-  console.log("Preview:", formattedContent.substring(0, 100) + "...");
+  isSaving.value = true;
 
-  // Save formatted content as draft
-  editorStore.saveDraft(props.filePath, formattedContent);
+  try {
+    // Get content from editor
+    const content = formatHTML(editor.value.getHTML());
+    
+    // Count words (simple implementation)
+    const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length;
+    
+    // Generate unique ID for new drafts or use existing one
+    const currentDraftId = `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create draft data
+    const draftData: DraftData = {
+      id: currentDraftId,
+      title: articleTitle.value.trim() || "Untitled Draft",
+      content: content,
+      tags: articleTags.value || "",
+      category: articleCategory.value,
+      author: "Current User", // TODO: Get from auth
+      createdAt: new Date(),
+      lastModified: new Date(),
+      wordCount: wordCount,
+      status: 'draft'
+    };
 
-  // Update store's raw text
-  store.updateRawText(formattedContent);
-
-  showToast({
-    title: "Draft Saved",
-    message: "Changes saved as draft",
-    type: "success",
-  });
+    // Save to localStorage (can be replaced with API call later)
+    const existingDrafts = JSON.parse(localStorage.getItem('opinion_drafts') || '[]');
+    
+    // Always add as new draft (each save creates a new version)
+    existingDrafts.push(draftData);
+    
+    localStorage.setItem('opinion_drafts', JSON.stringify(existingDrafts));
+    
+    // Debug: Log the saved data
+    console.log('Draft saved to localStorage:', draftData);
+    console.log('Total drafts in localStorage:', existingDrafts.length);
+    
+    // Update UI state
+    lastSavedAt.value = new Date();
+    isDraftSaved.value = true;
+    
+    showToast({
+      title: "Draft Saved",
+      message: `"${draftData.title}" saved successfully`,
+      type: "success",
+    });
+    
+    // Emit save event to trigger refresh in parent component
+    emit('save');
+    
+  } catch (error) {
+    console.error('Error saving draft:', error);
+    showToast({
+      title: "Error",
+      message: "Failed to save draft. Please try again.",
+      type: "error",
+    });
+  } finally {
+    isSaving.value = false;
+  }
 };
 
 const handleCommit = async () => {
@@ -530,18 +636,14 @@ const handleImageUploaded = (details: { url: string; alt: string }) => {
 
   // Set default center alignment
   try {
-    const imageNode = editor.value.view.state.selection.$anchor.nodeAfter;
-    if (imageNode) {
-      editor.value
-        .chain()
-        .focus()
-        .setNodeAttribute(
-          imageNode.type,
-          "style",
-          "display: block; margin: 0 auto; float: none"
-        )
-        .run();
-    }
+    // Use updateAttributes to set image styles
+    editor.value
+      .chain()
+      .focus()
+      .updateAttributes('image', {
+        style: "display: block; margin: 0 auto; float: none"
+      })
+      .run();
   } catch (e) {
     console.warn('Could not set image alignment:', e);
   }
@@ -798,7 +900,7 @@ onMounted(async () => {
       transformPastedHTML: (html) => {
         return html;
       },
-      handleDrop: false,
+      handleDrop: undefined,
       // handleClick: (view: EditorView, pos: number, event: MouseEvent) => {
       //   // Get the precise position
       //   const precise = view.posAtCoords({
@@ -933,6 +1035,9 @@ onMounted(async () => {
         previewContent.value = content;
         emit("update:content", content);
       }
+    },
+    onSelectionUpdate: ({ editor: ed }) => {
+      handleTextSelection();
     },
     parseOptions: {
       preserveWhitespace: "full",
@@ -1087,139 +1192,166 @@ const handleExit = () => {
   emit("exit");
 };
 
-// AI Assistant handlers
+// Handle publish action
+const handlePublish = () => {
+  // For now, just emit save (can be expanded later for publish functionality)
+  emit("save");
+};
 
-const handleAIContentUpdate = (updatedContent: string) => {
-  if (editor.value) {
-    // Store current selection if editor is focused
-    const wasEditorFocused = editor.value.isFocused;
-    let savedSelection = null;
-    if (wasEditorFocused) {
-      savedSelection = editor.value.state.selection;
-    }
-
-    // Update editor content
-    editor.value.commands.setContent(updatedContent);
-    localContent.value = updatedContent;
-
-    // Restore selection and focus if editor was focused
-    if (wasEditorFocused && savedSelection) {
-      editor.value.commands.focus();
-      editor.value.chain().setTextSelection(savedSelection.from).run();
-    }
-
-    // Update store
-    store.updateRawText(updatedContent);
-    
-    // Emit the update
-    emit("update:content", updatedContent);
+// Utility function to format time ago
+const formatTimeAgo = (date: Date): string => {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) {
+    return 'just now';
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes}m ago`;
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours}h ago`;
+  } else {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days}d ago`;
   }
+};
+
+// Text selection and enhance functionality
+const handleTextSelection = () => {
+  if (!editor.value) return;
+  
+  const { state } = editor.value;
+  const { selection } = state;
+  const { from, to } = selection;
+  
+  if (from !== to) {
+    // Text is selected
+    selectedText.value = state.doc.textBetween(from, to);
+    hasTextSelection.value = true;
+    
+    // Get selection position for modal placement
+    const { view } = editor.value;
+    const start = view.coordsAtPos(from);
+    const end = view.coordsAtPos(to);
+    
+    enhanceModalPosition.value = {
+      x: (start.left + end.left) / 2,
+      y: start.top - 10
+    };
+  } else {
+    // No text selected
+    selectedText.value = "";
+    hasTextSelection.value = false;
+  }
+};
+
+const handleEnhanceClick = () => {
+  if (!hasTextSelection.value) {
+    showToast({
+      title: "No text selected",
+      message: "Please select some text first to enhance it",
+      type: "warning",
+    });
+    return;
+  }
+  
+  showEnhanceModal.value = true;
+};
+
+const handleEnhanceModalClose = () => {
+  showEnhanceModal.value = false;
+};
+
+const handleReplaceText = (newText: string) => {
+  if (!editor.value || !hasTextSelection.value) return;
+  
+  const { state } = editor.value;
+  const { selection } = state;
+  
+  editor.value
+    .chain()
+    .focus()
+    .insertContentAt({ from: selection.from, to: selection.to }, newText)
+    .run();
+    
+  showEnhanceModal.value = false;
+  hasTextSelection.value = false;
+  selectedText.value = "";
 };
 </script>
 
 <template>
-  <div class="editor-wrapper">
-    <div class="editor-layout">
-      <!-- AI Editing Assistant Sidebar - Left Side -->
-      <AIEditingAssistant
-        :currentContent="localContent"
-        @contentUpdate="handleAIContentUpdate"
-        class="ai-editing-sidebar"
-      />
-      
-      <div class="editor-main">
-        <div class="editor-toolbar">
-          <div class="toolbar-left">
-            <!-- Removed filepath and content source indicators -->
-          </div>
+  <div class="min-h-screen bg-white">
+    <!-- Main Header -->
+    <div class="header-wrapper">
+      <Header />
+    </div>
 
-          <div class="toolbar-right" style="display: none">
-            <!-- Editor View -->
-            <template v-if="!previewMode && !rawMode">
-              <button class="toolbar-button" @click="rawMode = true">
-                Raw
-              </button>
-              <button class="toolbar-button" @click="previewMode = true">
-                Preview
-              </button>
-              <div
-                v-if="showCommitButton && hasChanges"
-                class="commit-button-wrapper"
-              >
-                <button
-                  class="toolbar-button primary"
-                  @click="() => handleCommitClick()"
-                  :disabled="isMainBranch"
-                  :title="commitButtonTitle"
-                >
-                  Commit Changes
-                </button>
-                <div v-if="isMainBranch" class="main-branch-warning">
-                  Cannot commit directly to main branch
-                </div>
-              </div>
-              <button
-                v-if="hasChanges"
-                class="toolbar-button primary"
-                @click="handleSave"
-                :title="hasChanges ? 'Save your changes' : 'No changes to save'"
-              >
-                Save
-              </button>
-              <button class="toolbar-button" @click="handleExit">Exit</button>
-            </template>
-
-            <!-- Raw View -->
-            <template v-if="rawMode">
-              <button class="toolbar-button" @click="rawMode = false">
-                Normal
-              </button>
-              <button class="toolbar-button" @click="previewMode = true">
-                Preview
-              </button>
-              <button
-                v-if="showCommitButton && hasChanges"
-                class="toolbar-button primary"
-                @click="() => (showCommitDialog = true)"
-              >
-                Commit Changes
-              </button>
-              <button
-                v-if="hasChanges"
-                class="toolbar-button primary"
-                @click="handleSave"
-              >
-                Save
-              </button>
-              <button class="toolbar-button" @click="handleExit">Exit</button>
-            </template>
-
-            <!-- Preview View -->
-            <template v-if="previewMode">
-              <button class="toolbar-button" @click="previewMode = false">
-                Edit
-              </button>
-              <button
-                v-if="showCommitButton && hasChanges"
-                class="toolbar-button primary"
-                @click="() => (showCommitDialog = true)"
-              >
-                Commit Changes
-              </button>
-              <button
-                v-if="hasChanges"
-                class="toolbar-button primary"
-                @click="handleSave"
-              >
-                Save
-              </button>
-              <button class="toolbar-button" @click="handleExit">Exit</button>
-            </template>
+    <!-- Save/Publish Bar -->
+    <div class="save-publish-bar bg-white border-b border-gray-200 shadow-sm" style="min-height: 60px;">
+      <div class="w-full px-6 py-3 flex items-center justify-between" style="width: 100%; display: flex !important;">
+        <!-- Left side - Category and Draft status -->
+        <div class="flex items-center space-x-3">
+          <button
+            @click="handleExit"
+            class="flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 w-8 h-8 p-0 rounded-lg transition-colors"
+            title="Back to All Categories"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <span class="px-3 py-1 rounded-full text-sm bg-[#FF5310]/10 text-[#FF5310] font-medium">
+            Design
+          </span>
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-500 font-medium">Draft</span>
+            <span v-if="lastSavedAt" class="text-xs text-gray-400">
+              • Saved {{ formatTimeAgo(lastSavedAt) }}
+            </span>
           </div>
         </div>
 
-        <!-- Editor View Toolbar - Fixed at top -->
-        <div class="tiptap-toolbar" v-if="editor && !previewMode && !rawMode">
+        <!-- Right side - Save and Publish buttons -->
+        <div class="flex items-center space-x-3" style="display: flex !important; flex-shrink: 0;">
+          <button
+            @click="handleSave"
+            :disabled="isSaving"
+            class="border border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="isSaving" class="flex items-center">
+              <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Saving...
+            </span>
+            <span v-else>Save</span>
+          </button>
+          <button
+            @click="handlePublish"
+            :disabled="isSaving"
+            class="bg-[#FF5310] hover:bg-[#FF5310] text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            style="background-color: #FF5310 !important; color: white !important; display: inline-flex !important; align-items: center !important;"
+          >
+            <span v-if="isSaving" class="flex items-center">
+              <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Publishing...
+            </span>
+            <span v-else>Publish</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TipTap Toolbar -->
+    <div class="tiptap-toolbar-wrapper bg-white border-b border-gray-200">
+      <div class="w-full px-6 py-2 flex flex-row text-center items-center justify-center">
+        <div class="tiptap-toolbar" v-if="editor">
           <button
             class="menubar-button"
             @click="editor.chain().focus().toggleBold().run()"
@@ -1262,7 +1394,7 @@ const handleAIContentUpdate = (updatedContent: string) => {
           <select
             class="font-size-select"
             @change="
-              (e) => editor.chain().focus().setFontSize(e.target.value).run()
+              (e) => editor.chain().focus().setFontSize((e.target as HTMLSelectElement).value).run()
             "
           >
             <option value="">Font Size</option>
@@ -1344,52 +1476,54 @@ const handleAIContentUpdate = (updatedContent: string) => {
           >
             <span class="button-icon">🖼️</span>
           </button>
-          
-
-          
+          <div class="divider"></div>
+          <button
+            class="menubar-button enhance-button"
+            @click="handleEnhanceClick"
+            :class="{ 
+              'has-selection': hasTextSelection,
+              'no-selection': !hasTextSelection 
+            }"
+            :title="hasTextSelection ? 'Enhance selected text' : 'Select text to enhance'"
+          >
+            <span class="button-text">Enhance</span>
+          </button>
           <AddContentDialog
             :onInsertComponent="handleInsertComponent"
             :onInsertSection="handleInsertSection"
           />
         </div>
+      </div>
+    </div>
 
-        <div class="editor-scroll-container">
-          <div class="editor-content">
-            <!-- Editor View -->
-            <template v-if="!previewMode && !rawMode">
-              <editor-content
-                v-if="editorInitialized"
-                :editor="editor"
-                class="content-wrapper"
-                :class="{ 'has-changes': hasChanges }"
-              />
-            </template>
-
-            <!-- Raw View -->
-            <div v-else-if="rawMode" class="raw-content-wrapper">
-              <MonacoEditor
-                v-model="localContent"
-                class="monaco-editor"
-                :options="editorOptions"
-                @change="handleRawContentChange"
-                @mount="(editor) => (monacoEditor = editor)"
-              />
-            </div>
-
-            <!-- Preview View -->
-            <div v-else class="preview-wrapper">
-              <div class="content-wrapper" v-html="previewContent"></div>
-            </div>
-          </div>
-        </div>
+    <!-- Main Content Area -->
+    <main class="mx-auto max-w-4xl px-6 pt-10 pb-10 pl-8 pr-8">
+      
+      <!-- Article Title Input -->
+      <div class="title-section mb-8">
+        <input
+          v-model="articleTitle"
+          placeholder="Enter your article title..."
+          class="title-input w-full text-4xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-400 mb-4"
+          style="font-family: 'PP Neue Montreal', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;"
+        />
       </div>
 
-      <CollaborationSidebar
-        v-if="props.filePath"
-        :filePath="props.filePath"
-        @load-save="handleLoadSave"
-      />
-    </div>
+      <!-- TipTap Editor -->
+      <div class="relative">
+        <div v-if="isSaving" class="absolute inset-0 flex items-center justify-center bg-white/60 z-10 backdrop-blur">
+          <svg class="w-6 h-6 animate-spin text-[#FF5310]" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        <editor-content
+          v-if="editorInitialized"
+          :editor="editor"
+          class="content-wrapper"
+        />
+      </div>
+    </main>
 
     <!-- Commit Dialog -->
     <div v-if="showCommitDialog" class="commit-dialog">
@@ -1440,8 +1574,15 @@ const handleAIContentUpdate = (updatedContent: string) => {
       </div>
     </div>
 
-    <!-- Add the FloatingWidget component -->
-    <FloatingWidget v-if="editor" />
+    <!-- Enhance Modal -->
+    <EnhanceModal
+      v-if="showEnhanceModal"
+      :selectedText="selectedText"
+      :position="enhanceModalPosition"
+      @close="handleEnhanceModalClose"
+      @replaceText="handleReplaceText"
+    />
+
   </div>
 </template>
 
@@ -1481,7 +1622,6 @@ const handleAIContentUpdate = (updatedContent: string) => {
   overflow: hidden;
   width: 100%;
   background: white;
-  flex-direction: row;
 }
 
 .editor-main {
@@ -1824,6 +1964,19 @@ const handleAIContentUpdate = (updatedContent: string) => {
   flex: 1;
 }
 
+/* Remove any placeholder content */
+.ProseMirror::before {
+  display: none !important;
+}
+
+.ProseMirror-focused::before {
+  display: none !important;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  display: none !important;
+}
+
 .ProseMirror img {
   max-width: 100%;
   height: auto;
@@ -1987,10 +2140,33 @@ const handleAIContentUpdate = (updatedContent: string) => {
   border-color: #d1d5db;
 }
 
-/* AI Assistant Sidebar Styling */
-.ai-editing-sidebar {
-  flex-shrink: 0;
-  order: -1;
+/* Enhance button specific styles */
+.enhance-button {
+  min-width: 80px;
+  font-weight: 500;
+}
+
+.enhance-button.no-selection {
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.enhance-button.has-selection {
+  border-color: #FF5310;
+  color: #FF5310;
+  background: #FF5310/5;
+  cursor: pointer;
+}
+
+.enhance-button.has-selection:hover {
+  background: #FF5310/10;
+  border-color: #e0440a;
+}
+
+.button-text {
+  font-size: 14px;
+  font-weight: inherit;
 }
 
 /* Mobile responsiveness */
@@ -2024,5 +2200,53 @@ const handleAIContentUpdate = (updatedContent: string) => {
     width: 95%;
     padding: 1rem;
   }
+}
+
+/* Header and layout fixes for opinions editor */
+.header-wrapper {
+  position: relative;
+  z-index: 60;
+  background: white;
+}
+
+.save-publish-bar {
+  position: relative !important;
+  z-index: 50;
+  background: white !important;
+  border-bottom: 1px solid #e5e7eb;
+  display: block !important;
+  width: 100%;
+  min-height: 60px;
+}
+
+.save-publish-bar > div {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.tiptap-toolbar-wrapper {
+  position: relative !important;
+  z-index: 40;
+  background: white !important;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Ensure proper stacking context */
+.min-h-screen {
+  position: relative;
+  background: white;
+}
+
+/* Override any sticky positioning conflicts */
+.save-publish-bar.sticky {
+  position: relative !important;
+  top: auto !important;
+}
+
+.tiptap-toolbar-wrapper.sticky {
+  position: relative !important;
+  top: auto !important;
 }
 </style>

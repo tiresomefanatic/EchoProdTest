@@ -75,3 +75,28 @@
 .content-preview {
   @apply content-wrapper;
 }
+
+.editor-controls-bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  color: #111 !important;
+  padding: 8px 16px;
+  border-bottom: 1px solid #ccc;
+}
+.editor-controls-bar button {
+  display: inline-block !important;
+  opacity: 1 !important;
+  color: #111 !important;
+  background: #fff !important;
+  z-index: 1001 !important;
+  margin-right: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.editor-controls-bar button svg {
+  color: #111 !important;
+}

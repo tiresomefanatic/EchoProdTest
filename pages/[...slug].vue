@@ -1649,9 +1649,9 @@ watch(isEditing, (newValue) => {
 /* New styles for Figma design */
 .branch-header {
   display: flex;
-  justify-content: space-between;
+ 
   align-items: center;
-  width: 100%;
+  width: 50%;
   height: 56px;
   padding: 0 32px;
   background-color: transparent;
@@ -2054,6 +2054,65 @@ watch(isEditing, (newValue) => {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+</style>
+
+<style scoped>
+.page-wrapper.editor-mode {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  padding: 0 !important; /* Remove horizontal padding from the whole page */
+  margin: 0 !important;
+  align-items: stretch !important;
+}
+
+.page-wrapper.editor-mode .main-container {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+}
+
+.page-wrapper.editor-mode .content {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  justify-content: stretch !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+}
+
+.page-wrapper.editor-mode .editor-container {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  padding: 0 88px !important; /* Increased to 88px horizontal padding */
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+
+.page-wrapper.editor-mode .editor-content-wrapper {
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+@media screen and (max-width: 1024px) {
+  .page-wrapper.editor-mode .editor-container {
+    padding: 0 24px !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .page-wrapper.editor-mode .editor-container {
+    padding: 0 8px !important;
   }
 }
 </style>
