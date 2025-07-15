@@ -59,13 +59,13 @@ const openWritingAssistant = () => {
           <span>Design Analysis</span>
         </button>
       </div>
-      <div class="hover-shadow-lg transition-shadow bg-[#FAFAFA99] backdrop-blur-[27px] rounded-md border">
+      <!-- <div class="hover-shadow-lg transition-shadow bg-[#FAFAFA99] backdrop-blur-[27px] rounded-md border">
         <button
           class="w-full h-12 flex items-center gap-2 px-4 text-[#1D1B1B] hover:text-[#FF5310]"
           @click="openWritingAssistant"
-        >
+        > -->
           <!-- Bot icon -->
-          <svg
+          <!-- <svg
             xmlns="http://www.w3.org/2000/svg"
             width="20"
             height="20"
@@ -84,9 +84,9 @@ const openWritingAssistant = () => {
             <path d="M15 13v2" />
             <path d="M9 13v2" />
           </svg>
-          <span>AI Writing Assistant</span>
-        </button>
-      </div>
+          <span>AI Writing Assistant</span> -->
+        <!-- </button> -->
+      <!-- </div> -->
     </div>
 
     <!-- Widgets with updated close handlers -->

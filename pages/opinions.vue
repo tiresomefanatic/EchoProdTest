@@ -38,7 +38,7 @@
           :articles="filteredArticles"
           :categories="categoriesList"
           :active-category="activeCategory"
-          :drafts="drafts"
+          :drafts="displayDrafts"
           @back="handleBackToAll"
           @category-change="handleCategoryChange"
           @article-click="handleArticleClick"
@@ -53,7 +53,7 @@
           :articles="filteredArticles"
           :categories="categoriesList"
           :active-category="activeCategory"
-          :drafts="drafts"
+          :drafts="displayDrafts"
           @category-change="handleCategoryChange"
           @article-click="handleArticleClick"
           @draft-click="handleDraftClick"
@@ -79,14 +79,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useGithubAuth } from "~/composables/useGithubAuth";
 import { useToast } from "~/composables/useToast";
+import { useOpinionsStore, type OpinionDraft } from "~/store/opinions";
 import TiptapEditorOpinions from "~/components/TiptapEditorOpinions.vue";
 
 // Authentication state
 const { isAuthenticated } = useGithubAuth();
 const { showToast } = useToast();
+
+// Opinions store
+const opinionsStore = useOpinionsStore();
 
 // Interfaces
 interface Article {
@@ -99,19 +103,6 @@ interface Article {
   category: string;
   image: string;
   featured?: boolean;
-}
-
-interface DraftData {
-  id: string;
-  title: string;
-  content: string;
-  tags: string;
-  category: string;
-  author: string;
-  createdAt: Date;
-  lastModified: Date;
-  wordCount: number;
-  status: 'draft' | 'published';
 }
 
 interface Category {
@@ -130,51 +121,17 @@ interface Draft {
   category: string;
 }
 
-// Internal drafts state
-const rawDrafts = ref<DraftData[]>([]);
-
-// Computed drafts for display (transformed to match component interface)
-const drafts = computed<Draft[]>(() => {
-  return rawDrafts.value.map(draft => ({
+// Computed drafts for display (transformed from store to match component interface)
+const displayDrafts = computed<Draft[]>(() => {
+  return opinionsStore.sortedDrafts.map(draft => ({
     id: draft.id,
     title: draft.title,
     excerpt: draft.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...',
-    lastEdited: formatTimeAgo(draft.lastModified),
-    wordCount: draft.wordCount,
-    category: draft.category
+    lastEdited: formatTimeAgo(new Date(draft.updatedAt)),
+    wordCount: draft.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length,
+    category: draft.slug || 'General' // Using slug as category placeholder
   }));
 });
-
-// Load drafts from localStorage
-const loadDrafts = () => {
-  if (process.client) {
-    try {
-      const savedDrafts = localStorage.getItem('opinion_drafts');
-      console.log('Loading drafts from localStorage:', savedDrafts);
-      if (savedDrafts) {
-        const parsedDrafts = JSON.parse(savedDrafts);
-        // Convert date strings back to Date objects
-        rawDrafts.value = parsedDrafts.map((draft: any) => ({
-          ...draft,
-          createdAt: new Date(draft.createdAt),
-          lastModified: new Date(draft.lastModified)
-        }));
-        console.log('Loaded rawDrafts:', rawDrafts.value.length, 'drafts');
-      } else {
-        console.log('No drafts found in localStorage');
-        rawDrafts.value = [];
-      }
-    } catch (error) {
-      console.error('Error loading drafts:', error);
-      rawDrafts.value = [];
-    }
-  }
-};
-
-// Refresh drafts (called after saving)
-const refreshDrafts = () => {
-  loadDrafts();
-};
 
 // Format time ago helper
 const formatTimeAgo = (date: Date): string => {
@@ -322,16 +279,17 @@ const handleStartWriting = (preSelectedCategory?: string) => {
 
 // Draft click handler
 const handleDraftClick = (draft: Draft) => {
-  // Find the full draft data from rawDrafts
-  const fullDraft = rawDrafts.value.find(d => d.id === draft.id);
+  // Find the full draft data from the store
+  const fullDraft = opinionsStore.getDraftById(draft.id);
   if (fullDraft) {
     modalFormData.value = {
       title: fullDraft.title,
-      tags: fullDraft.tags,
-      category: [fullDraft.category],
+      tags: "", // Store doesn't have tags field yet, can be added if needed
+      category: [fullDraft.slug || 'General'], // Using slug as category
       collaborators: [],
     };
     currentDraftContent.value = fullDraft.content;
+    opinionsStore.setCurrentDraft(fullDraft);
     showWritingEditor.value = true;
   }
 };
@@ -375,8 +333,16 @@ const handleCategoryChangeFromArticle = (categoryName: string) => {
 
 // Modal event handlers
 const handleModalSubmit = () => {
-  // Close modal and open editor with empty content (new article)
-  currentDraftContent.value = "";
+  // Create a new draft or use existing one
+  if (!opinionsStore.currentDraft) {
+    // Create new draft
+    const newDraft = opinionsStore.createDraft(modalFormData.value.title || 'Untitled Opinion', '');
+    currentDraftContent.value = '';
+  } else {
+    // Update existing draft
+    currentDraftContent.value = opinionsStore.currentDraft.content;
+  }
+  
   showStartWritingModal.value = false;
   showWritingEditor.value = true;
   console.log("Opening editor with data:", modalFormData.value);
@@ -414,6 +380,7 @@ const handleRemoveCollaborator = (email: string) => {
 const handleEditorExit = () => {
   showWritingEditor.value = false;
   currentDraftContent.value = "";
+  opinionsStore.setCurrentDraft(null);
   // Reset form data when exiting editor
   modalFormData.value = {
     title: "",
@@ -425,10 +392,7 @@ const handleEditorExit = () => {
 };
 
 const handleEditorSave = () => {
-  // Refresh drafts to show the newly saved draft
-  console.log('Editor save triggered, refreshing drafts...');
-  refreshDrafts();
-  console.log('Drafts after refresh:', drafts.value);
+  console.log('Editor save triggered');
   
   showToast({
     title: "Success",
@@ -436,12 +400,11 @@ const handleEditorSave = () => {
     type: "success",
   });
   // Don't close editor immediately, let user continue editing
-  // showWritingEditor.value = false;
 };
 
-// Load drafts when component mounts
+// Initialize store when component mounts
 onMounted(() => {
-  loadDrafts();
+  opinionsStore.initStore();
 });
 
 // Page title for SEO

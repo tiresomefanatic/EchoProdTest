@@ -1,100 +1,69 @@
 <template>
   <div class="page-wrapper" :class="{ 'editor-mode': isEditing }">
     <ClientOnly>
-      <!-- Show ActionBar only for logged in users with branch info -->
+      <!-- Show ActionBar only for logged in users when not editing -->
       <ActionBar 
-        v-if="isLoggedIn" 
+        v-if="isLoggedIn && !isEditing" 
         :contentPath="contentPath"
         :isEditing="isEditing"
       />
 
-      <Header v-if="!isEditing" class="menu-bar" />
-      
-      <!-- Exit button when editing - shown in different position -->
-      <div v-if="isLoggedIn && isEditing" class="branch-header">
-        <!-- Branch info removed from here -->
-        
-        <!-- New editor mode controls -->
-        <div class="editor-mode-controls">
-          <button 
-            class="mode-button" 
-            :class="{ 'active': isRawMode }"
-            @click="handleEditorModeChange(isRawMode ? 'normal' : 'raw')"
-          >
-            Raw
-          </button>
-          <!-- <button 
-            class="mode-button" 
-            :class="{ 'active': isPreviewMode }"
-            @click="handleEditorModeChange(isPreviewMode ? 'normal' : 'preview')"
-          >
-            <span class="eye-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-                <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clip-rule="evenodd" />
-              </svg>
-            </span>
-          </button> -->
-          <!-- Content status indicator moved here -->
-          <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
-            {{ getContentSource }}
-          </span>
-          
-          <!-- Device preview buttons -->
-          <div class="device-preview-controls">
-            <button 
-              class="device-button" 
-              :class="{ active: previewDevice === 'desktop' }"
-              @click="setPreviewDevice('desktop')"
-              title="Desktop view"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
-              </svg>
-            </button>
-            <button 
-              class="device-button" 
-              :class="{ active: previewDevice === 'tablet' }"
-              @click="setPreviewDevice('tablet')"
-              title="Tablet view"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
-                <line x1="12" y1="18" x2="12" y2="18.01"></line>
-              </svg>
-            </button>
-            <button 
-              class="device-button" 
-              :class="{ active: previewDevice === 'mobile' }"
-              @click="setPreviewDevice('mobile')"
-              title="Mobile view"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="7" y="4" width="10" height="16" rx="1" ry="1"></rect>
-                <line x1="12" y1="17" x2="12" y2="17.01"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
-        
-        <div class="header-actions">
-          <button @click="exitEditor" class="exit-button">
+      <!-- Branch Actions Bar - when editing (replaces ActionBar) -->
+      <div v-if="isLoggedIn && isEditing" class="branch-actions-bar">
+        <div class="branch-actions-container">
+          <button @click="exitEditor" class="exit-branch-button">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M10 14H12.6667C13.0203 14 13.3594 13.8595 13.6095 13.6095C13.8595 13.3594 14 13.0203 14 12.6667V3.33333C14 2.97971 13.8595 2.64057 13.6095 2.39052C13.3594 2.14048 13.0203 2 12.6667 2H10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M5.33203 11.3334L1.9987 8.00008L5.33203 4.66675" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M2 8H10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            Exit
+            Exit branch
           </button>
-          <button @click="handleShowCommitModal" class="save-button">
-            Save changes
+          
+          <div class="branch-info-center">
+            <span class="branch-indicator">⚡ {{ currentBranch }}</span>
+          </div>
+          
+          <button class="request-review-button">
+            Request review
           </button>
         </div>
       </div>
+
+      <!-- Editor Controls Bar - when editing (second bar) -->
+      <div v-if="isLoggedIn && isEditing" class="editor-controls-bar">
+        <div class="editor-controls-container">
+          <!-- Left side - Editor mode controls -->
+          <div class="editor-mode-controls">
+            <button 
+              class="mode-button" 
+              :class="{ 'active': isRawMode }"
+              @click="handleEditorModeChange(isRawMode ? 'normal' : 'raw')"
+            >
+              Raw
+            </button>
+            <!-- Content status indicator -->
+            <span v-if="getContentSourceClass" class="content-status" :class="getContentSourceClass">
+              {{ getContentSource }}
+            </span>
+          </div>
+          
+          <!-- Right side - Save and Exit buttons -->
+          <div class="editor-actions">
+            <button @click="handleShowCommitModal" class="save-button">
+              Save changes
+            </button>
+            <button @click="handleExitEditorClick" class="exit-button">
+              Exit editor
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Header v-if="!isEditing" class="menu-bar" />
       
       <div class="main-container">
+
         <div class="content">
           <DesignSidebar v-if="!isEditing" class="sidebar" />
           <div class="flex flex-col content-and-footer-wrapper">
@@ -112,7 +81,7 @@
                     </div>
                     
                     <div v-if="isEditing" class="editor-container">
-                      <div class="editor-content-wrapper" :style="editorContentStyle">
+                      <div class="editor-content-wrapper">
                         <TiptapEditor
                           :content="editorContent"
                           :filePath="contentPath"
@@ -610,19 +579,19 @@ const handleEditorError = (error: Error) => {
 const exitEditor = async () => {
   if (isEditing.value) {
     if (editorContent.value !== githubContent.value) {
-      const confirmExit = confirm('You have unsaved changes, save to drafts and you can access them later.\n\nYes - Save to drafts and exit\nNo - Exit without saving');
-      if (confirmExit) {
-        // Save to drafts before exiting
-        if (contentPath.value) {
-          editorStore.saveDraft(contentPath.value, editorContent.value);
-        }
-      } else {
-        // Clear draft if user chooses not to save
-        if (contentPath.value) {
-          editorStore.clearDraft(contentPath.value);
-          await loadGithubContent(); // Load the committed content
-        }
-      }
+      // const confirmExit = confirm('You have unsaved changes, save to drafts and you can access them later.\n\nYes - Save to drafts and exit\nNo - Exit without saving');
+      // if (confirmExit) {
+      //   // Save to drafts before exiting
+      //   if (contentPath.value) {
+      //     editorStore.saveDraft(contentPath.value, editorContent.value);
+      //   }
+      // } else {
+      //   // Clear draft if user chooses not to save
+      //   if (contentPath.value) {
+      //     editorStore.clearDraft(contentPath.value);
+      //     await loadGithubContent(); // Load the committed content
+      //   }
+      // }
     }
     isEditing.value = false;
   }
@@ -880,38 +849,15 @@ const editorContentStyle = computed(() => {
     return { minWidth: '100%' };
   }
   
-  switch (previewDevice.value) {
-    case 'desktop':
-      return { 
-        minWidth: '804px', //base + 64 (16x4) to account for padding
-        maxWidth: '804px', //base + 64 (16x4) to account for padding
-        width: '804px',
-        border: 'none',
-        margin: '0',
-      };
-    case 'tablet':
-      return { 
-        minWidth: 'auto', 
-        maxWidth: '555px',
-        width: '100%',
-        margin: '0 auto',
-      };
-    case 'mobile':
-      return { 
-        minWidth: 'auto', 
-        maxWidth: '375px',
-        width: '100%',
-        margin: '0 auto',
-      };
-    default: // No device selected - default state
-      return { 
-        minWidth: 'auto',
-        maxWidth: '100%',
-        width: '100%',
-        border: 'none',
-        margin: '0 auto',
-      };
-  }
+  // In editor mode, always use full width
+  return { 
+    maxWidth: '100%',
+    width: '100%',
+    border: 'none',
+    margin: '0',
+    flex: '1',
+    minWidth: '0'
+  };
 });
 
 // Set the active preview device
@@ -929,6 +875,12 @@ watch(isEditing, (newValue) => {
     previewDevice.value = 'desktop'; // Reset to desktop instead of null
   }
 });
+
+const handleExitEditorClick = () => {
+  if (confirm('Are you sure you want to exit? Unsaved changes will be lost.')) {
+    exitEditor();
+  }
+};
 </script>
 
 
@@ -1324,10 +1276,12 @@ watch(isEditing, (newValue) => {
 .editor-container {
   width: 100%;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  justify-content: flex-start;
+  align-items: flex-start; /* Push content to top */
   background: white;
-  min-height: calc(100vh - 64px);
+  height: calc(100vh - 104px); /* Account for both bars only */
+  max-height: calc(100vh - 104px);
+  overflow: hidden;
   padding: 0;
   border-radius: 0;
   box-sizing: border-box;
@@ -1335,14 +1289,17 @@ watch(isEditing, (newValue) => {
 
 /* Style the editor content wrapper to match text-container width exactly */
 .editor-content-wrapper {
-  width:100%;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  width: 100% !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
   transition: all 0.3s ease !important;
-  max-width: 740px; /* Default max width */
-  box-sizing: border-box;
+  box-sizing: border-box !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  min-width: 0 !important; /* Allow shrinking */
+  max-width: 100% !important;
 }
 
 /* Create a completely separate styling section for editor view */
@@ -1362,30 +1319,87 @@ watch(isEditing, (newValue) => {
   margin-left: 0;
   display: flex;
   justify-content: center;
+  flex: 1;
+  min-width: 0;
 }
 
 .page-wrapper.editor-mode .body-container {
   width: 100%;
+  max-width: none !important; /* Remove the 740px constraint */
   display: flex;
   justify-content: center;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Create specific overrides for the TiptapEditor component */
 :deep(.tiptap-editor) {
-  width: 100%;
-  max-width: 100%; /* Use 100% of parent container */
-  margin: 0 auto;
+  width: 100% !important;
+  max-width: none !important; /* Remove any width constraints */
+  margin: 0 !important;
   transition: all 0.3s ease;
   box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Override any internal TiptapEditor constraints */
+:deep(.tiptap-editor),
+:deep(.tiptap-editor .editor-container),
+:deep(.tiptap-editor .editor-content),
+:deep(.tiptap-editor .editor-wrapper),
+:deep(.tiptap-editor > div),
+:deep(.editor-content-wrapper .tiptap-editor),
+:deep(.tiptap-editor .editor-content-area),
+:deep(.tiptap-editor .editor-main),
+:deep(.tiptap-editor .document-content) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+/* Ensure ProseMirror content takes full width */
+:deep(.ProseMirror),
+:deep(.ProseMirror-focused) {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+/* Aggressive override for any remaining width constraints */
+:deep(.tiptap-editor *) {
+  max-width: none !important;
+}
+
+/* Ensure the document content area uses full width */
+:deep(.document-content),
+:deep(.editor-content),
+:deep(.prose),
+:deep(.prose-content) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
 }
 
 :deep(.tiptap-editor .ProseMirror) {
-  padding: 20px 16px;
+  padding: 20px 32px;
   min-height: 300px;
   font-family: "PP Neue Montreal", sans-serif;
   font-size: 16px;
   line-height: 1.6;
   color: #1F2937;
+  flex: 1;
+  overflow-y: auto;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
 }
 
 /* Style the document status container separately */
@@ -1408,11 +1422,15 @@ watch(isEditing, (newValue) => {
 
 /* Ensure the collaboration sidebar is properly positioned */
 .page-wrapper.editor-mode .editor-container .collaboration-sidebar {
-  width: 280px;
+  width: 320px;
   flex-shrink: 0;
-  height: calc(100vh - 64px);
+  height: calc(100% - 16px);
+  max-height: calc(100% - 16px);
+  margin-top: 16px; /* Match editor content wrapper margin */
   border-left: 1px solid #E5E7EB;
   overflow-y: auto;
+  min-width: 320px;
+  max-width: 320px;
 }
 
 /* Additional responsive styles for editor mode */
@@ -1646,50 +1664,188 @@ watch(isEditing, (newValue) => {
   display: none;
 }
 
-/* New styles for Figma design */
-.branch-header {
+/* Branch Actions Bar - Top level when editing */
+.branch-actions-bar {
+  width: 100%;
+  background: #0f0f0f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  z-index: 10;
+}
+
+.branch-actions-container {
   display: flex;
- 
   align-items: center;
-  width: 50%;
+  justify-content: space-between;
+  max-width: 1400px;
+  margin: 0 auto;
   height: 56px;
-  padding: 0 32px;
-  background-color: transparent;
+  padding: 0 24px;
   color: white;
 }
 
-.branch-info {
+.exit-branch-button {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;
+  gap: 8px;
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.branch-icon {
+.exit-branch-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.branch-info-center {
+  flex: 1;
   display: flex;
-  align-items: center;
   justify-content: center;
 }
 
+.branch-indicator {
+  color: white;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.request-review-button {
+  background: white;
+  color: black;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.request-review-button:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Editor Controls Bar - Second level when editing */
+.editor-controls-bar {
+  width: 100% !important;
+  max-width: 100% !important;
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  position: relative;
+  z-index: 9;
+  box-sizing: border-box;
+}
+
+.editor-controls-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 48px;
+  padding: 0 24px;
+  gap: 16px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Style for the editor mode controls in white bar */
+.editor-mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  flex-wrap: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Mode button styles */
+.mode-button {
+  padding: 6px 12px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  border: 1px solid #e5e5e5;
+  background: #f8f8f8;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.mode-button:hover {
+  background: #e5e5e5;
+  border-color: #d0d0d0;
+}
+
+.mode-button.active {
+  background: #007AFF;
+  color: white;
+  border-color: #007AFF;
+}
+
+/* Content status indicator styles */
+.content-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background-color: #f0f0f0;
+  color: #666;
+  font-family: "PP Neue Montreal", sans-serif;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+
+
+
+/* Legacy header-actions (will be removed) */
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .exit-button {
   background-color: transparent;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 6px;
+  padding: 6px 12px;
   font-family: "PP Neue Montreal", -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: background-color 0.2s;
+  white-space: nowrap;
 }
 
 .exit-button:hover {
@@ -1697,25 +1853,27 @@ watch(isEditing, (newValue) => {
 }
 
 .save-button {
-  padding: 8px 12px;
+  padding: 8px 16px;
   justify-content: center;
   align-items: center;
-  border-radius: 8px;
-  background: #000;
-  color: #FFF;
+  border-radius: 6px;
+  background: #f8f8f8;
+  color: #333;
+  border: 1px solid #e5e5e5;
   font-family: "PP Neue Montreal";
-  font-size: 14px;
+  font-size: 13px;
   font-style: normal;
-  font-weight: 700;
-  line-height: 24px;
+  font-weight: 600;
+  line-height: 20px;
   letter-spacing: var(--Title-Medium-Tracking, 0.15px);
-  border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .save-button:hover {
-  background-color: #333;
+  background-color: #e5e5e5;
+  border-color: #d0d0d0;
 }
 
 .review-button {
@@ -1748,27 +1906,9 @@ watch(isEditing, (newValue) => {
   color: #6B7280;
 }
 
-/* Responsive styles for branch header */
-@media (max-width: 768px) {
-  .branch-header {
-    flex-direction: row;
-    padding: 16px;
-    height: auto;
-    gap: 16px;
-    align-items: flex-start;
-    justify-content: space-between;
-  }
+/* This responsive section is now handled above - removing duplicate */
 
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-}
-
-/* Remove or update the old exit button container */
-.exit-button-container {
-  display: none;
-}
+/* Old exit button container styles removed - now part of editor-controls-bar */
 
 /* Style the TiptapEditor toolbar buttons to fit in a single row */
 :deep(.tiptap-editor .editor-menubar) {
@@ -1776,10 +1916,14 @@ watch(isEditing, (newValue) => {
   align-items: center;
   flex-wrap: nowrap;
   gap: 4px;
-  padding: 8px 0;
+  padding: 8px 32px;
   margin-bottom: 16px;
   border-bottom: 1px solid #E5E7EB;
   overflow-x: auto;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 :deep(.tiptap-editor .menubar-button) {
@@ -1876,22 +2020,28 @@ watch(isEditing, (newValue) => {
 .editor-mode-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin: 0;
   flex-wrap: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .mode-button {
-  padding: 8px 12px;
+  padding: 6px 12px;
   justify-content: center;
   align-items: center;
-  border-radius: 8px;
-  border: 1px solid #BABABA;
-  background: transparent;
-  color: #000;
+  border-radius: 6px;
+  border: 1px solid #e5e5e5;
+  background: #f8f8f8;
+  color: #333;
   cursor: pointer;
-  transition: background-color 0.2s;
-  max-height: 40px;
+  transition: all 0.2s;
+  font-size: 13px;
+  font-family: "PP Neue Montreal", sans-serif;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .mode-button:hover {
@@ -1932,18 +2082,19 @@ watch(isEditing, (newValue) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
   font-weight: 500;
   margin-left: 4px;
   background-color: rgba(255, 255, 255, 0.2);
   color: #1D1B1B;
   font-family: "PP Neue Montreal", sans-serif;
-  max-width: 320px;
+  max-width: 120px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 1;
 }
 
 .content-status.draft {
@@ -1961,40 +2112,7 @@ watch(isEditing, (newValue) => {
   color: white;
 }
 
-/* Device preview controls */
-.device-preview-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-}
 
-.device-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 6px;
-  border-radius: 6px;
-  background: #000;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.device-button:hover {
-  background: #fff;
-  color: #000;
-  border-color: rgba(255, 255, 255, 0.6);
-}
-
-.device-button.active {
-  background: #fff;
-  color: #000;
-  border-color: rgba(255, 255, 255, 0.6);
-}
 
 /* Device preview width classes */
 
@@ -2056,63 +2174,131 @@ watch(isEditing, (newValue) => {
     transform: rotate(360deg);
   }
 }
+
+/* Responsive styles for the two-bar editor structure */
+@media (max-width: 768px) {
+  .branch-actions-container {
+    height: auto;
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .branch-info-center {
+    order: -1;
+    justify-content: flex-start;
+  }
+  
+  .exit-branch-button,
+  .request-review-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .editor-controls-container {
+    flex-direction: column;
+    height: auto;
+    padding: 12px 16px;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .editor-mode-controls {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .editor-actions {
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .content-status {
+    max-width: 120px;
+    font-size: 10px;
+  }
+}
 </style>
 
 <style scoped>
 .page-wrapper.editor-mode {
-  width: 100vw !important;
-  max-width: 100vw !important;
+  width: 100% !important;
+  max-width: 100% !important;
   padding: 0 !important; /* Remove horizontal padding from the whole page */
   margin: 0 !important;
   align-items: stretch !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
 }
 
 .page-wrapper.editor-mode .main-container {
-  width: 100vw !important;
-  max-width: 100vw !important;
+  width: 100% !important;
+  max-width: 100% !important;
   padding: 0 !important;
   margin: 0 !important;
   align-items: stretch !important;
   gap: 0 !important;
+  height: calc(100vh - 128px) !important; /* Account for both bars (104px) + bottom padding (24px) */
+  max-height: calc(100vh - 128px) !important;
 }
 
 .page-wrapper.editor-mode .content {
-  width: 100vw !important;
-  max-width: 100vw !important;
+  width: 100% !important;
+  max-width: 100% !important;
   padding: 0 !important;
   margin: 0 !important;
   justify-content: stretch !important;
   align-items: stretch !important;
   gap: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
 }
 
 .page-wrapper.editor-mode .editor-container {
-  width: 100vw !important;
-  max-width: 100vw !important;
-  padding: 0 88px !important; /* Increased to 88px horizontal padding */
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0 24px !important; /* Only horizontal padding */
   margin: 0 !important;
   display: flex !important;
   flex-direction: row !important;
-  align-items: stretch !important;
+  align-items: flex-start !important; /* Push content to top */
   justify-content: stretch !important;
+  height: calc(100vh - 104px) !important; /* Account for both bars only */
+  max-height: calc(100vh - 104px) !important;
 }
 
 .page-wrapper.editor-mode .editor-content-wrapper {
   max-width: none !important;
   width: 100% !important;
-  margin: 0 !important;
+  margin: 16px 0 0 0 !important; /* Add top margin to push content up slightly */
   padding: 0 !important;
+  height: calc(100% - 16px) !important; /* Adjust height for margin */
+  max-height: calc(100% - 16px) !important;
+  flex: 1 !important;
+  min-width: 0 !important;
 }
 
 @media screen and (max-width: 1024px) {
   .page-wrapper.editor-mode .editor-container {
-    padding: 0 24px !important;
+    padding: 0 16px !important; /* Only horizontal padding */
+    height: calc(100vh - 104px) !important; /* Account for both bars only */
+    max-height: calc(100vh - 104px) !important;
   }
 }
 
 @media screen and (max-width: 767px) {
   .page-wrapper.editor-mode .editor-container {
-    padding: 0 8px !important;
+    padding: 0 8px !important; /* Only horizontal padding */
+    height: calc(100vh - 104px) !important; /* Account for both bars only */
+    max-height: calc(100vh - 104px) !important;
   }
+}
+
+/* Editor mode styling adjustments */
+.page-wrapper.editor-mode .main-container {
+  margin-top: 0;
 }
 </style>

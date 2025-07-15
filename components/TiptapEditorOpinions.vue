@@ -30,6 +30,7 @@ import Link from "@tiptap/extension-link";
 
 import ImageUploader from "~/components/ImageUploader.vue";
 import EnhanceModal from "~/components/EnhanceModal.vue";
+import { useOpinionsStore } from "~/store/opinions";
 
 interface Props {
   content?: string;
@@ -39,19 +40,6 @@ interface Props {
   initialTitle?: string;
   initialTags?: string;
   initialCategory?: string;
-}
-
-interface DraftData {
-  id: string;
-  title: string;
-  content: string;
-  tags: string;
-  category: string;
-  author: string;
-  createdAt: Date;
-  lastModified: Date;
-  wordCount: number;
-  status: 'draft' | 'published';
 }
 
 const handleInsertComponent = (componentId: string) => {
@@ -156,43 +144,11 @@ const lastSavedAt = ref<Date | null>(null);
 const isDraftSaved = ref(false);
 
 // Store setup
-const store = useStore();
-const { rawText, isPreviewActive } = storeToRefs(store);
-const editorStore = useEditorStore();
-const {
-  getFileContent,
-  currentBranch,
-  saveFileContent,
-  fetchBranches,
-  isLoggedIn,
-} = useGithub();
+const opinionsStore = useOpinionsStore();
+// Remove GitHub integration for opinions - we only use localStorage
 const { showToast } = useToast();
 
-const isMainBranch = computed(() => {
-  return currentBranch.value?.toLowerCase() === "main";
-});
-
-const commitButtonTitle = computed(() => {
-  if (isMainBranch.value) {
-    return "Cannot commit directly to main branch";
-  }
-  return hasChanges.value ? "Commit your changes" : "No changes to commit";
-});
-
-// Modify the commit handling
-const handleCommitClick = () => {
-  if (isMainBranch.value) {
-    showToast({
-      title: "Warning",
-      message:
-        "Cannot commit directly to main branch. Please create a new branch for your changes.",
-      type: "warning",
-      duration: 5000,
-    });
-    return;
-  }
-  showCommitDialog.value = true;
-};
+// Remove git-related computed properties for opinions
 
 // Node extensions with style support
 const StyledDiv = Node.create({
@@ -417,25 +373,20 @@ watch(
   }
 );
 
-// Computed properties
-const showCommitButton = computed(() => {
-  return props.filePath && isLoggedIn.value;
-});
+// Watch for content prop changes (critical for loading drafts)
+watch(
+  () => props.content,
+  (newContent) => {
+    if (newContent !== undefined && editor.value) {
+      const formattedContent = formatHTML(newContent || "");
+      editor.value.commands.setContent(formattedContent);
+      localContent.value = formattedContent;
+      originalContent.value = formattedContent;
+    }
+  }
+);
 
-const hasChanges = computed(() => {
-  if (!props.filePath) return false;
-  const gitContent = editorStore.getCurrentGitContent(props.filePath);
-  return gitContent
-    ? localContent.value !== gitContent.content
-    : localContent.value !== "";
-});
-
-const contentSource = computed(() => {
-  if (!props.filePath) return "New File";
-  if (editorStore.hasDraft(props.filePath)) return "Draft";
-  return "Committed";
-});
-
+// Computed properties for opinions
 const sanitizedPreviewContent = computed(() => {
   return previewContent.value || localContent.value;
 });
@@ -456,38 +407,20 @@ const handleSave = () => {
   try {
     // Get content from editor
     const content = formatHTML(editor.value.getHTML());
+    const title = articleTitle.value.trim() || "Untitled Draft";
     
-    // Count words (simple implementation)
-    const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length;
-    
-    // Generate unique ID for new drafts or use existing one
-    const currentDraftId = `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Create draft data
-    const draftData: DraftData = {
-      id: currentDraftId,
-      title: articleTitle.value.trim() || "Untitled Draft",
-      content: content,
-      tags: articleTags.value || "",
-      category: articleCategory.value,
-      author: "Current User", // TODO: Get from auth
-      createdAt: new Date(),
-      lastModified: new Date(),
-      wordCount: wordCount,
-      status: 'draft'
-    };
-
-    // Save to localStorage (can be replaced with API call later)
-    const existingDrafts = JSON.parse(localStorage.getItem('opinion_drafts') || '[]');
-    
-    // Always add as new draft (each save creates a new version)
-    existingDrafts.push(draftData);
-    
-    localStorage.setItem('opinion_drafts', JSON.stringify(existingDrafts));
-    
-    // Debug: Log the saved data
-    console.log('Draft saved to localStorage:', draftData);
-    console.log('Total drafts in localStorage:', existingDrafts.length);
+    // Update existing draft or create new one
+    if (opinionsStore.currentDraft) {
+      // Update existing draft
+      opinionsStore.updateDraft(opinionsStore.currentDraft.id, {
+        title: title,
+        content: content,
+        slug: opinionsStore.generateSlug(title)
+      });
+    } else {
+      // Create new draft
+      const newDraft = opinionsStore.createDraft(title, content);
+    }
     
     // Update UI state
     lastSavedAt.value = new Date();
@@ -495,7 +428,7 @@ const handleSave = () => {
     
     showToast({
       title: "Draft Saved",
-      message: `"${draftData.title}" saved successfully`,
+      message: `"${title}" saved successfully`,
       type: "success",
     });
     
@@ -515,100 +448,11 @@ const handleSave = () => {
 };
 
 const handleCommit = async () => {
-  if (!props.filePath || !commitMessage.value.trim()) return;
-
-  isCommitting.value = true;
-  try {
-    await saveFileContent(
-      "tiresomefanatic",
-      "EchoProdTest",
-      props.filePath,
-      localContent.value,
-      commitMessage.value.trim(),
-      currentBranch.value
-    );
-
-    // Update git content in store and clear draft
-    editorStore.updateContent(props.filePath, localContent.value);
-    editorStore.clearDraft(props.filePath);
-
-    showToast({
-      title: "Success",
-      message: "Changes committed successfully",
-      type: "success",
-    });
-
-    showCommitDialog.value = false;
-    commitMessage.value = "";
-  } catch (error) {
-    console.error("Commit error:", error);
-    const errorMessage =
-      error.status === 409
-        ? "File was modified elsewhere. Please try committing again."
-        : error.message || "Failed to commit changes";
-
-    showToast({
-      title: "Error",
-      message: errorMessage,
-      type: "error",
-      duration: 5000,
-    });
-  } finally {
-    isCommitting.value = false;
-  }
+  // Remove this function completely - not needed for opinions
 };
 
 const handleLoadSave = async (content: string) => {
-  console.log("Editor received content - Length:", content?.length);
-  console.log("Preview:", content?.substring(0, 100) + "...");
-
-  if (!content) {
-    console.error("Empty content received");
-    showToast({
-      title: "Error",
-      message: "No content to load",
-      type: "error",
-    });
-    return;
-  }
-
-  try {
-    // Update content and save as draft
-    editorStore.saveDraft(props.filePath || "", content);
-    if (editor.value) {
-      // Store current selection if editor is focused
-      const wasEditorFocused = editor.value.isFocused;
-      let savedSelection = null;
-      if (wasEditorFocused) {
-        savedSelection = editor.value.state.selection;
-      }
-
-      // Update editor content
-      editor.value.commands.setContent(content);
-
-      // Restore selection and focus if editor was focused
-      if (wasEditorFocused && savedSelection) {
-        editor.value.commands.focus();
-        editor.value.chain().setTextSelection(savedSelection.from).run();
-      }
-    }
-    localContent.value = content;
-
-    await nextTick();
-
-    showToast({
-      title: "Draft Loaded",
-      message: "Successfully loaded draft version",
-      type: "success",
-    });
-  } catch (error) {
-    console.error("Error loading content:", error);
-    showToast({
-      title: "Error",
-      message: "Failed to load content",
-      type: "error",
-    });
-  }
+  // Remove this function completely - not needed for opinions
 };
 
 const handleImageUploaded = (details: { url: string; alt: string }) => {
@@ -721,85 +565,19 @@ const handleRawContentChange = (value: string) => {
 };
 
 // Modify the watch for rawText to be more aggressive in updating
+// Opinions editor doesn't need git-related watches
+
+// Watch for title changes and auto-save
 watch(
-  () => rawText.value,
-  (newContent, oldContent) => {
-    if (newContent && editor.value) {
-      // Don't update if content is the same or if the editor has focus
-      // This prevents the cursor from jumping when typing
-      if (
-        editor.value.isFocused &&
-        newContent === formatHTML(editor.value.getHTML())
-      ) {
-        return;
-      }
-
-      console.log(
-        "rawText changed, updating editor content:",
-        newContent.length
-      );
-      const formattedContent = formatHTML(newContent);
-
-      // Store current selection if editor is focused
-      const wasEditorFocused = editor.value.isFocused;
-      let savedSelection = null;
-      if (wasEditorFocused) {
-        savedSelection = editor.value.state.selection;
-      }
-
-      // Force editor update with selection preservation
-      editor.value.commands.setContent(formattedContent, false);
-
-      // Restore selection if editor was focused
-      if (wasEditorFocused && savedSelection) {
-        editor.value.commands.focus();
-        editor.value.chain().setTextSelection(savedSelection.from).run();
-      }
-
-      // Update local content reference
-      localContent.value = formattedContent;
-
-      // Also update preview if active
-      if (previewMode.value) {
-        previewContent.value = formattedContent;
-      }
-    }
-  },
-  { immediate: true } // Add immediate option to ensure initial content is set
-);
-
-// Add a watch for branch changes to trigger content reload
-watch(
-  () => currentBranch.value,
-  async (newBranch) => {
-    if (newBranch && props.filePath) {
-      try {
-        const { content, sha } = await getFileContent(
-          "tiresomefanatic",
-          "EchoProdTest",
-          props.filePath,
-          newBranch
-        );
-
-        if (content) {
-          const formattedContent = formatHTML(content);
-          store.updateRawText(formattedContent);
-        }
-      } catch (error) {
-        console.error("Error loading content for branch:", error);
-      }
-    }
-  }
-);
-
-// Watch for content changes
-watch(
-  () => editorStore.getCurrentGitContent(props.filePath || "")?.content,
-  (newContent) => {
-    if (newContent && editor.value) {
-      console.log("Git content updated:", newContent.substring(0, 100) + "...");
-      editor.value.commands.setContent(newContent);
-      localContent.value = newContent;
+  () => articleTitle.value,
+  (newTitle) => {
+    if (opinionsStore.currentDraft && newTitle.trim() && newTitle !== opinionsStore.currentDraft.title) {
+      // Debounce auto-save for title changes
+      setTimeout(() => {
+        opinionsStore.updateDraft(opinionsStore.currentDraft!.id, {
+          title: newTitle.trim()
+        });
+      }, 1000);
     }
   }
 );
@@ -833,12 +611,8 @@ watchEffect(() => {
 
 // Initialize
 onMounted(async () => {
-  editorStore.initializeStore();
-
-  if (isLoggedIn.value) {
-    await fetchBranches();
-  }
-
+  // Remove git-related initialization
+  
   editor.value = new Editor({
     extensions: [
       StarterKit.configure({
@@ -1034,6 +808,11 @@ onMounted(async () => {
         localContent.value = content;
         previewContent.value = content;
         emit("update:content", content);
+        
+        // Auto-save to opinions store
+        if (opinionsStore.currentDraft && content.trim()) {
+          opinionsStore.autoSaveDraft(content, articleTitle.value);
+        }
       }
     },
     onSelectionUpdate: ({ editor: ed }) => {
@@ -1044,17 +823,19 @@ onMounted(async () => {
     },
   });
 
-  // Initialize editor content with formatting
-  if (props.content) {
-    const formattedContent = formatHTML(props.content);
+  // Initialize editor content - only use props.content or current draft
+  if (props.content !== undefined) {
+    const formattedContent = formatHTML(props.content || "");
     editor.value.commands.setContent(formattedContent);
     localContent.value = formattedContent;
     originalContent.value = formattedContent;
-  } else if (rawText.value) {
-    const formattedContent = formatHTML(rawText.value);
+  } else if (opinionsStore.currentDraft) {
+    const formattedContent = formatHTML(opinionsStore.currentDraft.content);
     editor.value.commands.setContent(formattedContent);
     localContent.value = formattedContent;
     originalContent.value = formattedContent;
+    // Sync title with current draft
+    articleTitle.value = opinionsStore.currentDraft.title;
   }
 
   editorInitialized.value = true;

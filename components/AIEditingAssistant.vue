@@ -25,24 +25,9 @@
     <div class="chat-messages-area p-2 space-y-2">
       <!-- Empty state -->
       <div v-if="conversation.length === 0" class="text-center space-y-4">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="w-12 h-12 text-[#FF5310] mx-auto"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <rect x="7" y="7" width="3" height="9"/>
-          <rect x="14" y="7" width="3" height="5"/>
-        </svg>
-        <div class="space-y-2">
-          <h3 class="font-semibold text-gray-900">AI Editing Assistant</h3>
+   
+        <div class="space-y-2 mt-4">
+         
           <p class="text-sm text-gray-600">
             Tell me how you'd like to edit your document. I can help you:
           </p>
@@ -61,17 +46,7 @@
             • Format text and add HTML elements
           </div>
         </div>
-        <div class="mt-4 space-y-2">
-          <p class="text-xs text-gray-500">Example prompts:</p>
-          <button 
-            v-for="prompt in examplePrompts" 
-            :key="prompt"
-            @click="handleExamplePrompt(prompt)"
-            class="block w-full text-left p-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border text-gray-700"
-          >
-            "{{ prompt }}"
-          </button>
-        </div>
+
       </div>
 
       <!-- Conversation -->
@@ -96,7 +71,29 @@
                 {{ message.content }}
               </div>
               <div v-else class="assistant-message-text">
-                <div v-html="renderMarkdown(message.content)" class="markdown-content"></div>
+                <div>
+                  <!-- Render summary (text before first code block) -->
+                  <span v-html="renderMarkdown(message.content.split('```')[0])" class="markdown-content"></span>
+                  <!-- If there is a code block, show expandable -->
+                  <template v-if="message.content.includes('```')">
+                    <button
+                      class="show-html-btn"
+                      @click="toggleExpand(index)"
+                      :aria-expanded="expandedIndexes.includes(index) ? 'true' : 'false'"
+                      :aria-controls="'html-block-' + index"
+                      style="margin-top: 8px; margin-bottom: 8px; background: #e5e7eb; color: #1f2937; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 13px;"
+                    >
+                      {{ expandedIndexes.includes(index) ? 'Hide Raw output' : 'Show Raw output' }}
+                    </button>
+                    <div
+                      v-show="expandedIndexes.includes(index)"
+                      :id="'html-block-' + index"
+                      style="background: #f0f7ff; border-radius: 6px; padding: 12px; margin-top: 4px; overflow-x: auto; font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace; font-size: 13px; color: #1e293b;"
+                    >
+                      <pre style="margin: 0; white-space: pre-wrap; word-break: break-all;">{{ message.content.split('```')[1] }}</pre>
+                    </div>
+                  </template>
+                </div>
                 <div v-if="message.changes" class="changes-applied">
                   <div class="changes-header">
                     <svg
@@ -150,7 +147,7 @@
           v-model="userInput"
           type="text"
           placeholder="Describe how you'd like to edit your document..."
-          class="flex-1 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF5310] focus:border-transparent"
+          class="flex-1 p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF5310] focus:border-transparent bg-white text-gray-900"
           @keydown.enter="handleSendMessage"
           :disabled="isLoading"
         />
@@ -207,20 +204,16 @@ const isLoading = ref(false);
 const loadingText = ref('Analyzing your request...');
 const { showToast } = useToast();
 
-const examplePrompts = [
-  "Add a best practices section with 3 key guidelines",
-  "Add a section about color accessibility requirements",
-  "Create a usage examples section with do's and don'ts",
-  "Add a section about implementation guidelines",
-  "Improve the writing style to be more concise"
-];
+const expandedIndexes = ref<number[]>([]);
 
-
-
-const handleExamplePrompt = (prompt: string) => {
-  userInput.value = prompt;
-  handleSendMessage();
+const toggleExpand = (index: number) => {
+  if (expandedIndexes.value.includes(index)) {
+    expandedIndexes.value = expandedIndexes.value.filter(i => i !== index);
+  } else {
+    expandedIndexes.value.push(index);
+  }
 };
+
 
 const handleSendMessage = async () => {
   if (!userInput.value.trim() || isLoading.value) return;
@@ -340,7 +333,7 @@ const formatTime = (date: Date) => {
 <style scoped>
 .ai-editing-assistant-sidebar {
   width: 350px;
-  height: calc(100vh - 100px); /* or 100% if parent is already sized */
+  height: calc(100vh - 150px);
   background: white;
   border-right: 1px solid #e5e7eb;
   display: flex;
