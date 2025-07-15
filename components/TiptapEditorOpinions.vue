@@ -137,9 +137,6 @@ const hasTextSelection = ref(false);
 const enhanceModalPosition = ref({ x: 0, y: 0 });
 
 // Article state
-const articleTitle = ref(props.initialTitle || "");
-const articleTags = ref(props.initialTags || "");
-const articleCategory = ref(props.initialCategory || "Design");
 const lastSavedAt = ref<Date | null>(null);
 const isDraftSaved = ref(false);
 
@@ -346,32 +343,8 @@ watch(
 );
 
 // Watch for initial data changes
-watch(
-  () => props.initialTitle,
-  (newTitle) => {
-    if (newTitle !== undefined) {
-      articleTitle.value = newTitle;
-    }
-  }
-);
-
-watch(
-  () => props.initialTags,
-  (newTags) => {
-    if (newTags !== undefined) {
-      articleTags.value = newTags;
-    }
-  }
-);
-
-watch(
-  () => props.initialCategory,
-  (newCategory) => {
-    if (newCategory !== undefined) {
-      articleCategory.value = newCategory;
-    }
-  }
-);
+// Remove articleTitle from state
+// Remove all logic related to articleTitle
 
 // Watch for content prop changes (critical for loading drafts)
 watch(
@@ -391,6 +364,14 @@ const sanitizedPreviewContent = computed(() => {
   return previewContent.value || localContent.value;
 });
 
+// Function to extract title from editor content
+const extractTitleFromContent = (html: string): string => {
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  const h1Element = tempDiv.querySelector('h1');
+  return h1Element?.textContent?.trim() || 'Untitled Draft';
+};
+
 // Save and commit handlers
 const handleSave = () => {
   if (!editor.value) {
@@ -407,7 +388,7 @@ const handleSave = () => {
   try {
     // Get content from editor
     const content = formatHTML(editor.value.getHTML());
-    const title = articleTitle.value.trim() || "Untitled Draft";
+    const title = extractTitleFromContent(content);
     
     // Update existing draft or create new one
     if (opinionsStore.currentDraft) {
@@ -568,19 +549,8 @@ const handleRawContentChange = (value: string) => {
 // Opinions editor doesn't need git-related watches
 
 // Watch for title changes and auto-save
-watch(
-  () => articleTitle.value,
-  (newTitle) => {
-    if (opinionsStore.currentDraft && newTitle.trim() && newTitle !== opinionsStore.currentDraft.title) {
-      // Debounce auto-save for title changes
-      setTimeout(() => {
-        opinionsStore.updateDraft(opinionsStore.currentDraft!.id, {
-          title: newTitle.trim()
-        });
-      }, 1000);
-    }
-  }
-);
+// Remove articleTitle from state
+// Remove all logic related to articleTitle
 
 // Watch for raw mode changes
 watch(rawMode, (newValue) => {
@@ -811,7 +781,8 @@ onMounted(async () => {
         
         // Auto-save to opinions store
         if (opinionsStore.currentDraft && content.trim()) {
-          opinionsStore.autoSaveDraft(content, articleTitle.value);
+          const title = extractTitleFromContent(content);
+          opinionsStore.autoSaveDraft(content, title);
         }
       }
     },
@@ -823,19 +794,24 @@ onMounted(async () => {
     },
   });
 
-  // Initialize editor content - only use props.content or current draft
-  if (props.content !== undefined) {
-    const formattedContent = formatHTML(props.content || "");
+  // Initialize editor content - use props.content, current draft, or create with title
+  if (props.content !== undefined && props.content.trim()) {
+    const formattedContent = formatHTML(props.content);
     editor.value.commands.setContent(formattedContent);
     localContent.value = formattedContent;
     originalContent.value = formattedContent;
-  } else if (opinionsStore.currentDraft) {
+  } else if (opinionsStore.currentDraft && opinionsStore.currentDraft.content.trim()) {
     const formattedContent = formatHTML(opinionsStore.currentDraft.content);
     editor.value.commands.setContent(formattedContent);
     localContent.value = formattedContent;
     originalContent.value = formattedContent;
-    // Sync title with current draft
-    articleTitle.value = opinionsStore.currentDraft.title;
+  } else {
+    // New article - initialize with title from props or draft
+    const initialTitle = props.initialTitle || (opinionsStore.currentDraft?.title) || 'Untitled Article';
+    const initialContent = `<h1>${initialTitle}</h1><p></p>`;
+    editor.value.commands.setContent(initialContent);
+    localContent.value = initialContent;
+    originalContent.value = initialContent;
   }
 
   editorInitialized.value = true;
@@ -941,6 +917,11 @@ onMounted(() => {
 
 // Cleanup
 onBeforeUnmount(() => {
+  // Clear title update timeout
+  if (titleUpdateTimeout) {
+    clearTimeout(titleUpdateTimeout);
+  }
+  
   if (editor.value) {
     editor.value.destroy();
   }
@@ -1060,6 +1041,48 @@ const handleReplaceText = (newText: string) => {
   hasTextSelection.value = false;
   selectedText.value = "";
 };
+
+// Watch for editor content changes to update draft title
+let titleUpdateTimeout: NodeJS.Timeout | null = null;
+watch(
+  () => localContent.value,
+  (newContent) => {
+    if (newContent && opinionsStore.currentDraft) {
+      const title = extractTitleFromContent(newContent);
+      if (title !== opinionsStore.currentDraft.title) {
+        // Debounce title updates to avoid excessive updates while typing
+        if (titleUpdateTimeout) {
+          clearTimeout(titleUpdateTimeout);
+        }
+        titleUpdateTimeout = setTimeout(() => {
+          opinionsStore.updateDraft(opinionsStore.currentDraft!.id, { title });
+        }, 500); // Wait 500ms after user stops typing
+      }
+    }
+  },
+  { deep: true }
+);
+
+watch(
+  () => editor.value,
+  (newEditor) => {
+    if (newEditor && newEditor.isEmpty) {
+      // Use the title from props or current draft, fallback to default
+      const initialTitle = props.initialTitle || (opinionsStore.currentDraft?.title) || 'Untitled Article';
+      newEditor.commands.setContent(`<h1>${initialTitle}</h1><p></p>`);
+    } else if (newEditor) {
+      // If the first node is not a heading, prepend one with the proper title
+      const doc = newEditor.state.doc;
+      if (doc.childCount > 0 && doc.child(0).type.name !== 'heading') {
+        const initialTitle = props.initialTitle || (opinionsStore.currentDraft?.title) || 'Untitled Article';
+        const html = newEditor.getHTML();
+        newEditor.commands.setContent(`<h1>${initialTitle}</h1>` + html);
+      }
+    }
+  },
+  { immediate: true }
+);
+
 </script>
 
 <template>
@@ -1281,14 +1304,7 @@ const handleReplaceText = (newText: string) => {
     <main class="mx-auto max-w-4xl px-6 pt-10 pb-10 pl-8 pr-8">
       
       <!-- Article Title Input -->
-      <div class="title-section mb-8">
-        <input
-          v-model="articleTitle"
-          placeholder="Enter your article title..."
-          class="title-input w-full text-4xl font-bold text-gray-900 bg-transparent border-none outline-none placeholder-gray-400 mb-4"
-          style="font-family: 'PP Neue Montreal', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;"
-        />
-      </div>
+      <!-- REMOVE title-section and input here -->
 
       <!-- TipTap Editor -->
       <div class="relative">
@@ -1743,6 +1759,17 @@ const handleReplaceText = (newText: string) => {
   /* Allow content to expand but not force container to expand */
   min-height: auto;
   flex: 1;
+}
+
+/* Style the first h1 as the main title */
+.ProseMirror h1:first-child {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  margin-top: 0;
+  color: #111827;
+  font-family: 'PP Neue Montreal', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.2;
 }
 
 /* Remove any placeholder content */

@@ -8,21 +8,10 @@
       <!-- Sticky Start Writing CTA -->
       <StickyStartWritingCTA @start-writing="handleStartWriting" />
       
-      <!-- Article View -->
-      <div v-if="showArticleView && selectedArticle" class="flex min-h-screen bg-white">
-        <ArticleView 
-          :article="selectedArticle"
-          :categories="categoriesList"
-          @back="handleBackFromArticle"
-          @category-change="handleCategoryChangeFromArticle"
-          @start-writing="handleStartWriting"
-        />
-      </div>
-
       <!-- Writing Editor -->
       <div v-if="showWritingEditor" class="writing-editor-wrapper">
-        <TiptapEditorOpinions 
-          :content="currentDraftContent"
+                <TiptapEditorOpinions 
+           :content="currentDraftContent"
           :initial-title="modalFormData.title"
           :initial-tags="modalFormData.tags"
           :initial-category="modalFormData.category[0] || 'Design'"
@@ -74,16 +63,28 @@
         @add-collaborator="handleAddCollaborator"
         @remove-collaborator="handleRemoveCollaborator"
       />
+
+      <!-- Article View Overlay -->
+      <ArticleView
+        v-if="showArticleView && selectedArticle"
+        :article="selectedArticle"
+        :categories="categoriesList"
+        @back="handleBackFromArticle"
+        @category-change="handleCategoryChangeFromArticle"
+        @start-writing="handleStartWriting"
+      />
     </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { useGithubAuth } from "~/composables/useGithubAuth";
 import { useToast } from "~/composables/useToast";
 import { useOpinionsStore, type OpinionDraft } from "~/store/opinions";
 import TiptapEditorOpinions from "~/components/TiptapEditorOpinions.vue";
+import ArticleView from "~/components/ArticleView.vue";
 
 // Authentication state
 const { isAuthenticated } = useGithubAuth();
@@ -196,43 +197,13 @@ const articles: Article[] = [
   },
   {
     id: "5",
-    title: "Product Strategy for Design Systems",
-    author: "Maria Rodriguez",
+    title: "Component Library Best Practices",
+    author: "Maya Rodriguez",
     date: "Jun 5, 2025",
-    readTime: "7 min read",
-    excerpt: "Strategic approaches to building and maintaining design systems that align with product goals and user needs.",
-    category: "Product",
-    image: "https://images.unsplash.com/photo-1553028826-f4804a6dba3b?w=400&h=240&fit=crop&crop=center",
-  },
-  {
-    id: "6",
-    title: "Scaling Design Systems Across Teams",
-    author: "Alex Thompson",
-    date: "Jun 3, 2025",
     readTime: "9 min read",
-    excerpt: "Best practices for implementing design systems across multiple product teams and maintaining consistency.",
-    category: "Product",
-    image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&h=240&fit=crop&crop=center",
-  },
-  {
-    id: "7",
-    title: "Engineering Design System Components",
-    author: "David Kim",
-    date: "Jun 1, 2025",
-    readTime: "11 min read",
-    excerpt: "Technical deep dive into building robust, reusable components for modern design systems.",
-    category: "Engineering",
-    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=240&fit=crop&crop=center",
-  },
-  {
-    id: "8",
-    title: "Performance Optimization in Design Systems",
-    author: "Lisa Wang",
-    date: "May 28, 2025",
-    readTime: "8 min read",
-    excerpt: "Strategies for optimizing design system performance and reducing bundle sizes in production applications.",
-    category: "Engineering",
-    image: "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=400&h=240&fit=crop&crop=center",
+    excerpt: "Essential guidelines for building maintainable and scalable component libraries.",
+    category: "Design System",
+    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=240&fit=crop&crop=center",
   },
 ];
 
@@ -249,8 +220,6 @@ const activeCategory = ref("All");
 const filteredArticles = ref<Article[]>(articles);
 const showCategoryPage = ref(false);
 const selectedCategory = ref("");
-const showArticleView = ref(false);
-const selectedArticle = ref<Article | null>(null);
 const currentDraftContent = ref("");
 
 // Modal state
@@ -263,6 +232,10 @@ const modalFormData = ref({
   collaborators: [] as string[],
 });
 const newCollaboratorEmail = ref("");
+
+// Article view state
+const showArticleView = ref(false);
+const selectedArticle = ref<Article | null>(null);
 
 // Event handlers
 const handleStartWriting = (preSelectedCategory?: string) => {
@@ -327,17 +300,46 @@ const handleBackFromArticle = () => {
 };
 
 const handleCategoryChangeFromArticle = (categoryName: string) => {
-  handleBackFromArticle();
-  handleCategoryChange(categoryName);
+  // First go back to main view
+  showArticleView.value = false;
+  selectedArticle.value = null;
+  
+  // Then filter by category
+  if (categoryName === "All") {
+    activeCategory.value = "All";
+    filteredArticles.value = articles;
+    showCategoryPage.value = false;
+    selectedCategory.value = "";
+  } else {
+    activeCategory.value = categoryName;
+    filteredArticles.value = articles.filter(article => article.category === categoryName);
+    showCategoryPage.value = true;
+    selectedCategory.value = categoryName;
+  }
 };
+
+// Handle category filtering from URL parameters
+const route = useRoute();
+
+onMounted(() => {
+  opinionsStore.initStore();
+  
+  // Check for category parameter in URL
+  const categoryParam = route.query.category as string;
+  if (categoryParam) {
+    handleCategoryChange(categoryParam);
+  }
+});
 
 // Modal event handlers
 const handleModalSubmit = () => {
   // Create a new draft or use existing one
   if (!opinionsStore.currentDraft) {
-    // Create new draft
-    const newDraft = opinionsStore.createDraft(modalFormData.value.title || 'Untitled Opinion', '');
-    currentDraftContent.value = '';
+    // Create new draft with initial content containing the title as h1
+    const title = modalFormData.value.title || 'Untitled Opinion';
+    const initialContent = `<h1>${title}</h1><p></p>`;
+    const newDraft = opinionsStore.createDraft(title, initialContent);
+    currentDraftContent.value = initialContent;
   } else {
     // Update existing draft
     currentDraftContent.value = opinionsStore.currentDraft.content;
@@ -402,10 +404,7 @@ const handleEditorSave = () => {
   // Don't close editor immediately, let user continue editing
 };
 
-// Initialize store when component mounts
-onMounted(() => {
-  opinionsStore.initStore();
-});
+// This onMounted is now handled above with route handling
 
 // Page title for SEO
 useHead({
@@ -455,5 +454,27 @@ useHead({
   background: white;
   z-index: 50;
   overflow: hidden;
+}
+
+/* Article View Overlay */
+.article-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 100;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 </style> 
