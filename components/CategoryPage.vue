@@ -54,6 +54,7 @@
             <div
               v-for="draft in drafts.slice(0, 3)"
               :key="draft.id"
+              @click="$emit('draft-click', draft)"
               class="draft-card"
             >
               <h4 class="draft-title">{{ draft.title }}</h4>
@@ -217,6 +218,7 @@ defineEmits<{
   'back': [];
   'category-change': [categoryName: string];
   'article-click': [article: Article];
+  'draft-click': [draft: any];
   'start-writing': [preSelectedCategory?: string];
 }>();
 
