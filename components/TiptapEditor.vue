@@ -1,6 +1,6 @@
 # TiptapEditor.vue
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Document from "@tiptap/extension-document";
@@ -290,20 +290,20 @@ const parseMarkdownToHTML = (content: string): string => {
     );
 };
 
-// Monaco editor options
-const editorOptions = {
+// Monaco editor options  
+const editorOptions: any = {
   theme: "vs",
   language: "html",
   fontSize: 13,
-  lineNumbers: "on" as const,
+  lineNumbers: "on",
   renderWhitespace: "selection",
   minimap: {
     enabled: true,
     scale: 1,
-    showSlider: "mouseover" as "mouseover" | "always",
+    showSlider: "mouseover",
   },
   scrollBeyondLastLine: false,
-  wordWrap: "on" as "on" | "off" | "wordWrapColumn" | "bounded",
+  wordWrap: "on",
   lineHeight: 20,
   padding: { top: 16, bottom: 16 },
   folding: true,
@@ -322,8 +322,8 @@ const editorOptions = {
   tabSize: 2,
   automaticLayout: true,
   scrollbar: {
-    vertical: "visible" as const,
-    horizontal: "visible" as const,
+    vertical: "visible",
+    horizontal: "visible",
     useShadows: false,
     verticalHasArrows: false,
     horizontalHasArrows: false,
@@ -618,6 +618,10 @@ const handleRawContentChange = (value: string) => {
   emit("update:content", formattedContent);
 };
 
+const handleMonacoMount = (editorInstance: any) => {
+  monacoEditor.value = editorInstance;
+};
+
 // Modify the watch for rawText to be more aggressive in updating
 watch(
   () => rawText.value,
@@ -705,7 +709,12 @@ watch(
 // Watch for raw mode changes
 watch(rawMode, (newValue) => {
   if (editor.value) {
-    if (!newValue) {
+    if (newValue) {
+      // When switching TO raw mode, get the current editor content as HTML
+      const currentHTML = editor.value.getHTML();
+      const formattedContent = formatHTML(currentHTML);
+      localContent.value = formattedContent;
+    } else {
       // When switching from raw mode back to normal mode, format the content
       const formattedContent = formatHTML(localContent.value);
       editor.value.commands.setContent(formattedContent, false);
@@ -1284,7 +1293,7 @@ const handleAIContentUpdate = (updatedContent: string) => {
                 class="monaco-editor"
                 :options="editorOptions"
                 @change="handleRawContentChange"
-                @mount="(editor) => (monacoEditor = editor)"
+                @mount="handleMonacoMount"
               />
             </div>
 
@@ -1529,7 +1538,6 @@ const handleAIContentUpdate = (updatedContent: string) => {
 
 .font-size-select:hover {
   background: #f9fafb;
-  border-color: #d1d5db;
 }
 
 .font-size-select:focus {

@@ -578,8 +578,7 @@ const formatTime = (date: Date) => {
 }
 
 .user-message .message-content {
-  background-color: #FF5310;
-  color: white;
+  background-color: #f9fafbb2;
   border-radius: 0.5rem;
   padding: 0.75rem;
 }
@@ -599,12 +598,11 @@ const formatTime = (date: Date) => {
 }
 
 .user-message .message-header {
-  color: white;
-  opacity: 0.9;
+  color: #000000;
 }
 
 .assistant-message .message-header {
-  color: #4b5563;
+  color: #000000;
 }
 
 .message-body {
@@ -613,11 +611,12 @@ const formatTime = (date: Date) => {
 
 .user-message-text {
   font-size: 0.875rem;
+  color: #000000;
 }
 
 .assistant-message-text {
   font-size: 0.875rem;
-  color: #111827;
+  color: #000000;
 }
 
 .changes-applied {
