@@ -169,3 +169,26 @@
 <p style="text-align: left">
 <img src="/images/color-accessibility-chart.png" alt="Color Accessibility Chart">
 </p>
+<p style="text-align: left">
+</p>
+<h2 style="text-align: left"><strong>Pantone Colors</strong>
+</h2>
+<p style="text-align: left">The following Pantone colors correspond to the primary colors used in the Echo Design System:
+</p>
+<ul style="text-align: left">
+<li>
+<strong>Cyan:</strong> Pantone 298 C
+</li>
+<li>
+<strong>Red:</strong> Pantone 186 C
+</li>
+<li>
+<strong>Green:</strong> Pantone 347 C
+</li>
+<li>
+<strong>Yellow:</strong> Pantone 102 C
+</li>
+<li>
+<strong>Blue:</strong> Pantone 286 C
+</li>
+</ul>
