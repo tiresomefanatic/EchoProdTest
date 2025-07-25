@@ -39,3 +39,23 @@
 <img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743600047913-7b7b2b34-1743600047278-fic5w3v1l.png" alt="image 19.png">These animation trigger an event by tapping on the icon. There is no change of state for the icon. Given these actions are important, this is a moment where we can create delight for the user. This guideline for structuring the animation is to be used for creating icon animation which trigger functions. <br>
 <br>Since this is an on tap animation, we will be having a background container which appears to indicate this icon is being pressed. The icon animation will vary from icon to icon but we need an visual nudge which has to be constant with all these animations to orient the user.
 </p>
+<h2 style="text-align: left">Icon Colors
+</h2>
+<p style="text-align: left">Color plays a crucial role in icon design, influencing user perception and interaction. When choosing colors for icons, consider the following guidelines:
+</p>
+<ul style="text-align: left">
+<li>
+Use a limited color palette to maintain visual coherence.
+</li>
+<li>
+Ensure sufficient contrast between the icon and its background for visibility.
+</li>
+<li>
+Utilize colors that align with the brand identity and evoke the desired emotional response.
+</li>
+<li>
+Be mindful of color blindness; use patterns or shapes in addition to color to convey meaning.
+</li>
+</ul>
+<p style="text-align: left">By following these guidelines, icons can effectively communicate their purpose and enhance the overall user experience.
+</p>
