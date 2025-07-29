@@ -39,11 +39,21 @@
 <img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743600047913-7b7b2b34-1743600047278-fic5w3v1l.png" alt="image 19.png">These animation trigger an event by tapping on the icon. There is no change of state for the icon. Given these actions are important, this is a moment where we can create delight for the user. This guideline for structuring the animation is to be used for creating icon animation which trigger functions. <br>
 <br>Since this is an on tap animation, we will be having a background container which appears to indicate this icon is being pressed. The icon animation will vary from icon to icon but we need an visual nudge which has to be constant with all these animations to orient the user.
 </p>
-<p style="text-align: left">
-</p>
-<h2 style="text-align: left">Dark mode icons
+<h2 style="text-align: left">Dark Mode Icons
 </h2>
-<p style="text-align: left">Icons for dark mode
+<p style="text-align: left">In dark mode environments, icons must be designed to ensure visibility and maintain aesthetic appeal. Here are some guidelines for creating effective dark mode icons:
 </p>
-<p style="text-align: left">
-</p>
+<ul style="text-align: left">
+<li>
+Use lighter colors for icons to contrast against dark backgrounds.
+</li>
+<li>
+Consider using outlines or shadows to enhance visibility.
+</li>
+<li>
+Ensure that the icons maintain their recognizability and functionality in both light and dark modes.
+</li>
+<li>
+Test icons in various lighting conditions to ensure they are effective.
+</li>
+</ul>
