@@ -35,6 +35,18 @@
 </h3>
 <p style="text-align: left">Applies to large text only Minimum contrast ratio of 3:1
 </p>
+<p style="text-align: left">
+</p>
+<h2 style="text-align: left">Dark mode colors
+</h2>
+<p style="text-align: left">
+</p>
+<p style="text-align: left">asdfasdfljas;lfjk
+</p>
+<p style="text-align: left">
+</p>
+<p style="text-align: left">
+</p>
 <h3 style="text-align: left"><strong>FAIL:</strong>
 </h3>
 <p style="text-align: left">Any combination not meeting the above criteria
