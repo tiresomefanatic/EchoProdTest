@@ -43,19 +43,15 @@
 </h2>
 <p style="text-align: left">Color plays a crucial role in icon design, influencing user perception and interaction. When choosing colors for icons, consider the following guidelines:
 </p>
-<ul style="text-align: left">
-<li>
-Use a limited color palette to maintain visual coherence.
-</li>
-<li>
-Ensure sufficient contrast between the icon and its background for visibility.
-</li>
-<li>
-Utilize colors that align with the brand identity and evoke the desired emotional response.
-</li>
-<li>
-Be mindful of color blindness; use patterns or shapes in addition to color to convey meaning.
-</li>
-</ul>
+<p style="text-align: left"> Use a limited color palette to maintain visual coherence. Ensure sufficient contrast between the icon and its background for visibility. Utilize colors that align with the brand identity and evoke the desired emotional response. Be mindful of color blindness; use patterns or shapes in addition to color to convey meaning.
+</p>
 <p style="text-align: left">By following these guidelines, icons can effectively communicate their purpose and enhance the overall user experience.
+</p>
+<p style="text-align: left">
+</p>
+<h2 style="text-align: left">Fun Icons
+</h2>
+<p style="text-align: left">
+</p>
+<p style="text-align: left">Icons that don't necessarily go on products ...
 </p>
