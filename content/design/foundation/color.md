@@ -3,6 +3,10 @@
 <p style="text-align: left">Lorem ipsum dolor sit amet consectetur. Et ut ultrices dolor ut. Vitae pharetra rutrum dolor vestibulum pharetra et. Pretium consectetur venenatis lacus quam non ipsum.
 </p>
 <p style="text-align: left">
+</p>
+<h2 style="text-align: left">
+</h2>
+<p style="text-align: left">
 <img src="https://bucket-production-5169.up.railway.app/uploads/uploads/1743580007629-15b99212-1743580004107-jij2vaood1f.gif" alt="test">
 </p>
 <p style="text-align: left">
@@ -43,4 +47,12 @@
 </p>
 <p style="text-align: left">
 <img src="/images/color-accessibility-chart.png" alt="Color Accessibility Chart">
+</p>
+<p style="text-align: left">
+</p>
+<h2 style="text-align: left">Dark modew colors
+</h2>
+<p style="text-align: left">
+</p>
+<p style="text-align: left">cooors to be used un dark mode
 </p>
