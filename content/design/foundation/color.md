@@ -37,6 +37,14 @@
 </h3>
 <p style="text-align: left">Applies to large text only Minimum contrast ratio of 3:1
 </p>
+<p style="text-align: left">
+</p>
+<h2 style="text-align: left">New Color
+</h2>
+<p style="text-align: left">
+</p>
+<p style="text-align: left">Hey new color is blue ff3402
+</p>
 <h3 style="text-align: left"><strong>FAIL:</strong>
 </h3>
 <p style="text-align: left">Any combination not meeting the above criteria
